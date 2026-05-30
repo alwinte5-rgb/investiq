@@ -1,3 +1,5 @@
+import { fetchJson, UpstreamError } from "./http.js";
+
 /**
  * Market-data provider abstraction. Each vendor is wrapped behind this typed
  * interface so fallbacks/swaps stay localized. Primary = Polygon, fallback =
@@ -42,19 +44,95 @@ export class FailoverMarketData implements MarketDataProvider {
   }
 }
 
-/** Placeholder concrete providers — real HTTP calls added in Layer 1. */
+// ---------- Polygon ----------
+export interface PolygonSnapshot {
+  status?: string;
+  ticker?: {
+    ticker?: string;
+    todaysChange?: number;
+    todaysChangePerc?: number;
+    day?: { c?: number; v?: number };
+    prevDay?: { c?: number; v?: number };
+    lastTrade?: { p?: number };
+  };
+}
+
+/** Pure parser — unit-tested with sample payloads. */
+export function parsePolygonSnapshot(json: PolygonSnapshot, ticker: string): NormalizedQuote {
+  const t = json.ticker;
+  const price = t?.lastTrade?.p ?? t?.day?.c ?? t?.prevDay?.c;
+  if (price == null || Number.isNaN(price)) {
+    throw new UpstreamError("polygon", `No price for ${ticker}`);
+  }
+  return {
+    ticker: ticker.toUpperCase(),
+    price,
+    change: t?.todaysChange ?? null,
+    changePct: t?.todaysChangePerc ?? null,
+    volume: t?.day?.v ?? t?.prevDay?.v ?? null,
+    asOf: new Date().toISOString(),
+    source: "polygon",
+  };
+}
+
 export class PolygonProvider implements MarketDataProvider {
   readonly name = "polygon";
   constructor(private readonly apiKey: string) {}
-  async getQuote(_ticker: string): Promise<NormalizedQuote> {
-    throw new Error("PolygonProvider.getQuote not implemented yet (Layer 1)");
+
+  async getQuote(ticker: string): Promise<NormalizedQuote> {
+    const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${encodeURIComponent(
+      ticker.toUpperCase(),
+    )}?apiKey=${this.apiKey}`;
+    const json = await fetchJson<PolygonSnapshot>("polygon", url);
+    return parsePolygonSnapshot(json, ticker);
   }
+}
+
+// ---------- Twelve Data (fallback) ----------
+export interface TwelveDataQuote {
+  symbol?: string;
+  close?: string | number;
+  change?: string | number;
+  percent_change?: string | number;
+  volume?: string | number;
+  datetime?: string;
+  status?: string;
+  message?: string;
+}
+
+const num = (v: string | number | undefined): number | null => {
+  if (v == null) return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isNaN(n) ? null : n;
+};
+
+/** Pure parser — unit-tested with sample payloads. */
+export function parseTwelveDataQuote(json: TwelveDataQuote, ticker: string): NormalizedQuote {
+  if (json.status === "error") {
+    throw new UpstreamError("twelvedata", json.message ?? "error");
+  }
+  const price = num(json.close);
+  if (price == null) throw new UpstreamError("twelvedata", `No price for ${ticker}`);
+  return {
+    ticker: ticker.toUpperCase(),
+    price,
+    change: num(json.change),
+    changePct: num(json.percent_change),
+    volume: num(json.volume),
+    asOf: json.datetime ? new Date(json.datetime).toISOString() : new Date().toISOString(),
+    source: "twelvedata",
+  };
 }
 
 export class TwelveDataProvider implements MarketDataProvider {
   readonly name = "twelvedata";
   constructor(private readonly apiKey: string) {}
-  async getQuote(_ticker: string): Promise<NormalizedQuote> {
-    throw new Error("TwelveDataProvider.getQuote not implemented yet (Layer 1)");
+
+  async getQuote(ticker: string): Promise<NormalizedQuote> {
+    const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(
+      ticker.toUpperCase(),
+    )}&apikey=${this.apiKey}`;
+    const json = await fetchJson<TwelveDataQuote>("twelvedata", url);
+    return parseTwelveDataQuote(json, ticker);
   }
 }

@@ -5,6 +5,9 @@ import { resolveAuthContext, type AuthDeps } from "./lib/guard.js";
 import { webhookRoutes } from "./routes/webhooks.js";
 import { symbolRoutes } from "./routes/symbols.js";
 import { watchlistRoutes } from "./routes/watchlists.js";
+import { marketRoutes } from "./routes/market.js";
+import { createMarketService } from "./services/market.js";
+import { createNewsService } from "./services/news.js";
 
 /**
  * InvestIQ API. Boots with FAIL-FAST env validation. Every protected route
@@ -17,6 +20,15 @@ async function main() {
   const clerkVerifier = makeClerkVerifier(env.CLERK_SECRET_KEY);
   const clerk = makeClerkClient(env.CLERK_SECRET_KEY);
   const authDeps: AuthDeps = { verifier: clerkVerifier, clerk };
+  const market = createMarketService({
+    polygonKey: env.POLYGON_API_KEY,
+    twelveDataKey: env.TWELVEDATA_API_KEY,
+    onFailover: (err) => app.log.warn({ err }, "polygon failover -> twelvedata"),
+  });
+  const news = createNewsService({
+    benzingaKey: env.BENZINGA_API_KEY,
+    marketauxKey: env.MARKETAUX_API_KEY,
+  });
 
   const app = Fastify({ logger: true });
 
@@ -62,6 +74,7 @@ async function main() {
   // Layer 1 feature routes.
   await app.register(async (instance) => symbolRoutes(instance, authDeps));
   await app.register(async (instance) => watchlistRoutes(instance, authDeps));
+  await app.register(async (instance) => marketRoutes(instance, { auth: authDeps, market, news }));
 
   await app.listen({ port: env.API_PORT, host: "0.0.0.0" });
   app.log.info(`InvestIQ API listening on :${env.API_PORT}`);

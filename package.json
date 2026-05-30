@@ -1,0 +1,27 @@
+{
+  "name": "investiq",
+  "private": true,
+  "version": "0.0.0",
+  "description": "InvestIQ — AI-powered investment research & education platform for US stocks and ETFs (educational, non-advisory).",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:generate": "npm -w @investiq/db run generate",
+    "db:migrate": "npm -w @investiq/db run migrate",
+    "db:studio": "npm -w @investiq/db run studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.0",
+    "typescript": "^5.6.0"
+  }
+}

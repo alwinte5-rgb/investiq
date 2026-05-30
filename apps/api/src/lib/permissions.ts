@@ -13,10 +13,15 @@ export interface OwnedResource {
   userId: string;
 }
 
+/** Throws NOT_FOUND if missing, FORBIDDEN if owned by a different user. */
+export function assertOwnedBy(userId: string, resource: OwnedResource | null): void {
+  if (!resource) throw errors.notFound();
+  if (resource.userId !== userId) throw errors.forbidden();
+}
+
 /** Throws FORBIDDEN unless the resource belongs to the caller. */
 export function assertOwner(ctx: AuthContext, resource: OwnedResource | null): void {
-  if (!resource) throw errors.notFound();
-  if (resource.userId !== ctx.userId) throw errors.forbidden();
+  assertOwnedBy(ctx.userId, resource);
 }
 
 /** Convenience for query filters: always scope reads/writes by the user. */

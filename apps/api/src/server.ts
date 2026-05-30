@@ -1,7 +1,9 @@
 import Fastify from "fastify";
-import { loadServerEnv, parseAllowedOrigins, toApiError } from "@investiq/shared";
+import { loadServerEnv, parseAllowedOrigins, toApiError, errors } from "@investiq/shared";
+import { findOrProvisionUser } from "@investiq/db";
 import { authenticate } from "./lib/auth.js";
-import { clerkVerifier, userLoader } from "./lib/context.js";
+import { makeClerkVerifier, makeClerkClient, userLoader } from "./lib/context.js";
+import { webhookRoutes } from "./routes/webhooks.js";
 
 /**
  * InvestIQ API. Boots with FAIL-FAST env validation. Every protected route
@@ -11,6 +13,8 @@ async function main() {
   // STARTUP: validate env; missing/invalid vars crash the process immediately.
   const env = loadServerEnv();
   const allowedOrigins = parseAllowedOrigins(env.ALLOWED_ORIGINS);
+  const clerkVerifier = makeClerkVerifier(env.CLERK_SECRET_KEY);
+  const clerk = makeClerkClient(env.CLERK_SECRET_KEY);
 
   const app = Fastify({ logger: true });
 
@@ -36,10 +40,32 @@ async function main() {
   // Public health check (no auth).
   app.get("/health", async () => ({ data: { ok: true } }));
 
-  // Example protected route demonstrating the pipeline.
-  // Personalized -> never cached.
+  // Clerk webhook (public, signature-verified) — encapsulated for raw body.
+  await app.register(async (instance) => {
+    await webhookRoutes(instance, env.CLERK_WEBHOOK_SECRET);
+  });
+
+  // Example protected route demonstrating the pipeline. Personalized -> no-store.
   app.get("/api/v1/me", async (req, reply) => {
-    const ctx = await authenticate(req.headers.authorization, clerkVerifier, userLoader);
+    let ctx;
+    try {
+      ctx = await authenticate(req.headers.authorization, clerkVerifier, userLoader);
+    } catch (err) {
+      // Lazy provision: token valid but User row not yet created by webhook.
+      const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+      const verified = await clerkVerifier.verify(token);
+      if (!verified) throw err;
+      const cu = await clerk.users.getUser(verified.clerkId);
+      const email = cu.primaryEmailAddress?.emailAddress ?? cu.emailAddresses[0]?.emailAddress;
+      if (!email) throw errors.unauthorized("No email on account");
+      const user = await findOrProvisionUser({
+        clerkId: verified.clerkId,
+        email,
+        name: [cu.firstName, cu.lastName].filter(Boolean).join(" ") || null,
+        avatarUrl: cu.imageUrl ?? null,
+      });
+      ctx = { userId: user.id, clerkId: user.clerkId, plan: user.plan, role: user.role };
+    }
     reply.header("Cache-Control", "no-store");
     return { data: { userId: ctx.userId, plan: ctx.plan, role: ctx.role } };
   });
@@ -49,7 +75,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  // Boot failure (e.g. missing env) — print readable reason and exit non-zero.
   console.error(err instanceof Error ? err.message : err);
   process.exit(1);
 });

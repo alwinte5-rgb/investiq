@@ -13,11 +13,13 @@
     "lint": "echo \"(lint: add eslint)\""
   },
   "dependencies": {
+    "@clerk/backend": "^1.15.0",
     "@investiq/ai": "*",
     "@investiq/db": "*",
     "@investiq/integrations": "*",
     "@investiq/shared": "*",
     "fastify": "^4.28.0",
+    "svix": "^1.37.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

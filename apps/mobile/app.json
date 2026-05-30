@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "InvestIQ",
+    "slug": "investiq",
+    "scheme": "investiq",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.investiq.mobile"
+    },
+    "android": {
+      "package": "app.investiq.mobile"
+    },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiBaseUrl": "http://localhost:4000"
+    }
+  }
+}

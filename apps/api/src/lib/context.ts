@@ -1,20 +1,46 @@
-import type { ClerkVerifier, UserLoader } from "./auth.js";
+import { createClerkClient, verifyToken } from "@clerk/backend";
+import { getUserByClerkId } from "@investiq/db";
+import type { AuthContext, ClerkVerifier, UserLoader } from "./auth.js";
 
 /**
- * Wiring point for auth dependencies. Real Clerk verification + DB-backed user
- * loading are implemented in Layer 1. Until then these return null so the API
- * boots and honestly responds 401 on protected routes (no fake auth).
+ * Real auth wiring.
+ * - clerkVerifier verifies the bearer token server-side via Clerk.
+ * - userLoader loads the mirrored InvestIQ user (provisioned by the Clerk
+ *   webhook, or lazily on first authenticated request) and returns plan/role.
  */
-export const clerkVerifier: ClerkVerifier = {
-  async verify(_token) {
-    // TODO(Layer 1): verify with @clerk/backend using CLERK_SECRET_KEY.
-    return null;
+export function makeClerkVerifier(secretKey: string): ClerkVerifier {
+  return {
+    async verify(token) {
+      if (!token) return null;
+      try {
+        const claims = await verifyToken(token, { secretKey });
+        return claims?.sub ? { clerkId: claims.sub } : null;
+      } catch {
+        return null;
+      }
+    },
+  };
+}
+
+/**
+ * Loads the app user for a verified clerkId. If the webhook hasn't created the
+ * row yet, the route layer may lazily provision (see auth flow); here we read
+ * what exists and surface plan/role for entitlement checks.
+ */
+export const userLoader: UserLoader = {
+  async byClerkId(clerkId) {
+    const user = await getUserByClerkId(clerkId);
+    if (!user) return null;
+    const ctx: AuthContext = {
+      userId: user.id,
+      clerkId: user.clerkId,
+      plan: user.plan,
+      role: user.role,
+    };
+    return ctx;
   },
 };
 
-export const userLoader: UserLoader = {
-  async byClerkId(_clerkId) {
-    // TODO(Layer 1): find-or-provision User via @investiq/db.
-    return null;
-  },
-};
+export function makeClerkClient(secretKey: string) {
+  return createClerkClient({ secretKey });
+}

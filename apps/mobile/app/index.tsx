@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { SignedIn, SignedOut, useAuth } from "@clerk/clerk-expo";
+import { Link } from "expo-router";
 import { apiFetch } from "../lib/api";
 
 interface Me {
@@ -60,6 +61,9 @@ export default function Index() {
       </Text>
       <SignedIn>
         <Dashboard />
+        <Link href="/watchlists" style={styles.link}>
+          Go to Watchlists →
+        </Link>
       </SignedIn>
       <SignedOut>
         <View style={styles.card}>
@@ -83,5 +87,6 @@ const styles = StyleSheet.create({
   row: { fontSize: 15 },
   hint: { fontSize: 12, color: "#888" },
   error: { color: "#b91c1c", fontSize: 14 },
+  link: { color: "#2563eb", fontWeight: "600", textAlign: "center" },
   disclaimer: { fontSize: 11, color: "#999", textAlign: "center" },
 });

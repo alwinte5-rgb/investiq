@@ -22,6 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/dashboard" className="hover:underline">
                 Dashboard
               </Link>
+              <Link href="/watchlists" className="hover:underline">
+                Watchlists
+              </Link>
               <SignedOut>
                 <SignInButton mode="modal" />
               </SignedOut>

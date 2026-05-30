@@ -1,8 +1,17 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { SignedIn, SignedOut, useAuth } from "@clerk/clerk-expo";
 import { Link } from "expo-router";
 import { apiFetch } from "../lib/api";
+
+function SignOutButton() {
+  const { signOut } = useAuth();
+  return (
+    <Pressable onPress={() => signOut()}>
+      <Text style={styles.link}>Sign out</Text>
+    </Pressable>
+  );
+}
 
 interface Me {
   userId: string;
@@ -64,11 +73,17 @@ export default function Index() {
         <Link href="/watchlists" style={styles.link}>
           Go to Watchlists →
         </Link>
+        <SignOutButton />
       </SignedIn>
       <SignedOut>
         <View style={styles.card}>
           <Text style={styles.row}>Sign in to view your research dashboard.</Text>
-          <Text style={styles.hint}>Auth UI is wired in Layer 1.</Text>
+          <Link href="/sign-in" style={styles.link}>
+            Sign in
+          </Link>
+          <Link href="/sign-up" style={styles.linkMuted}>
+            Create an account
+          </Link>
         </View>
       </SignedOut>
       <Text style={styles.disclaimer}>
@@ -88,5 +103,6 @@ const styles = StyleSheet.create({
   hint: { fontSize: 12, color: "#888" },
   error: { color: "#b91c1c", fontSize: 14 },
   link: { color: "#2563eb", fontWeight: "600", textAlign: "center" },
+  linkMuted: { color: "#666", textAlign: "center" },
   disclaimer: { fontSize: 11, color: "#999", textAlign: "center" },
 });

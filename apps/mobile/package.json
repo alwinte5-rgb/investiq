@@ -12,14 +12,17 @@
     "test": "echo \"(mobile: add tests)\""
   },
   "dependencies": {
-    "@clerk/clerk-expo": "^2.2.0",
+    "@clerk/clerk-expo": "2.4.0",
     "@investiq/shared": "*",
     "expo": "~51.0.28",
+    "expo-auth-session": "~5.5.2",
     "expo-constants": "~16.0.2",
     "expo-linking": "~6.3.1",
+    "expo-local-authentication": "~14.0.1",
     "expo-router": "~3.5.23",
     "expo-secure-store": "~13.0.2",
     "expo-status-bar": "~1.12.1",
+    "expo-web-browser": "~13.0.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.74.5",

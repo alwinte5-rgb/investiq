@@ -6,7 +6,7 @@ import {
   createWatchlistAction,
   deleteWatchlistAction,
   removeItemAction,
-} from "@/app/watchlists/actions";
+} from "@/app/(authed)/watchlists/actions";
 
 export interface SymbolResult {
   ticker: string;

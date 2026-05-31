@@ -1,8 +1,9 @@
 import {
   FailoverMarketData,
   InMemoryTtlCache,
-  PolygonProvider,
+  MassiveProvider,
   TwelveDataProvider,
+  UpstreamError,
   type MarketDataProvider,
   type NormalizedQuote,
 } from "@investiq/integrations";
@@ -23,30 +24,51 @@ export interface MarketOverview {
 export interface MarketService {
   getQuote(ticker: string): Promise<NormalizedQuote>;
   getOverview(): Promise<MarketOverview>;
+  /** True when at least one provider key is configured. */
+  readonly enabled: boolean;
 }
 
 export interface MarketServiceOptions {
-  polygonKey: string;
-  twelveDataKey: string;
+  twelveDataKey?: string;
+  massiveKey?: string;
+  massiveBaseUrl?: string;
   onFailover?: (err: unknown) => void;
 }
 
+/** Chain providers with failover in order; throws upstream if none configured. */
+function buildProvider(
+  providers: MarketDataProvider[],
+  onFailover?: (err: unknown) => void,
+): MarketDataProvider {
+  if (providers.length === 0) {
+    return {
+      name: "none",
+      async getQuote(): Promise<NormalizedQuote> {
+        throw new UpstreamError("market", "No market-data provider configured");
+      },
+    };
+  }
+  return providers.reduce((acc, next) => new FailoverMarketData(acc, next, onFailover));
+}
+
 /**
- * Market data service. Polygon primary, Twelve Data fallback, results cached in
- * a shared (non-personalized) TTL cache. Overview tolerates partial failures so
- * one bad symbol doesn't blank the whole screen.
+ * Market data service. Twelve Data is the primary provider; Massive (ex-Polygon)
+ * is the fallback. Providers without a configured key are skipped, so the app
+ * runs with whatever keys are present. Results are cached in a shared
+ * (non-personalized) TTL cache; the overview tolerates partial failures.
  */
 export function createMarketService(opts: MarketServiceOptions): MarketService {
-  const provider: MarketDataProvider = new FailoverMarketData(
-    new PolygonProvider(opts.polygonKey),
-    new TwelveDataProvider(opts.twelveDataKey),
-    opts.onFailover,
-  );
+  const providers: MarketDataProvider[] = [];
+  if (opts.twelveDataKey) providers.push(new TwelveDataProvider(opts.twelveDataKey));
+  if (opts.massiveKey) providers.push(new MassiveProvider(opts.massiveKey, opts.massiveBaseUrl));
+
+  const provider = buildProvider(providers, opts.onFailover);
   const cache = new InMemoryTtlCache();
 
   async function getQuote(ticker: string): Promise<NormalizedQuote> {
-    const key = `quote:${ticker.toUpperCase()}`;
-    return cache.wrap(key, QUOTE_TTL_MS, () => provider.getQuote(ticker));
+    return cache.wrap(`quote:${ticker.toUpperCase()}`, QUOTE_TTL_MS, () =>
+      provider.getQuote(ticker),
+    );
   }
 
   async function quotesFor(tickers: string[]): Promise<NormalizedQuote[]> {
@@ -66,5 +88,5 @@ export function createMarketService(opts: MarketServiceOptions): MarketService {
     });
   }
 
-  return { getQuote, getOverview };
+  return { getQuote, getOverview, enabled: providers.length > 0 };
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   FailoverMarketData,
-  parsePolygonSnapshot,
+  parseMassiveSnapshot,
   parseTwelveDataQuote,
   type MarketDataProvider,
   type NormalizedQuote,
@@ -10,8 +10,8 @@ import { InMemoryTtlCache } from "./cache.js";
 import { dedupeKeyFor, mergeNews, parseBenzinga, parseMarketaux } from "./news.js";
 
 describe("market-data parsers", () => {
-  it("parsePolygonSnapshot prefers last trade price", () => {
-    const q = parsePolygonSnapshot(
+  it("parseMassiveSnapshot prefers last trade price", () => {
+    const q = parseMassiveSnapshot(
       {
         ticker: {
           todaysChange: 1.2,
@@ -22,11 +22,11 @@ describe("market-data parsers", () => {
       },
       "aapl",
     );
-    expect(q).toMatchObject({ ticker: "AAPL", price: 190.1, change: 1.2, source: "polygon" });
+    expect(q).toMatchObject({ ticker: "AAPL", price: 190.1, change: 1.2, source: "massive" });
   });
 
-  it("parsePolygonSnapshot throws when no price", () => {
-    expect(() => parsePolygonSnapshot({ ticker: {} }, "AAPL")).toThrow();
+  it("parseMassiveSnapshot throws when no price", () => {
+    expect(() => parseMassiveSnapshot({ ticker: {} }, "AAPL")).toThrow();
   });
 
   it("parseTwelveDataQuote coerces strings and handles error status", () => {

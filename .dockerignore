@@ -1,0 +1,21 @@
+# Keep the build context small + reproducible (fresh install in the image).
+# NOTE: apps/mobile is intentionally NOT excluded — npm ci needs every
+# workspace listed in package-lock.json to be present.
+node_modules
+**/node_modules
+.git
+.next
+**/.next
+.expo
+**/.expo
+.turbo
+**/.turbo
+dist
+**/dist
+
+# local env + secrets (never bake into an image)
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store

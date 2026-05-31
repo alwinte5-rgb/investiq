@@ -44,8 +44,8 @@ export class FailoverMarketData implements MarketDataProvider {
   }
 }
 
-// ---------- Polygon ----------
-export interface PolygonSnapshot {
+// ---------- Massive (formerly Polygon.io) ----------
+export interface MassiveSnapshot {
   status?: string;
   ticker?: {
     ticker?: string;
@@ -58,11 +58,11 @@ export interface PolygonSnapshot {
 }
 
 /** Pure parser — unit-tested with sample payloads. */
-export function parsePolygonSnapshot(json: PolygonSnapshot, ticker: string): NormalizedQuote {
+export function parseMassiveSnapshot(json: MassiveSnapshot, ticker: string): NormalizedQuote {
   const t = json.ticker;
   const price = t?.lastTrade?.p ?? t?.day?.c ?? t?.prevDay?.c;
   if (price == null || Number.isNaN(price)) {
-    throw new UpstreamError("polygon", `No price for ${ticker}`);
+    throw new UpstreamError("massive", `No price for ${ticker}`);
   }
   return {
     ticker: ticker.toUpperCase(),
@@ -71,20 +71,28 @@ export function parsePolygonSnapshot(json: PolygonSnapshot, ticker: string): Nor
     changePct: t?.todaysChangePerc ?? null,
     volume: t?.day?.v ?? t?.prevDay?.v ?? null,
     asOf: new Date().toISOString(),
-    source: "polygon",
+    source: "massive",
   };
 }
 
-export class PolygonProvider implements MarketDataProvider {
-  readonly name = "polygon";
-  constructor(private readonly apiKey: string) {}
+/**
+ * Massive provider (the rebranded Polygon.io). The snapshot endpoint shape is
+ * the Polygon v2 format; `baseUrl` is configurable via env (MASSIVE_BASE_URL)
+ * so it can be repointed if Massive changes its host.
+ */
+export class MassiveProvider implements MarketDataProvider {
+  readonly name = "massive";
+  constructor(
+    private readonly apiKey: string,
+    private readonly baseUrl = "https://api.polygon.io",
+  ) {}
 
   async getQuote(ticker: string): Promise<NormalizedQuote> {
-    const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${encodeURIComponent(
+    const url = `${this.baseUrl}/v2/snapshot/locale/us/markets/stocks/tickers/${encodeURIComponent(
       ticker.toUpperCase(),
     )}?apiKey=${this.apiKey}`;
-    const json = await fetchJson<PolygonSnapshot>("polygon", url);
-    return parsePolygonSnapshot(json, ticker);
+    const json = await fetchJson<MassiveSnapshot>("massive", url);
+    return parseMassiveSnapshot(json, ticker);
   }
 }
 

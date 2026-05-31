@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
-    "build": "next build",
+    "build": "rm -rf .next node_modules/.cache ../../node_modules/.cache && next build",
     "start": "next start --port ${PORT:-3000}",
     "typecheck": "tsc --noEmit",
     "lint": "next lint",

@@ -1,4 +1,4 @@
-// Build marker: mobile excluded from web/api install — single React 18.3.1, no Expo toolchain.
+// Build marker: cross-platform lockfile (linux @next/swc included) — fixes Railway SWC/useContext.
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,

@@ -2,6 +2,11 @@
 # In Railway: set this service's "Dockerfile Path" to apps/web/Dockerfile.
 FROM node:20-bookworm-slim
 
+# openssl/ca-certificates for Prisma's generate (runs via packages/db postinstall).
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 COPY . .
 

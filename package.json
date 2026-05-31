@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "description": "InvestIQ — AI-powered investment research & education platform for US stocks and ETFs (educational, non-advisory).",
   "workspaces": [
-    "apps/*",
+    "apps/api",
+    "apps/web",
     "packages/*"
   ],
   "engines": {
@@ -25,9 +26,6 @@
   "devDependencies": {
     "turbo": "^2.1.0",
     "typescript": "^5.6.0"
-  },
-  "dependencies": {
-    "expo-router": "~3.5.23"
   },
   "overrides": {
     "react-native": "0.74.5",

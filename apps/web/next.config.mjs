@@ -1,4 +1,4 @@
-// Build marker: single React 18.3.1 repo-wide + cross-platform lockfile (linux swc included).
+// Build marker: mobile excluded from web/api install — single React 18.3.1, no Expo toolchain.
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,

@@ -22,12 +22,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Link href="/" className="font-semibold tracking-tight">
             Invest<span className="text-blue-600">IQ</span>
           </Link>
+          {/* Plain links only — NO Clerk components here, so the public/prerendered
+              pages stay Clerk-free. The actual sign-in/up UI lives on the dynamic
+              /sign-in and /sign-up routes. */}
           <nav className="flex items-center gap-4 text-sm">
             <Link href="/pricing" className="hover:underline">
               Pricing
             </Link>
             <Link href="/dashboard" className="hover:underline">
               Dashboard
+            </Link>
+            <Link href="/sign-in" className="hover:underline">
+              Sign in
+            </Link>
+            <Link
+              href="/sign-up"
+              className="rounded-md bg-blue-600 px-3 py-1.5 font-medium text-white hover:bg-blue-700"
+            >
+              Sign up
             </Link>
           </nav>
         </header>

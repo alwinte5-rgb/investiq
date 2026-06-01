@@ -25,8 +25,11 @@ import { webhookRoutes } from "./routes/webhooks.js";
 import { symbolRoutes } from "./routes/symbols.js";
 import { watchlistRoutes } from "./routes/watchlists.js";
 import { marketRoutes } from "./routes/market.js";
+import { connectionRoutes } from "./routes/connections.js";
 import { createMarketService } from "./services/market.js";
 import { createNewsService } from "./services/news.js";
+import { createSnapTradeClient } from "@investiq/integrations";
+import type { BrokerageDeps } from "./services/brokerage.js";
 
 /**
  * InvestIQ API. Boots with FAIL-FAST env validation. Every protected route
@@ -95,6 +98,18 @@ async function main() {
   await app.register(async (instance) => symbolRoutes(instance, authDeps));
   await app.register(async (instance) => watchlistRoutes(instance, authDeps));
   await app.register(async (instance) => marketRoutes(instance, { auth: authDeps, market, news }));
+
+  // Brokerage (SnapTrade) — only enabled when credentials + encryption key are set.
+  if (env.SNAPTRADE_CLIENT_ID && env.SNAPTRADE_CONSUMER_KEY && env.CONNECTION_ENCRYPTION_KEY) {
+    const brokerage: BrokerageDeps = {
+      client: createSnapTradeClient(env.SNAPTRADE_CLIENT_ID, env.SNAPTRADE_CONSUMER_KEY),
+      encKey: env.CONNECTION_ENCRYPTION_KEY,
+    };
+    await app.register(async (instance) => connectionRoutes(instance, { auth: authDeps, brokerage }));
+    app.log.info("SnapTrade brokerage routes enabled");
+  } else {
+    app.log.warn("SnapTrade not configured — brokerage routes disabled");
+  }
 
   const port = resolvePort(env);
   await app.listen({ port, host: "0.0.0.0" });

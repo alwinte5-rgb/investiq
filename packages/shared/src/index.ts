@@ -1,4 +1,5 @@
 export * from "./recommendations.js";
+export * from "./crypto.js";
 export * from "./entitlements.js";
 export * from "./env.js";
 export * from "./errors.js";

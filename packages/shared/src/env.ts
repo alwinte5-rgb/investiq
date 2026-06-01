@@ -67,7 +67,13 @@ export type ServerEnv = z.infer<typeof envSchema>;
 
 /** Parse & validate server env. Throws a readable error listing missing vars. */
 export function loadServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
-  const parsed = envSchema.safeParse(source);
+  // Treat empty-string vars as unset (common in .env files) so optional vars
+  // with a blank value behave as "not provided" instead of failing min length.
+  const cleaned: Record<string, string | undefined> = {};
+  for (const [k, v] of Object.entries(source)) {
+    cleaned[k] = v === "" ? undefined : v;
+  }
+  const parsed = envSchema.safeParse(cleaned);
   if (!parsed.success) {
     const issues = parsed.error.issues
       .map((i) => `  - ${i.path.join(".")}: ${i.message}`)

@@ -163,6 +163,7 @@ model Account {
   holdings      Holding[]
   transactions  Transaction[]
 
+  @@unique([connectionId, externalId])
   @@index([connectionId])
 }
 

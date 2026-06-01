@@ -24,5 +24,6 @@ export async function apiFetch<T>(
   });
   const body = (await res.json().catch(() => ({}))) as { data?: T; error?: string };
   if (!res.ok) throw new Error(body.error ?? `Request failed (${res.status})`);
-  return body.data as T;
+  if (body.data === undefined) throw new Error("Unexpected empty response from API");
+  return body.data;
 }

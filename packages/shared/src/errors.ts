@@ -52,6 +52,14 @@ export function toApiError(err: unknown): { body: ApiError; status: number } {
   if (err instanceof AppError) {
     return { body: { error: err.message, code: err.code }, status: err.httpStatus };
   }
+  // Vendor/upstream failures (from @investiq/integrations) -> 502, not 500.
+  // Matched by name to avoid a dependency from shared into integrations.
+  if (err instanceof Error && err.name === "UpstreamError") {
+    return {
+      body: { error: "Upstream service unavailable", code: "UPSTREAM_UNAVAILABLE" },
+      status: 502,
+    };
+  }
   // Unknown internal error: never expose details.
   return { body: { error: "Something went wrong", code: "INTERNAL" }, status: 500 };
 }

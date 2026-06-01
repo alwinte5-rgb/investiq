@@ -69,6 +69,18 @@ function SymbolSearch({ onPick }: { onPick: (ticker: string) => void }) {
     };
   }, [q]);
 
+  // Close the results dropdown when clicking outside of it.
+  useEffect(() => {
+    function onMouseDown(e: MouseEvent) {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
+        setResults([]);
+        setQ("");
+      }
+    }
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
+
   return (
     <div ref={boxRef} className="relative">
       <input
@@ -121,8 +133,10 @@ export function CreateWatchlistForm() {
     if (!name.trim()) return;
     start(async () => {
       const res = await createWatchlistAction(name);
-      if (res.ok) setName("");
-      else setError(res.error ?? "Failed");
+      if (res.ok) {
+        setName("");
+        setError(null);
+      } else setError(res.error ?? "Failed");
     });
   }
 

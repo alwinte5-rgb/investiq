@@ -24,15 +24,22 @@ export async function listWatchlists(userId: string) {
 
 export async function createWatchlist(userId: string, plan: Plan, name: string) {
   const limit = entitlementsFor(plan).maxWatchlists;
-  const count = await prisma.watchlist.count({ where: { userId } });
-  if (count >= limit) {
-    throw errors.quota(
-      limit === 1
-        ? "Free plan allows 1 watchlist. Upgrade for unlimited watchlists."
-        : "Watchlist limit reached for your plan.",
-    );
-  }
-  return prisma.watchlist.create({ data: { userId, name } });
+  // Serializable transaction so two concurrent requests can't both read the
+  // same count and both create — which would bypass the plan limit (TOCTOU).
+  return prisma.$transaction(
+    async (tx) => {
+      const count = await tx.watchlist.count({ where: { userId } });
+      if (count >= limit) {
+        throw errors.quota(
+          limit === 1
+            ? "Free plan allows 1 watchlist. Upgrade for unlimited watchlists."
+            : "Watchlist limit reached for your plan.",
+        );
+      }
+      return tx.watchlist.create({ data: { userId, name } });
+    },
+    { isolationLevel: "Serializable" },
+  );
 }
 
 export async function renameWatchlist(userId: string, id: string, name: string) {

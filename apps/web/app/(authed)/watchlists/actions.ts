@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
 export interface ActionResult {
@@ -14,7 +15,13 @@ async function run(fn: () => Promise<unknown>): Promise<ActionResult> {
     revalidatePath("/watchlists");
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Request failed" };
+    const msg = e instanceof Error ? e.message : "Request failed";
+    // Session expired mid-action (middleware doesn't fire on server actions) —
+    // send the user to sign in rather than showing a confusing inline error.
+    if (/authentication required|unauthorized|\b401\b/i.test(msg)) {
+      redirect("/sign-in");
+    }
+    return { ok: false, error: msg };
   }
 }
 

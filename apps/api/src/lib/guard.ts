@@ -1,6 +1,6 @@
 import type { FastifyRequest } from "fastify";
 import type { ClerkClient } from "@clerk/backend";
-import { errors } from "@investiq/shared";
+import { AppError, errors } from "@investiq/shared";
 import { findOrProvisionUser } from "@investiq/db";
 import { authenticate, type AuthContext, type ClerkVerifier } from "./auth.js";
 import { userLoader } from "./context.js";
@@ -24,9 +24,14 @@ export async function resolveAuthContext(
   try {
     return await authenticate(req.headers.authorization, deps.verifier, userLoader);
   } catch (err) {
+    // Only lazily provision for the specific "valid token, missing user row"
+    // case. Re-throw invalid-token (401) and any unrelated error (e.g. a DB
+    // failure) instead of swallowing it and re-verifying.
+    if (!(err instanceof AppError) || err.message !== "User not provisioned") throw err;
+
     const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
     const verified = await deps.verifier.verify(token);
-    if (!verified) throw err;
+    if (!verified) throw errors.unauthorized();
 
     const cu = await deps.clerk.users.getUser(verified.clerkId);
     const email = cu.primaryEmailAddress?.emailAddress ?? cu.emailAddresses[0]?.emailAddress;

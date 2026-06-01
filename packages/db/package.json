@@ -13,7 +13,7 @@
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
-    "push": "prisma db push",
+    "push": "prisma db push --accept-data-loss",
     "seed": "prisma db seed",
     "studio": "prisma studio",
     "typecheck": "tsc -p tsconfig.json --noEmit",

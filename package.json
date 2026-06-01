@@ -20,6 +20,7 @@
     "test": "turbo run test",
     "db:generate": "npm -w @investiq/db run generate",
     "db:migrate": "npm -w @investiq/db run migrate",
+    "db:deploy": "npm -w @investiq/db run migrate:deploy && npm -w @investiq/db run seed",
     "db:seed": "npm -w @investiq/db run seed",
     "db:studio": "npm -w @investiq/db run studio"
   },

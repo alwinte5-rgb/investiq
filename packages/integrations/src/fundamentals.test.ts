@@ -4,7 +4,7 @@ import { parseFmpProfile } from "./fundamentals.js";
 describe("parseFmpProfile", () => {
   it("maps an FMP profile array row to normalized fundamentals", () => {
     const raw = [
-      { symbol: "AAPL", price: 190.1, beta: 1.2, mktCap: 3_000_000_000_000, sector: "Technology", industry: "Consumer Electronics" },
+      { symbol: "AAPL", price: 190.1, beta: 1.2, marketCap: 3_000_000_000_000, sector: "Technology", industry: "Consumer Electronics" },
     ];
     const f = parseFmpProfile("aapl", raw);
     expect(f.ticker).toBe("AAPL");

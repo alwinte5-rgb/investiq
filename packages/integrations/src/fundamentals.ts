@@ -27,7 +27,7 @@ interface FmpProfile {
   symbol?: string;
   price?: number | null;
   beta?: number | null;
-  mktCap?: number | null;
+  marketCap?: number | null;
   sector?: string | null;
   industry?: string | null;
 }
@@ -36,12 +36,12 @@ function num(v: unknown): number | null {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
-/** Parse an FMP `/profile` array response into the normalized shape. Exported for tests. */
+/** Parse an FMP `stable/profile` array response into the normalized shape. Exported for tests. */
 export function parseFmpProfile(ticker: string, raw: unknown): NormalizedFundamentals {
   const row: FmpProfile = Array.isArray(raw) ? (raw[0] ?? {}) : ((raw as FmpProfile) ?? {});
   return {
     ticker: ticker.toUpperCase(),
-    marketCap: num(row.mktCap),
+    marketCap: num(row.marketCap),
     beta: num(row.beta),
     pe: null, // not present on /profile; left null (ETFs/some symbols lack it anyway)
     eps: null,
@@ -54,9 +54,9 @@ export function parseFmpProfile(ticker: string, raw: unknown): NormalizedFundame
 }
 
 /**
- * Financial Modeling Prep fundamentals. Uses the company profile endpoint
- * (market cap, beta, sector). A profile with no usable fields is treated as
- * "no data" so the caller's evidence bundle stays honest.
+ * Financial Modeling Prep fundamentals. Uses the current "stable" company
+ * profile endpoint (market cap, beta, sector). A profile with no usable fields
+ * is treated as "no data" so the caller's evidence bundle stays honest.
  */
 export class FmpProvider implements FundamentalsProvider {
   readonly name = "fmp";
@@ -67,7 +67,7 @@ export class FmpProvider implements FundamentalsProvider {
 
   async getFundamentals(ticker: string): Promise<NormalizedFundamentals> {
     const t = encodeURIComponent(ticker.toUpperCase());
-    const url = `${this.baseUrl}/api/v3/profile/${t}?apikey=${encodeURIComponent(this.apiKey)}`;
+    const url = `${this.baseUrl}/stable/profile?symbol=${t}&apikey=${encodeURIComponent(this.apiKey)}`;
     const raw = await fetchJson<unknown>("fmp", url);
     const parsed = parseFmpProfile(ticker, raw);
     // If the provider returned a row but nothing usable, surface as upstream "no data".

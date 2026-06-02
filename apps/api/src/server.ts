@@ -27,9 +27,12 @@ import { watchlistRoutes } from "./routes/watchlists.js";
 import { marketRoutes } from "./routes/market.js";
 import { connectionRoutes } from "./routes/connections.js";
 import { adminRoutes } from "./routes/admin.js";
+import { analysisRoutes } from "./routes/analysis.js";
 import { createMarketService } from "./services/market.js";
 import { createNewsService } from "./services/news.js";
+import { createFundamentalsService } from "./services/fundamentals.js";
 import { createSnapTradeClient } from "@investiq/integrations";
+import { createAnthropicAnalysisModel } from "@investiq/ai";
 import type { BrokerageDeps } from "./services/brokerage.js";
 
 /**
@@ -53,6 +56,7 @@ async function main() {
     benzingaKey: env.BENZINGA_API_KEY,
     marketauxKey: env.MARKETAUX_API_KEY,
   });
+  const fundamentals = createFundamentalsService({ fmpKey: env.FMP_API_KEY });
 
   const app = Fastify({ logger: true });
 
@@ -111,6 +115,16 @@ async function main() {
     app.log.info("SnapTrade brokerage routes enabled");
   } else {
     app.log.warn("SnapTrade not configured — brokerage routes disabled");
+  }
+
+  // AI analysis (Layer 2) — only enabled when an Anthropic key is set.
+  if (env.ANTHROPIC_API_KEY) {
+    const model = createAnthropicAnalysisModel({ apiKey: env.ANTHROPIC_API_KEY, model: env.AI_MODEL });
+    const analysis = { market, news, fundamentals, model };
+    await app.register(async (instance) => analysisRoutes(instance, { auth: authDeps, analysis }));
+    app.log.info(`AI analysis routes enabled (model=${env.AI_MODEL})`);
+  } else {
+    app.log.warn("ANTHROPIC_API_KEY not set — AI analysis routes disabled");
   }
 
   const port = resolvePort(env);

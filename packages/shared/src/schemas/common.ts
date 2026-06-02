@@ -26,3 +26,9 @@ export const createWatchlistSchema = z
 export const addWatchlistItemSchema = z
   .object({ ticker: tickerSchema, note: z.string().max(280).optional() })
   .strict();
+
+/** Body for POST /analysis — generate (or reuse) an AI analysis for a symbol. */
+export const generateAnalysisSchema = z.object({ ticker: tickerSchema }).strict();
+
+/** Params for GET /symbols/:ticker/analysis. */
+export const tickerParamSchema = z.object({ ticker: tickerSchema }).strict();

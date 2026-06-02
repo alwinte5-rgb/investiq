@@ -28,6 +28,7 @@ import { marketRoutes } from "./routes/market.js";
 import { connectionRoutes } from "./routes/connections.js";
 import { adminRoutes } from "./routes/admin.js";
 import { analysisRoutes } from "./routes/analysis.js";
+import { portfolioRoutes } from "./routes/portfolio.js";
 import { createMarketService } from "./services/market.js";
 import { createNewsService } from "./services/news.js";
 import { createFundamentalsService } from "./services/fundamentals.js";
@@ -104,6 +105,7 @@ async function main() {
   await app.register(async (instance) => watchlistRoutes(instance, authDeps));
   await app.register(async (instance) => marketRoutes(instance, { auth: authDeps, market, news }));
   await app.register(async (instance) => adminRoutes(instance, authDeps));
+  await app.register(async (instance) => portfolioRoutes(instance, authDeps));
 
   // Brokerage (SnapTrade) — only enabled when credentials + encryption key are set.
   if (env.SNAPTRADE_CLIENT_ID && env.SNAPTRADE_CONSUMER_KEY && env.CONNECTION_ENCRYPTION_KEY) {

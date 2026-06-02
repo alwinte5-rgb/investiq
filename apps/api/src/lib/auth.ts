@@ -1,4 +1,4 @@
-import { errors } from "@investiq/shared";
+import { entitlementsFor, errors, type Entitlements } from "@investiq/shared";
 
 /**
  * Authentication — STEP 1 of the request pipeline. Verifies the caller
@@ -47,4 +47,18 @@ export async function authenticate(
 /** Require ADMIN role (used by /admin/* routes), after authenticate(). */
 export function requireAdmin(ctx: AuthContext): void {
   if (ctx.role !== "ADMIN") throw errors.forbidden("Admin access required");
+}
+
+/**
+ * Require a boolean plan entitlement (e.g. portfolioIntelligence, newsIntelligence).
+ * Centralized so every gated feature enforces access the same way, server-side.
+ */
+export function requireEntitlement(
+  plan: AuthContext["plan"],
+  key: { [K in keyof Entitlements]: Entitlements[K] extends boolean ? K : never }[keyof Entitlements],
+  label: string,
+): void {
+  if (!entitlementsFor(plan)[key]) {
+    throw errors.forbidden(`${label} requires the Investor plan or higher.`);
+  }
 }

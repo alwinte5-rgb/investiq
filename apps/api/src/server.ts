@@ -122,7 +122,9 @@ async function main() {
     const model = createAnthropicAnalysisModel({ apiKey: env.ANTHROPIC_API_KEY, model: env.AI_MODEL });
     const analysis = { market, news, fundamentals, model };
     await app.register(async (instance) => analysisRoutes(instance, { auth: authDeps, analysis }));
-    app.log.info(`AI analysis routes enabled (model=${env.AI_MODEL})`);
+    app.log.info(
+      `AI analysis routes enabled (model=${env.AI_MODEL}, fundamentals=${fundamentals.enabled})`,
+    );
   } else {
     app.log.warn("ANTHROPIC_API_KEY not set — AI analysis routes disabled");
   }

@@ -10,6 +10,14 @@ import { errors } from "@investiq/shared";
  * via validation), and genuinely malformed JSON returns a clean 400.
  */
 export function registerJsonBodyParser(app: FastifyInstance): void {
+  // Replace Fastify's built-in JSON parser. Some Fastify builds throw
+  // "Content type parser 'application/json' already present" on a duplicate
+  // addContentTypeParser, so remove the existing one first.
+  try {
+    app.removeContentTypeParser("application/json");
+  } catch {
+    /* no existing parser to remove */
+  }
   app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
     const text = typeof body === "string" ? body.trim() : "";
     if (text === "") {

@@ -70,9 +70,23 @@ export default function Index() {
       </Text>
       <SignedIn>
         <Dashboard />
-        <Link href="/watchlists" style={styles.link}>
-          Go to Watchlists →
-        </Link>
+        <View style={styles.nav}>
+          <Link href="/research" style={styles.navLink}>
+            Research
+          </Link>
+          <Link href="/portfolio" style={styles.navLink}>
+            Portfolio
+          </Link>
+          <Link href="/reviews" style={styles.navLink}>
+            Reviews
+          </Link>
+          <Link href="/watchlists" style={styles.navLink}>
+            Watchlists
+          </Link>
+          <Link href="/settings" style={styles.navLink}>
+            Settings
+          </Link>
+        </View>
         <SignOutButton />
       </SignedIn>
       <SignedOut>
@@ -103,6 +117,8 @@ const styles = StyleSheet.create({
   hint: { fontSize: 12, color: "#888" },
   error: { color: "#b91c1c", fontSize: 14 },
   link: { color: "#2563eb", fontWeight: "600", textAlign: "center" },
+  nav: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 16 },
+  navLink: { color: "#2563eb", fontWeight: "600" },
   linkMuted: { color: "#666", textAlign: "center" },
   disclaimer: { fontSize: 11, color: "#999", textAlign: "center" },
 });

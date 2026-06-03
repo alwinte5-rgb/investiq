@@ -157,11 +157,18 @@ export function ResearchUI({ initialTicker = "" }: { initialTicker?: string }) {
     });
   }
 
-  // Auto-run when arriving with ?ticker=.
+  // Auto-run when arriving with ?ticker= — and re-run when it changes via
+  // same-route navigation (e.g. clicking "Analyze" on a second holding while
+  // already on /research). A ref guards against re-running the same ticker.
+  const lastAuto = useRef<string | null>(null);
   useEffect(() => {
-    if (initialTicker) run(initialTicker);
+    const t = initialTicker.trim().toUpperCase();
+    if (t && lastAuto.current !== t) {
+      lastAuto.current = t;
+      run(t);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialTicker]);
 
   // Debounced typeahead against the BFF search route.
   useEffect(() => {

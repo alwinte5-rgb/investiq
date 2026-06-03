@@ -93,7 +93,16 @@ export async function ingestAndClassify(
       source: a.source,
       publishedAt: a.publishedAt,
     };
-    const result = await classifyNewsArticle(input, deps.classifier);
+    let result: Awaited<ReturnType<typeof classifyNewsArticle>>;
+    try {
+      result = await classifyNewsArticle(input, deps.classifier);
+    } catch {
+      // A transient classifier failure (rate limit / 5xx) must not abandon the
+      // rest of the batch. The article + symbol link are already persisted and
+      // this pair has no NewsImpact yet, so a later run retries it.
+      skipped += 1;
+      continue;
+    }
     if (result.status !== "classified") {
       skipped += 1;
       continue;

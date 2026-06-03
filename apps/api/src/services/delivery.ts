@@ -150,7 +150,15 @@ export async function deliverReview(
           if (res.invalidTokens.length > 0) {
             await prisma.deviceToken.deleteMany({ where: { token: { in: res.invalidTokens } } });
           }
-          report.push = "sent";
+          if (res.sent > 0) {
+            report.push = "sent";
+          } else {
+            // Nothing was actually delivered (no valid tokens, or every ticket
+            // errored — e.g. bad EXPO_ACCESS_TOKEN). Release the claim so a later
+            // run retries instead of marking it "sent" and never delivering.
+            await prisma.notification.deleteMany({ where: { dedupeKey: key } });
+            report.push = "failed";
+          }
         } catch {
           await prisma.notification.deleteMany({ where: { dedupeKey: key } });
           report.push = "failed";

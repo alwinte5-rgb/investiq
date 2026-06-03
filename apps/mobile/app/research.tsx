@@ -73,6 +73,7 @@ function Researcher() {
   const { getToken } = useAuth();
   const params = useLocalSearchParams<{ ticker?: string }>();
   const [ticker, setTicker] = useState("");
+  const [analyzedTicker, setAnalyzedTicker] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +115,7 @@ function Researcher() {
     setError(null);
     setResult(null);
     setNews(null);
+    setAnalyzedTicker(t);
     try {
       const token = await getToken();
       const r = await apiFetch<Result>("/api/v1/analysis", token, {
@@ -189,7 +191,10 @@ function Researcher() {
           <View style={styles.newsHeader}>
             <Text style={styles.fieldTitle}>News & impact</Text>
             {!newsGated && (
-              <Pressable onPress={() => loadNews(ticker.trim().toUpperCase(), true)} disabled={newsBusy}>
+              <Pressable
+                onPress={() => analyzedTicker && loadNews(analyzedTicker, true)}
+                disabled={newsBusy || !analyzedTicker}
+              >
                 <Text style={[styles.newsRefresh, newsBusy && styles.btnDisabled]}>
                   {newsBusy ? "…" : "Refresh"}
                 </Text>

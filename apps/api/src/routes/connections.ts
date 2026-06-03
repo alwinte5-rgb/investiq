@@ -12,6 +12,7 @@ import {
   syncConnection,
   type BrokerageDeps,
 } from "../services/brokerage.js";
+import { enableDemoPortfolio } from "../services/demo-portfolio.js";
 
 const idParam = z.object({ id: cuidSchema }).strict();
 
@@ -31,6 +32,16 @@ export async function connectionRoutes(app: FastifyInstance, deps: ConnectionRou
     reply.header("Cache-Control", "no-store");
     reply.code(201);
     return { data: await startConnection(deps.brokerage, ctx.userId) };
+  });
+
+  // Seed a read-only sample-data portfolio so users can explore before
+  // connecting a real brokerage. Not plan-gated (like a real connection) —
+  // the Intelligence/Reviews layers stay gated on top of it.
+  app.post("/api/v1/connections/demo", async (req, reply) => {
+    const ctx = await resolveAuthContext(req, deps.auth);
+    reply.header("Cache-Control", "no-store");
+    reply.code(201);
+    return { data: await enableDemoPortfolio(ctx.userId) };
   });
 
   app.get("/api/v1/connections", async (req, reply) => {

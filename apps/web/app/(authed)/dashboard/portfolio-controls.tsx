@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { connectBrokerageAction, syncBrokerageAction } from "./actions";
+import {
+  connectBrokerageAction,
+  loadDemoPortfolioAction,
+  removeConnectionAction,
+  syncBrokerageAction,
+} from "./actions";
 
 export function ConnectButton() {
   const [pending, start] = useTransition();
@@ -27,6 +32,59 @@ export function ConnectButton() {
       </button>
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
+  );
+}
+
+export function DemoButton() {
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function load() {
+    setError(null);
+    start(async () => {
+      const res = await loadDemoPortfolioAction();
+      if (!res.ok) setError(res.error ?? "Failed to load sample data");
+      // On success the action revalidates /dashboard, refreshing this view.
+    });
+  }
+
+  return (
+    <div className="space-y-2">
+      <button
+        onClick={load}
+        disabled={pending}
+        className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50"
+      >
+        {pending ? "Loading…" : "Try with sample data"}
+      </button>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
+export function RemoveDemoButton({ connectionId }: { connectionId: string }) {
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function remove() {
+    setError(null);
+    start(async () => {
+      const res = await removeConnectionAction(connectionId);
+      if (!res.ok) setError(res.error ?? "Failed to remove");
+    });
+  }
+
+  return (
+    <span>
+      <button
+        onClick={remove}
+        disabled={pending}
+        className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
+      >
+        {pending ? "Removing…" : "Remove sample data"}
+      </button>
+      {error && <span className="ml-2 text-xs text-red-600">{error}</span>}
+    </span>
   );
 }
 

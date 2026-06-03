@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
-import { ConnectButton, SyncButton } from "./portfolio-controls";
+import { ConnectButton, DemoButton, RemoveDemoButton, SyncButton } from "./portfolio-controls";
 
 export const dynamic = "force-dynamic"; // personalized — never statically cached
 
@@ -62,6 +62,7 @@ export default async function DashboardPage() {
     safe<Account[]>("/api/v1/accounts"),
   ]);
   const connection = connections?.[0];
+  const isDemo = connection?.status === "demo";
 
   return (
     <div className="space-y-6">
@@ -89,15 +90,29 @@ export default async function DashboardPage() {
       {/* Portfolio */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Portfolio</h2>
-          {connection && <SyncButton connectionId={connection.id} />}
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            Portfolio
+            {isDemo && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                Sample data
+              </span>
+            )}
+          </h2>
+          {connection &&
+            (isDemo ? (
+              <RemoveDemoButton connectionId={connection.id} />
+            ) : (
+              <SyncButton connectionId={connection.id} />
+            ))}
         </div>
 
         {!summary || !summary.connected ? (
           <div className="rounded-md border border-dashed p-6 text-center text-sm text-neutral-600">
             <p className="mb-3">Connect a brokerage to see your holdings and a health score.</p>
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center gap-2">
               <ConnectButton />
+              <span className="text-xs text-neutral-400">or explore first</span>
+              <DemoButton />
             </div>
           </div>
         ) : (

@@ -11,6 +11,7 @@ import type {
   SnapTradeUser,
 } from "@investiq/integrations";
 import { assertOwnedBy } from "../lib/permissions.js";
+import { DEMO_STATUS } from "./demo-portfolio.js";
 
 /**
  * SnapTrade brokerage flows. Read-only (no order placement). The SnapTrade
@@ -90,6 +91,13 @@ export async function syncConnection(
     ? await prisma.brokerageConnection.findUnique({ where: { id: connectionId } })
     : await prisma.brokerageConnection.findFirst({ where: { userId } });
   assertOwnedBy(userId, conn);
+
+  if (conn!.status === DEMO_STATUS) {
+    // Sample data is static — there is no real brokerage to pull from.
+    throw errors.validation(
+      "This is the demo portfolio — sample data can't be synced. Connect a real brokerage for live holdings.",
+    );
+  }
 
   const user = snaptradeUser(conn!, deps.encKey);
   const accounts = await deps.client.listAccounts(user);
@@ -197,10 +205,13 @@ export async function getPortfolioSummary(userId: string) {
 export async function disconnect(deps: BrokerageDeps, userId: string, connectionId: string) {
   const conn = await prisma.brokerageConnection.findUnique({ where: { id: connectionId } });
   assertOwnedBy(userId, conn);
-  try {
-    await deps.client.deleteUser(conn!.snaptradeUserId);
-  } catch {
-    // best-effort upstream cleanup; still remove our record
+  // Demo connections have no real SnapTrade user — skip the upstream call.
+  if (conn!.status !== DEMO_STATUS) {
+    try {
+      await deps.client.deleteUser(conn!.snaptradeUserId);
+    } catch {
+      // best-effort upstream cleanup; still remove our record
+    }
   }
   await prisma.brokerageConnection.delete({ where: { id: conn!.id } });
 }

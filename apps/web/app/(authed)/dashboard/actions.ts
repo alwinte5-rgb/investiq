@@ -23,6 +23,34 @@ export async function connectBrokerageAction(): Promise<{ portalUrl?: string; er
   }
 }
 
+/** Load the read-only sample-data portfolio (explore before connecting a broker). */
+export async function loadDemoPortfolioAction(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await apiFetch("/api/v1/connections/demo", { method: "POST" });
+    revalidatePath("/dashboard");
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to load sample data";
+    if (isAuthError(msg)) redirect("/sign-in");
+    return { ok: false, error: msg };
+  }
+}
+
+/** Remove a connection (used to clear the demo portfolio). */
+export async function removeConnectionAction(
+  connectionId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await apiFetch(`/api/v1/connections/${connectionId}`, { method: "DELETE" });
+    revalidatePath("/dashboard");
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to remove";
+    if (isAuthError(msg)) redirect("/sign-in");
+    return { ok: false, error: msg };
+  }
+}
+
 /** Sync holdings/transactions for a connection (or the user's only one). */
 export async function syncBrokerageAction(
   connectionId: string,

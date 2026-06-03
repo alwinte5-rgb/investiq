@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { prisma } from "@investiq/db";
 import {
   decryptSecret,
@@ -48,7 +49,12 @@ export async function startConnection(
   let user: SnapTradeUser;
 
   if (!conn) {
-    const reg = await deps.client.registerUser(userId);
+    // Register under a FRESH unique SnapTrade userId (not the InvestIQ id).
+    // SnapTrade user deletion is asynchronous, so reusing a stable id makes a
+    // disconnect→reconnect (or any DB/SnapTrade drift) collide with "user
+    // already registered". A unique id per registration avoids that entirely.
+    const snaptradeUserId = `${userId}-${randomUUID()}`;
+    const reg = await deps.client.registerUser(snaptradeUserId);
     conn = await prisma.brokerageConnection.create({
       data: {
         userId,

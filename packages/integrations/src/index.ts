@@ -4,3 +4,5 @@ export * from "./market-data.js";
 export * from "./news.js";
 export * from "./fundamentals.js";
 export * from "./snaptrade.js";
+export * from "./email.js";
+export * from "./push.js";

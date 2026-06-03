@@ -103,6 +103,7 @@ model User {
   deviceTokens          DeviceToken[]
   usageCounters         UsageCounter[]
   portfolioSnapshots    PortfolioSnapshot[]
+  notificationPreference NotificationPreference?
 }
 
 model Subscription {
@@ -608,6 +609,23 @@ model DeviceToken {
   token     String   @unique
   platform  String   // ios | android
   createdAt DateTime @default(now())
+}
+
+// Per-user delivery preferences for Layer 4 reviews/briefings. Quiet hours are
+// minutes-from-local-midnight (0–1439) in `timezone`; null = no quiet window.
+// In-app notifications are always recorded; quiet hours only gate email/push.
+model NotificationPreference {
+  userId          String   @id
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timezone        String   @default("America/New_York")
+  emailEnabled    Boolean  @default(true)
+  pushEnabled     Boolean  @default(true)
+  morningBriefing Boolean  @default(true)
+  weeklyReview    Boolean  @default(true)
+  monthlyReview   Boolean  @default(true)
+  quietHoursStart Int?     // minutes from local midnight, inclusive
+  quietHoursEnd   Int?     // minutes from local midnight, exclusive
+  updatedAt       DateTime @updatedAt
 }
 
 // ---------- Platform / admin ----------

@@ -35,3 +35,33 @@ export async function fetchJson<T>(
     clearTimeout(timeout);
   }
 }
+
+/** POST a JSON body and parse a JSON response, with the same timeout + typed
+ * error handling as fetchJson. Used for delivery vendors (Resend, Expo push). */
+export async function postJson<T>(
+  vendor: string,
+  url: string,
+  body: unknown,
+  opts: { timeoutMs?: number; headers?: Record<string, string> } = {},
+): Promise<T> {
+  const ctrl = new AbortController();
+  const timeout = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? 8000);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...opts.headers },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) {
+      throw new UpstreamError(vendor, `${vendor} responded ${res.status}`, res.status);
+    }
+    return (await res.json()) as T;
+  } catch (e) {
+    if (e instanceof UpstreamError) throw e;
+    const reason = e instanceof Error ? e.message : "request failed";
+    throw new UpstreamError(vendor, `${vendor} request failed: ${reason}`);
+  } finally {
+    clearTimeout(timeout);
+  }
+}

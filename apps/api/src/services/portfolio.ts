@@ -10,7 +10,7 @@ import { requireEntitlement } from "../lib/auth.js";
 const FEATURE_LABEL = "Portfolio Intelligence";
 
 /** Load the user's holdings (with sector/assetType) + total cash from stored data. */
-async function loadPortfolioInput(userId: string): Promise<{ holdings: HoldingInput[]; cash: number }> {
+export async function loadPortfolioInput(userId: string): Promise<{ holdings: HoldingInput[]; cash: number }> {
   const accounts = await prisma.account.findMany({
     where: { connection: { userId } },
     select: {

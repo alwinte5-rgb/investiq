@@ -1,12 +1,5 @@
-import { ClerkProvider } from "@clerk/nextjs";
-
-// ClerkProvider for the sign-in / sign-up pages only. These pages are
-// force-dynamic (see each page.tsx), so Clerk renders at request time and is
-// never part of the build-time static prerender — keeping the build safe.
+// The ClerkProvider lives at the root layout now; this group just centers the
+// Clerk <SignIn>/<SignUp> widgets (each page is force-dynamic).
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ClerkProvider>
-      <div className="flex min-h-[60vh] items-center justify-center">{children}</div>
-    </ClerkProvider>
-  );
+  return <div className="flex min-h-[60vh] items-center justify-center">{children}</div>;
 }

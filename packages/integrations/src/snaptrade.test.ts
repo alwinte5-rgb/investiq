@@ -4,6 +4,7 @@ import {
   normalizeAccount,
   normalizePosition,
   normalizeActivity,
+  normalizeHoldingsSnapshot,
 } from "./snaptrade.js";
 
 describe("snaptrade normalizers", () => {
@@ -40,6 +41,34 @@ describe("snaptrade normalizers", () => {
     });
     expect(h).toMatchObject({ ticker: "NVDA", quantity: 10, price: 190.5, marketValue: 1905, avgCost: 150 });
     expect(normalizePosition({ units: 5, price: 1 })).toBeNull(); // no symbol
+  });
+
+  it("normalizeHoldingsSnapshot pulls cash from balances on an empty paper account", () => {
+    // A fresh Alpaca paper account: $100k cash, no positions.
+    const snap = normalizeHoldingsSnapshot({
+      positions: [],
+      balances: [{ currency: { code: "USD" }, cash: 100000 }],
+      total_value: { amount: 100000, currency: "USD" },
+    });
+    expect(snap.positions).toEqual([]);
+    expect(snap.cash).toBe(100000);
+    expect(snap.totalValue).toBe(100000);
+  });
+
+  it("normalizeHoldingsSnapshot sums multi-currency cash and keeps positions", () => {
+    const snap = normalizeHoldingsSnapshot({
+      positions: [{ symbol: { symbol: { symbol: "AAPL" } }, units: 2, price: 100 }],
+      balances: [{ cash: 500 }, { cash: 250 }],
+      total_value: { amount: 950 },
+    });
+    expect(snap.cash).toBe(750);
+    expect(snap.positions).toHaveLength(1);
+    expect(snap.positions[0]).toMatchObject({ ticker: "AAPL", marketValue: 200 });
+  });
+
+  it("normalizeHoldingsSnapshot returns null cash when no balances are present", () => {
+    const snap = normalizeHoldingsSnapshot({ positions: [], total_value: { amount: 0 } });
+    expect(snap.cash).toBeNull();
   });
 
   it("normalizeActivity maps a trade and derives an externalId fallback", () => {

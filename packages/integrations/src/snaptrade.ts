@@ -33,6 +33,15 @@ export interface NormalizedHolding {
   unrealizedPl: number | null;
 }
 
+/** A full account holdings snapshot: positions plus the cash + total balance
+ * that come back on the same getUserHoldings call. listUserAccounts often omits
+ * cash (e.g. Alpaca), so this is the reliable source for an account's cash. */
+export interface AccountHoldings {
+  positions: NormalizedHolding[];
+  cash: number | null;
+  totalValue: number | null;
+}
+
 export interface NormalizedTransaction {
   externalId: string;
   type: string;
@@ -95,6 +104,27 @@ export function normalizePosition(raw: Record<string, any>): NormalizedHolding |
   };
 }
 
+/**
+ * Normalize a getUserHoldings response into positions + cash + total. SnapTrade
+ * returns cash as a per-currency `balances` array (sometimes a single object);
+ * sum the cash across entries. `total_value.amount` is the whole-account value.
+ */
+export function normalizeHoldingsSnapshot(data: Record<string, any>): AccountHoldings {
+  const positions = ((data.positions ?? []) as Record<string, any>[])
+    .map(normalizePosition)
+    .filter((h): h is NormalizedHolding => h !== null);
+
+  const rawBalances = data.balances ?? data.balance ?? null;
+  const balanceList = Array.isArray(rawBalances) ? rawBalances : rawBalances ? [rawBalances] : [];
+  const cash = balanceList.reduce<number | null>((acc, b) => {
+    const c = n(b?.cash);
+    return c == null ? acc : (acc ?? 0) + c;
+  }, null);
+
+  const totalValue = n(data.total_value?.amount);
+  return { positions, cash, totalValue };
+}
+
 export function normalizeActivity(raw: Record<string, any>): NormalizedTransaction {
   return {
     externalId: String(raw.id ?? `${raw.trade_date ?? raw.settlement_date}-${raw.type}-${raw.amount}`),
@@ -112,7 +142,7 @@ export interface SnapTradeClient {
   registerUser(userId: string): Promise<SnapTradeUser>;
   connectionPortalUrl(user: SnapTradeUser, redirectUri?: string): Promise<string>;
   listAccounts(user: SnapTradeUser): Promise<NormalizedAccount[]>;
-  getHoldings(user: SnapTradeUser, accountId: string): Promise<NormalizedHolding[]>;
+  getHoldings(user: SnapTradeUser, accountId: string): Promise<AccountHoldings>;
   getTransactions(user: SnapTradeUser): Promise<NormalizedTransaction[]>;
   deleteUser(userId: string): Promise<void>;
 }
@@ -166,10 +196,7 @@ export function createSnapTradeClient(clientId: string, consumerKey: string): Sn
           accountId,
         }),
       );
-      const positions = (data as { positions?: Record<string, any>[] }).positions ?? [];
-      return positions
-        .map(normalizePosition)
-        .filter((h): h is NormalizedHolding => h !== null);
+      return normalizeHoldingsSnapshot(data as Record<string, any>);
     },
 
     async getTransactions(user) {

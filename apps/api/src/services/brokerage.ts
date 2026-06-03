@@ -104,22 +104,27 @@ export async function syncConnection(
   let holdingCount = 0;
 
   for (const a of accounts) {
+    // Fetch the holdings snapshot first — it carries the reliable cash + total
+    // balance (listUserAccounts omits cash for some brokerages, e.g. Alpaca).
+    const snapshot = await deps.client.getHoldings(user, a.externalId);
+    const cash = snapshot.cash ?? a.cash ?? 0;
+    const totalValue = snapshot.totalValue ?? a.totalValue ?? 0;
+
     const account = await prisma.account.upsert({
       where: { connectionId_externalId: { connectionId: conn!.id, externalId: a.externalId } },
-      update: { name: a.name, currency: a.currency, cash: a.cash ?? 0, totalValue: a.totalValue ?? 0 },
+      update: { name: a.name, currency: a.currency, cash, totalValue },
       create: {
         connectionId: conn!.id,
         externalId: a.externalId,
         name: a.name,
         currency: a.currency,
-        cash: a.cash ?? 0,
-        totalValue: a.totalValue ?? 0,
+        cash,
+        totalValue,
       },
       select: { id: true },
     });
 
-    const holdings = await deps.client.getHoldings(user, a.externalId);
-    for (const h of holdings) {
+    for (const h of snapshot.positions) {
       const symbolId = await resolveSymbolId(h.ticker, h.description);
       await prisma.holding.upsert({
         where: { accountId_symbolId: { accountId: account.id, symbolId } },

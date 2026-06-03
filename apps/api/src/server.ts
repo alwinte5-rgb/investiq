@@ -21,7 +21,6 @@ if (process.env.NODE_ENV !== "production") {
 }
 import { makeClerkVerifier, makeClerkClient } from "./lib/context.js";
 import { resolveAuthContext, type AuthDeps } from "./lib/guard.js";
-import { registerJsonBodyParser } from "./lib/body-parser.js";
 import { webhookRoutes } from "./routes/webhooks.js";
 import { symbolRoutes } from "./routes/symbols.js";
 import { watchlistRoutes } from "./routes/watchlists.js";
@@ -63,10 +62,6 @@ async function main() {
   const fundamentals = createFundamentalsService({ fmpKey: env.FMP_API_KEY });
 
   const app = Fastify({ logger: true });
-
-  // Tolerate empty JSON bodies (bodyless POSTs from web/mobile send
-  // Content-Type: application/json) — otherwise the default parser 500s.
-  registerJsonBodyParser(app);
 
   // CORS: explicit allowlist only — never wildcard with credentials.
   app.addHook("onRequest", async (req, reply) => {

@@ -10,10 +10,15 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   const { getToken } = await auth();
   const token = await getToken();
 
+  // Only send a JSON content-type when there's actually a body. Bodyless POSTs
+  // (connect, generate, refresh) with Content-Type: application/json make the
+  // API's JSON parser choke on the empty body and return a 500.
+  const hasBody = init?.body != null;
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      ...(hasBody ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers ?? {}),
     },

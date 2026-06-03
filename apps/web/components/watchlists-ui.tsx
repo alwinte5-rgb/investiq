@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import {
   addItemAction,
@@ -213,16 +214,30 @@ export function WatchlistCard({ watchlist }: { watchlist: Watchlist }) {
           {watchlist.items.map((it) => (
             <li key={it.id} className="flex items-center justify-between py-2">
               <span>
-                <span className="font-medium">{it.symbol.ticker}</span>{" "}
+                <Link
+                  href={`/research?ticker=${it.symbol.ticker}`}
+                  className="font-medium text-blue-600 hover:underline"
+                  title={`Analyze ${it.symbol.ticker}`}
+                >
+                  {it.symbol.ticker}
+                </Link>{" "}
                 <span className="text-neutral-500">{it.symbol.name}</span>
               </span>
-              <button
-                onClick={() => remove(it.id)}
-                disabled={pending}
-                className="text-xs text-neutral-400 hover:text-red-600 disabled:opacity-50"
-              >
-                Remove
-              </button>
+              <span className="flex items-center gap-3">
+                <Link
+                  href={`/research?ticker=${it.symbol.ticker}`}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  Analyze →
+                </Link>
+                <button
+                  onClick={() => remove(it.id)}
+                  disabled={pending}
+                  className="text-xs text-neutral-400 hover:text-red-600 disabled:opacity-50"
+                >
+                  Remove
+                </button>
+              </span>
             </li>
           ))}
         </ul>

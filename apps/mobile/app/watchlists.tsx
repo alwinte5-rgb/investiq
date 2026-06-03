@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { SignedIn, SignedOut, useAuth } from "@clerk/clerk-expo";
+import { Link } from "expo-router";
 import { apiFetch } from "../lib/api";
 
 interface WatchlistItem {
@@ -99,9 +100,13 @@ function Manager() {
                 <Text style={styles.hint}>No symbols yet.</Text>
               ) : (
                 item.items.map((it) => (
-                  <Text key={it.id} style={styles.symRow}>
-                    {it.symbol.ticker} · {it.symbol.name}
-                  </Text>
+                  <Link
+                    key={it.id}
+                    href={`/research?ticker=${it.symbol.ticker}`}
+                    style={styles.symLink}
+                  >
+                    {it.symbol.ticker} · {it.symbol.name}  ›
+                  </Link>
                 ))
               )}
             </View>
@@ -137,6 +142,7 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderColor: "#e5e5e5", borderRadius: 10, padding: 14, marginBottom: 10, gap: 4 },
   cardTitle: { fontWeight: "600", fontSize: 15 },
   symRow: { fontSize: 13, color: "#444" },
+  symLink: { fontSize: 13, color: "#2563eb", paddingVertical: 3 },
   hint: { fontSize: 13, color: "#888" },
   error: { color: "#b91c1c", fontSize: 13 },
 });

@@ -93,6 +93,32 @@ export function periodKeyFor(period: ReviewPeriod, date: Date, timezone: string)
   }
 }
 
+/** Local day-of-week in a timezone: 0=Sunday .. 6=Saturday. */
+export function localWeekday(date: Date, timezone: string): number {
+  let tz = timezone;
+  let wd: string;
+  try {
+    wd = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(date);
+  } catch {
+    tz = UTC_FALLBACK;
+    wd = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(date);
+  }
+  return { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[wd] ?? 0;
+}
+
+/**
+ * Which review periods a single daily scheduled run should generate for a given
+ * date, in a reference timezone: MORNING every day, WEEKLY on Mondays, MONTHLY
+ * on the 1st. Lets one daily cron cover all three cadences. Pure + testable.
+ */
+export function autoReviewPeriods(date: Date, timezone = "America/New_York"): ReviewPeriod[] {
+  const { day } = localParts(date, timezone);
+  const periods: ReviewPeriod[] = ["MORNING"];
+  if (localWeekday(date, timezone) === 1) periods.push("WEEKLY");
+  if (day === 1) periods.push("MONTHLY");
+  return periods;
+}
+
 // ---------- Quiet hours ----------
 
 /** Minutes-from-local-midnight (0..1439) for an instant in a timezone. */

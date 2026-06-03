@@ -128,10 +128,24 @@ export default async function DashboardPage() {
                     {a.holdings.map((h) => (
                       <li key={h.id} className="flex items-center justify-between py-1.5">
                         <span>
-                          <span className="font-medium">{h.symbol.ticker}</span>{" "}
+                          <Link
+                            href={`/research?ticker=${h.symbol.ticker}`}
+                            className="font-medium text-blue-600 hover:underline"
+                            title={`Analyze ${h.symbol.ticker}`}
+                          >
+                            {h.symbol.ticker}
+                          </Link>{" "}
                           <span className="text-neutral-500">× {Number(h.quantity)}</span>
                         </span>
-                        <span>{money(h.marketValue)}</span>
+                        <span className="flex items-center gap-3">
+                          <span>{money(h.marketValue)}</span>
+                          <Link
+                            href={`/research?ticker=${h.symbol.ticker}`}
+                            className="text-xs text-blue-600 hover:underline"
+                          >
+                            Analyze →
+                          </Link>
+                        </span>
                       </li>
                     ))}
                   </ul>

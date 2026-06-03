@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { SignedIn, SignedOut, useAuth } from "@clerk/clerk-expo";
-import { Link } from "expo-router";
+import { Link, useLocalSearchParams } from "expo-router";
 import { apiFetch } from "../lib/api";
 
 const REC_LABELS: Record<string, string> = {
@@ -59,13 +59,24 @@ function Field({ title, body }: { title: string; body: string | null }) {
 
 function Researcher() {
   const { getToken } = useAuth();
+  const params = useLocalSearchParams<{ ticker?: string }>();
   const [ticker, setTicker] = useState("");
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function analyze() {
-    const t = ticker.trim().toUpperCase();
+  // Auto-run when arriving from a "Analyze" link (e.g. /research?ticker=AAPL).
+  useEffect(() => {
+    const t = (params.ticker ?? "").toString().trim().toUpperCase();
+    if (t) {
+      setTicker(t);
+      void analyze(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.ticker]);
+
+  async function analyze(override?: string) {
+    const t = (override ?? ticker).trim().toUpperCase();
     if (!t || loading) return;
     setLoading(true);
     setError(null);
@@ -97,7 +108,7 @@ function Researcher() {
           style={styles.input}
         />
         <Pressable
-          onPress={analyze}
+          onPress={() => analyze()}
           disabled={loading || !ticker.trim()}
           style={[styles.btn, (loading || !ticker.trim()) && styles.btnDisabled]}
         >

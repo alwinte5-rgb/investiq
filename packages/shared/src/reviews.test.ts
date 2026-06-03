@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   periodKeyFor,
   isoWeek,
+  autoReviewPeriods,
+  localWeekday,
   localMinutes,
   isWithinQuietHours,
   buildPortfolioReview,
@@ -42,6 +44,33 @@ describe("isoWeek", () => {
     expect(isoWeek(2027, 1, 1)).toEqual({ week: 53, year: 2026 });
     // 2026-01-01 is a Thursday → ISO week 1 of 2026.
     expect(isoWeek(2026, 1, 1)).toEqual({ week: 1, year: 2026 });
+  });
+});
+
+describe("autoReviewPeriods", () => {
+  it("always includes MORNING", () => {
+    // 2026-06-03 is a Wednesday, not the 1st.
+    expect(autoReviewPeriods(new Date("2026-06-03T13:00:00Z"), "UTC")).toEqual(["MORNING"]);
+  });
+
+  it("adds WEEKLY on Mondays", () => {
+    // 2026-06-08 is a Monday.
+    const p = autoReviewPeriods(new Date("2026-06-08T13:00:00Z"), "UTC");
+    expect(p).toContain("MORNING");
+    expect(p).toContain("WEEKLY");
+    expect(p).not.toContain("MONTHLY");
+  });
+
+  it("adds MONTHLY on the 1st (and WEEKLY too if that's a Monday)", () => {
+    // 2026-06-01 is a Monday and the 1st → all three.
+    const p = autoReviewPeriods(new Date("2026-06-01T13:00:00Z"), "UTC");
+    expect(p).toEqual(expect.arrayContaining(["MORNING", "WEEKLY", "MONTHLY"]));
+  });
+
+  it("uses the reference timezone for the date boundary", () => {
+    // 2026-06-01T02:00Z is still May 31 (Sunday) in New York → MORNING only.
+    expect(autoReviewPeriods(new Date("2026-06-01T02:00:00Z"), "America/New_York")).toEqual(["MORNING"]);
+    expect(localWeekday(new Date("2026-06-08T13:00:00Z"), "UTC")).toBe(1);
   });
 });
 

@@ -87,6 +87,20 @@ async function main() {
     reply.code(404).send({ error: "Not found", code: "NOT_FOUND" });
   });
 
+  // Public root — this is an API, not the web app. Return a friendly pointer so
+  // a browser hitting the bare API domain doesn't just see a 404.
+  app.get("/", async (_req, reply) => {
+    reply.header("Cache-Control", "no-store");
+    return {
+      data: {
+        name: "InvestIQ API",
+        status: "ok",
+        message: "This is the InvestIQ API. The web app is served separately.",
+        health: "/health",
+      },
+    };
+  });
+
   // Public health check (no auth).
   app.get("/health", async () => ({ data: { ok: true } }));
 

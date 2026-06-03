@@ -21,6 +21,11 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().optional(),
   API_PORT: z.coerce.number().int().positive().default(4000),
 
+  // Plan gating. OFF for now (review mode) so every feature is reachable while
+  // pricing is still being finalized. The pricing tiers + entitlement matrix
+  // stay fully defined — set PLAN_GATING_ENABLED=true to re-enable enforcement.
+  PLAN_GATING_ENABLED: z.coerce.boolean().default(false),
+
   // --- Optional: cache/queues (in-memory used until provided) ---
   REDIS_URL: z.string().url().optional(),
 

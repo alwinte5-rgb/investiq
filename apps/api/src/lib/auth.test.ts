@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { AppError, type Plan } from "@investiq/shared";
-import { requireAdmin, requireEntitlement, type AuthContext } from "./auth.js";
+import { effectivePlan, requireAdmin, requireEntitlement, type AuthContext } from "./auth.js";
 
 const ctx = (role: "USER" | "ADMIN"): AuthContext => ({
   userId: "u1",
@@ -21,6 +21,24 @@ describe("requireAdmin", () => {
       expect((e as AppError).code).toBe("FORBIDDEN");
       expect((e as AppError).httpStatus).toBe(403);
     }
+  });
+});
+
+describe("effectivePlan (review-mode ungating)", () => {
+  afterEach(() => {
+    delete process.env.PLAN_GATING_ENABLED;
+  });
+
+  it("returns the top tier for any plan when gating is OFF (default)", () => {
+    delete process.env.PLAN_GATING_ENABLED;
+    expect(effectivePlan("FREE")).toBe("INVESTOR_PLUS");
+    expect(effectivePlan("INVESTOR")).toBe("INVESTOR_PLUS");
+  });
+
+  it("preserves the real plan when PLAN_GATING_ENABLED=true", () => {
+    process.env.PLAN_GATING_ENABLED = "true";
+    expect(effectivePlan("FREE")).toBe("FREE");
+    expect(effectivePlan("INVESTOR")).toBe("INVESTOR");
   });
 });
 

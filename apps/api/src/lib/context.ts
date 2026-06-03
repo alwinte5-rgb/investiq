@@ -1,5 +1,6 @@
 import { createClerkClient, verifyToken } from "@clerk/backend";
 import { getUserByClerkId } from "@investiq/db";
+import { effectivePlan } from "./auth.js";
 import type { AuthContext, ClerkVerifier, UserLoader } from "./auth.js";
 
 /**
@@ -34,7 +35,7 @@ export const userLoader: UserLoader = {
     const ctx: AuthContext = {
       userId: user.id,
       clerkId: user.clerkId,
-      plan: user.plan,
+      plan: effectivePlan(user.plan),
       role: user.role,
     };
     return ctx;

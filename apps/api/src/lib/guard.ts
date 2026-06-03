@@ -2,7 +2,7 @@ import type { FastifyRequest } from "fastify";
 import type { ClerkClient } from "@clerk/backend";
 import { AppError, errors } from "@investiq/shared";
 import { findOrProvisionUser } from "@investiq/db";
-import { authenticate, type AuthContext, type ClerkVerifier } from "./auth.js";
+import { authenticate, effectivePlan, type AuthContext, type ClerkVerifier } from "./auth.js";
 import { userLoader } from "./context.js";
 
 export interface AuthDeps {
@@ -43,6 +43,6 @@ export async function resolveAuthContext(
       name: [cu.firstName, cu.lastName].filter(Boolean).join(" ") || null,
       avatarUrl: cu.imageUrl ?? null,
     });
-    return { userId: user.id, clerkId: user.clerkId, plan: user.plan, role: user.role };
+    return { userId: user.id, clerkId: user.clerkId, plan: effectivePlan(user.plan), role: user.role };
   }
 }

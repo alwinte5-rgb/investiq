@@ -50,6 +50,25 @@ export function requireAdmin(ctx: AuthContext): void {
 }
 
 /**
+ * Review mode: plan gating is OFF unless PLAN_GATING_ENABLED=true. While off,
+ * every authenticated user is treated as the top tier so all features are
+ * reachable for review. The pricing tiers + entitlement matrix stay fully
+ * defined — flip the flag to re-enable enforcement once pricing is finalized.
+ * Read directly from process.env (not the validated env) so this stays usable
+ * from the auth layer without loading the full server env.
+ */
+export function planGatingEnabled(): boolean {
+  return process.env.PLAN_GATING_ENABLED === "true";
+}
+
+/** The plan to enforce: the user's real plan when gating is on, else the top
+ * tier (ungated review mode). Applied where the AuthContext is built so it
+ * covers both API entitlement checks and the plan reported to clients. */
+export function effectivePlan(plan: AuthContext["plan"]): AuthContext["plan"] {
+  return planGatingEnabled() ? plan : "INVESTOR_PLUS";
+}
+
+/**
  * Require a boolean plan entitlement (e.g. portfolioIntelligence, newsIntelligence).
  * Centralized so every gated feature enforces access the same way, server-side.
  */

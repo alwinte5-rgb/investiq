@@ -58,6 +58,57 @@ export async function generateAnalysisAction(ticker: string): Promise<AnalysisAc
 }
 
 /** Latest stored analysis for a ticker, or null if none yet. */
+export interface ArticleWithImpact {
+  id: string;
+  source: string;
+  url: string;
+  headline: string;
+  summary: string | null;
+  publishedAt: string;
+  impact: { impact: string; rationale: string; confidence: number; generatedAt: string } | null;
+}
+
+export type NewsActionResult =
+  | { ok: true; articles: ArticleWithImpact[] }
+  | { ok: false; error: string; gated?: boolean };
+
+function classifyNews(msg: string) {
+  return {
+    auth: /authentication required|unauthorized|\b401\b/i.test(msg),
+    gated: /\b403\b|investor plan|forbidden/i.test(msg),
+  };
+}
+
+/** Stored articles + impact classifications for a ticker (Investor+). */
+export async function getSymbolNewsAction(ticker: string): Promise<NewsActionResult> {
+  const t = ticker.trim().toUpperCase();
+  if (!t) return { ok: false, error: "Enter a ticker" };
+  try {
+    const articles = await apiFetch<ArticleWithImpact[]>(`/api/v1/symbols/${t}/news`);
+    return { ok: true, articles };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to load news";
+    const { auth, gated } = classifyNews(msg);
+    if (auth) redirect("/sign-in");
+    return { ok: false, error: msg, gated };
+  }
+}
+
+/** Ingest + classify the latest news for a ticker, then return the stored set. */
+export async function refreshSymbolNewsAction(ticker: string): Promise<NewsActionResult> {
+  const t = ticker.trim().toUpperCase();
+  if (!t) return { ok: false, error: "Enter a ticker" };
+  try {
+    await apiFetch(`/api/v1/symbols/${t}/news/refresh`, { method: "POST" });
+    return getSymbolNewsAction(t);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to refresh news";
+    const { auth, gated } = classifyNews(msg);
+    if (auth) redirect("/sign-in");
+    return { ok: false, error: msg, gated };
+  }
+}
+
 export async function getLatestAnalysisAction(ticker: string): Promise<AnalysisActionResult> {
   const t = ticker.trim().toUpperCase();
   if (!t) return { ok: false, error: "Enter a ticker" };

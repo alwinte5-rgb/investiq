@@ -30,11 +30,12 @@ import { adminRoutes } from "./routes/admin.js";
 import { analysisRoutes } from "./routes/analysis.js";
 import { portfolioRoutes } from "./routes/portfolio.js";
 import { reviewRoutes } from "./routes/reviews.js";
+import { newsRoutes } from "./routes/news.js";
 import { createMarketService } from "./services/market.js";
 import { createNewsService } from "./services/news.js";
 import { createFundamentalsService } from "./services/fundamentals.js";
 import { createSnapTradeClient } from "@investiq/integrations";
-import { createAnthropicAnalysisModel } from "@investiq/ai";
+import { createAnthropicAnalysisModel, createAnthropicNewsClassifier } from "@investiq/ai";
 import type { BrokerageDeps } from "./services/brokerage.js";
 
 /**
@@ -129,6 +130,17 @@ async function main() {
     app.log.info(
       `AI analysis routes enabled (model=${env.AI_MODEL}, fundamentals=${fundamentals.enabled})`,
     );
+
+    // Layer 5 — News Intelligence (needs the AI key + at least one news provider).
+    if (news.enabled) {
+      const classifier = createAnthropicNewsClassifier({ apiKey: env.ANTHROPIC_API_KEY, model: env.AI_MODEL });
+      await app.register(async (instance) =>
+        newsRoutes(instance, { auth: authDeps, newsIntel: { news, classifier } }),
+      );
+      app.log.info("News Intelligence routes enabled");
+    } else {
+      app.log.warn("News providers not configured — News Intelligence routes disabled");
+    }
   } else {
     app.log.warn("ANTHROPIC_API_KEY not set — AI analysis routes disabled");
   }

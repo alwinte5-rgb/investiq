@@ -47,6 +47,18 @@ type Result =
   | { status: "created" | "cached"; analysis: Analysis }
   | { status: "insufficient"; message: string };
 
+interface ArticleWithImpact {
+  id: string;
+  source: string;
+  url: string;
+  headline: string;
+  summary: string | null;
+  publishedAt: string;
+  impact: { impact: string; rationale: string; confidence: number } | null;
+}
+const IMPACT_LABEL: Record<string, string> = { POSITIVE: "Positive", NEUTRAL: "Neutral", NEGATIVE: "Negative" };
+const IMPACT_COLOR: Record<string, string> = { POSITIVE: "#15803d", NEUTRAL: "#6b7280", NEGATIVE: "#b91c1c" };
+
 function Field({ title, body }: { title: string; body: string | null }) {
   if (!body) return null;
   return (
@@ -64,6 +76,26 @@ function Researcher() {
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [news, setNews] = useState<ArticleWithImpact[] | null>(null);
+  const [newsGated, setNewsGated] = useState(false);
+  const [newsBusy, setNewsBusy] = useState(false);
+
+  async function loadNews(t: string, refresh = false) {
+    setNewsBusy(true);
+    setNewsGated(false);
+    try {
+      const token = await getToken();
+      if (refresh) {
+        await apiFetch(`/api/v1/symbols/${t}/news/refresh`, token, { method: "POST" });
+      }
+      setNews(await apiFetch<ArticleWithImpact[]>(`/api/v1/symbols/${t}/news`, token));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      if (/\b403\b|investor plan|forbidden/i.test(msg)) setNewsGated(true);
+    } finally {
+      setNewsBusy(false);
+    }
+  }
 
   // Auto-run when arriving from a "Analyze" link (e.g. /research?ticker=AAPL).
   useEffect(() => {
@@ -81,6 +113,7 @@ function Researcher() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setNews(null);
     try {
       const token = await getToken();
       const r = await apiFetch<Result>("/api/v1/analysis", token, {
@@ -88,6 +121,7 @@ function Researcher() {
         body: JSON.stringify({ ticker: t }),
       });
       setResult(r);
+      void loadNews(t);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Analysis failed");
     } finally {
@@ -151,6 +185,36 @@ function Researcher() {
           <Text style={styles.disclaimer}>
             Educational research only — not investment advice. Grounded in the evidence above.
           </Text>
+
+          <View style={styles.newsHeader}>
+            <Text style={styles.fieldTitle}>News & impact</Text>
+            {!newsGated && (
+              <Pressable onPress={() => loadNews(ticker.trim().toUpperCase(), true)} disabled={newsBusy}>
+                <Text style={[styles.newsRefresh, newsBusy && styles.btnDisabled]}>
+                  {newsBusy ? "…" : "Refresh"}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+          {newsGated ? (
+            <Text style={styles.hint}>News Intelligence is an Investor feature.</Text>
+          ) : !news || news.length === 0 ? (
+            <Text style={styles.hint}>No classified news yet — tap Refresh to pull headlines.</Text>
+          ) : (
+            news.map((n) => (
+              <View key={n.id} style={styles.newsItem}>
+                <View style={styles.newsTop}>
+                  <Text style={styles.newsHeadline}>{n.headline}</Text>
+                  {n.impact && (
+                    <Text style={[styles.newsBadge, { color: IMPACT_COLOR[n.impact.impact] ?? "#6b7280" }]}>
+                      {IMPACT_LABEL[n.impact.impact] ?? n.impact.impact} · {n.impact.confidence}
+                    </Text>
+                  )}
+                </View>
+                {n.impact?.rationale ? <Text style={styles.newsRationale}>{n.impact.rationale}</Text> : null}
+              </View>
+            ))
+          )}
         </ScrollView>
       )}
     </View>
@@ -195,4 +259,11 @@ const styles = StyleSheet.create({
   hint: { fontSize: 13, color: "#888" },
   error: { color: "#b91c1c", fontSize: 13 },
   disclaimer: { fontSize: 11, color: "#999", marginTop: 8 },
+  newsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 6 },
+  newsRefresh: { color: "#2563eb", fontWeight: "600", fontSize: 13 },
+  newsItem: { borderWidth: 1, borderColor: "#eee", borderRadius: 8, padding: 10, gap: 3 },
+  newsTop: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+  newsHeadline: { fontSize: 13, color: "#1f2937", flex: 1, fontWeight: "500" },
+  newsBadge: { fontSize: 11, fontWeight: "700" },
+  newsRationale: { fontSize: 12, color: "#4b5563" },
 });

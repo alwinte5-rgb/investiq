@@ -37,7 +37,11 @@ function currentPeriodStart(now = new Date()): Date {
  * isolated: a provider failure (or missing key) simply omits that source, which
  * the sufficiency check then accounts for — it never crashes the request.
  */
-async function assembleBundle(deps: AnalysisDeps, ticker: string): Promise<EvidenceBundle> {
+async function assembleBundle(
+  deps: AnalysisDeps,
+  ticker: string,
+  symbolId: string,
+): Promise<EvidenceBundle> {
   const T = ticker.toUpperCase();
   const data: EvidenceDatum[] = [];
 
@@ -53,12 +57,42 @@ async function assembleBundle(deps: AnalysisDeps, ticker: string): Promise<Evide
   }
 
   try {
-    const articles = await deps.news.getNews(T);
-    for (const a of articles.slice(0, MAX_NEWS_EVIDENCE)) {
+    const articles = (await deps.news.getNews(T)).slice(0, MAX_NEWS_EVIDENCE);
+    // Layer 5: enrich news evidence with any stored grounded impact
+    // classifications for this symbol (best-effort — never blocks analysis).
+    let impactByKey = new Map<string, { impact: string; confidence: number; rationale: string }>();
+    if (articles.length > 0) {
+      try {
+        const impacts = await prisma.newsImpact.findMany({
+          where: { symbolId, article: { dedupeKey: { in: articles.map((a) => a.dedupeKey) } } },
+          select: {
+            impact: true,
+            confidence: true,
+            rationale: true,
+            article: { select: { dedupeKey: true } },
+          },
+        });
+        impactByKey = new Map(
+          impacts.map((i) => [i.article.dedupeKey, { impact: i.impact, confidence: i.confidence, rationale: i.rationale }]),
+        );
+      } catch {
+        /* impact enrichment is best-effort */
+      }
+    }
+    for (const a of articles) {
+      const cls = impactByKey.get(a.dedupeKey);
       data.push({
         ref: `news:${a.dedupeKey}`,
         sourceType: "NEWS",
-        value: { headline: a.headline, summary: a.summary, source: a.source, publishedAt: a.publishedAt },
+        value: {
+          headline: a.headline,
+          summary: a.summary,
+          source: a.source,
+          publishedAt: a.publishedAt,
+          ...(cls
+            ? { impact: cls.impact, impactConfidence: cls.confidence, impactRationale: cls.rationale }
+            : {}),
+        },
       });
     }
   } catch {
@@ -101,7 +135,7 @@ export async function generateAnalysis(
   const symbol = await findSymbolByTicker(ticker);
   if (!symbol) throw errors.notFound(`Unknown or unsupported symbol: ${ticker}`);
 
-  const bundle = await assembleBundle(deps, ticker);
+  const bundle = await assembleBundle(deps, ticker, symbol.id);
   const periodStart = currentPeriodStart();
 
   const ports: AnalysisPorts<StoredAnalysis> = {

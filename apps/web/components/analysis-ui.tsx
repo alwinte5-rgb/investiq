@@ -6,6 +6,7 @@ import {
   type Analysis,
   type AnalysisResult,
 } from "@/app/(authed)/research/actions";
+import { NewsImpactPanel } from "@/components/news-impact-ui";
 
 // Display labels for the educational (non-advisory) recommendation types.
 const REC_LABELS: Record<string, string> = {
@@ -133,6 +134,7 @@ export function ResearchUI({ initialTicker = "" }: { initialTicker?: string }) {
   const [results, setResults] = useState<SymbolResult[]>([]);
   const [open, setOpen] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [analyzedTicker, setAnalyzedTicker] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const boxRef = useRef<HTMLDivElement>(null);
@@ -144,6 +146,7 @@ export function ResearchUI({ initialTicker = "" }: { initialTicker?: string }) {
     setOpen(false);
     setResults([]);
     setError(null);
+    setAnalyzedTicker(t);
     start(async () => {
       const res = await generateAnalysisAction(t);
       if (res.ok) setResult(res.result);
@@ -257,6 +260,8 @@ export function ResearchUI({ initialTicker = "" }: { initialTicker?: string }) {
       {!pending && result && result.status !== "insufficient" && (
         <AnalysisCard analysis={result.analysis} />
       )}
+
+      {analyzedTicker && !pending && <NewsImpactPanel ticker={analyzedTicker} />}
     </div>
   );
 }

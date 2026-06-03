@@ -4,3 +4,4 @@ export * from "./prompt.js";
 export * from "./hash.js";
 export * from "./model.js";
 export * from "./pipeline.js";
+export * from "./news-classify.js";

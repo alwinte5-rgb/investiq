@@ -109,6 +109,40 @@ export async function refreshSymbolNewsAction(ticker: string): Promise<NewsActio
   }
 }
 
+// --- Layer 6: Risk Engine ---
+export interface RiskView {
+  status: "assessed" | "insufficient";
+  ticker?: string;
+  message?: string;
+  price?: number;
+  buyZoneLow?: number;
+  buyZoneHigh?: number;
+  stopLoss?: number;
+  profitTarget?: number;
+  riskReward?: number;
+  positionSize?: number | null;
+  maxRiskPct?: number;
+  maxRiskAmount?: number | null;
+  warningColor?: "GREEN" | "YELLOW" | "ORANGE" | "RED";
+  warnings?: { type: string; severity: "info" | "warn"; message: string }[];
+}
+
+export type RiskActionResult = { ok: true; result: RiskView } | { ok: false; error: string };
+
+/** Compute (and store) a trade-risk assessment for a ticker. */
+export async function assessRiskAction(ticker: string): Promise<RiskActionResult> {
+  const t = ticker.trim().toUpperCase();
+  if (!t) return { ok: false, error: "Enter a ticker" };
+  try {
+    const result = await apiFetch<RiskView>(`/api/v1/symbols/${t}/risk`, { method: "POST" });
+    return { ok: true, result };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Risk assessment failed";
+    if (isAuthError(msg)) redirect("/sign-in");
+    return { ok: false, error: msg };
+  }
+}
+
 export async function getLatestAnalysisAction(ticker: string): Promise<AnalysisActionResult> {
   const t = ticker.trim().toUpperCase();
   if (!t) return { ok: false, error: "Enter a ticker" };

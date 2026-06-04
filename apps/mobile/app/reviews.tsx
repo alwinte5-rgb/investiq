@@ -128,7 +128,7 @@ function Reviewer() {
       {message && (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>
-            {message} Connect a brokerage and sync at least 3 holdings.
+            {message} Connect a brokerage and sync your holdings, or try sample data.
           </Text>
         </View>
       )}

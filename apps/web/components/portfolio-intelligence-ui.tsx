@@ -206,7 +206,7 @@ export function PortfolioIntelligenceUI({
       )}
       {insufficient && (
         <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          {insufficient} Connect a brokerage and sync at least 3 holdings to see a full analysis.
+          {insufficient} Connect a brokerage and sync your holdings, or try sample data.
         </div>
       )}
 

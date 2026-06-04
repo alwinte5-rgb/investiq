@@ -57,11 +57,16 @@ export interface PortfolioInsufficient {
 
 export type PortfolioResult = PortfolioScores | PortfolioInsufficient;
 
-/** Below this many priced holdings, concentration/diversification can't be assessed. */
-export const MIN_HOLDINGS_FOR_ANALYSIS = 3;
+/**
+ * Minimum priced holdings to produce an analysis. Set to 1 so a thin portfolio
+ * isn't blocked with a roadblock — a 1–2 holding book is scored HONESTLY (it
+ * shows real, high concentration + low diversification, never fabricated), which
+ * naturally guides the user toward diversifying. Only a truly empty portfolio
+ * (no priced holdings) returns "insufficient".
+ */
+export const MIN_HOLDINGS_FOR_ANALYSIS = 1;
 
-export const INSUFFICIENT_HOLDINGS_MESSAGE =
-  "Not enough holdings to analyze this portfolio.";
+export const INSUFFICIENT_HOLDINGS_MESSAGE = "No holdings to analyze yet.";
 
 const UNKNOWN_SECTOR = "Unknown";
 

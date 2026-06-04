@@ -25,21 +25,28 @@ const balanced: PortfolioInput = {
 };
 
 describe("scorePortfolio — sufficiency", () => {
-  it("returns insufficient for a thin portfolio (< 3 priced holdings)", () => {
-    const res = scorePortfolio({ cash: 0, holdings: [h("AAPL", "Technology", 100), h("MSFT", "Technology", 100)] });
+  it("returns insufficient only when there are no priced holdings", () => {
+    const res = scorePortfolio({ cash: 0, holdings: [] });
     expect(res.status).toBe("insufficient");
     if (res.status === "insufficient") {
       expect(res.message).toBe(INSUFFICIENT_HOLDINGS_MESSAGE);
-      expect(res.holdingsCount).toBe(2);
+      expect(res.holdingsCount).toBe(0);
     }
   });
 
-  it("ignores zero-value holdings when counting", () => {
-    const res = scorePortfolio({
-      cash: 0,
-      holdings: [h("A", "Tech", 100), h("B", "Energy", 100), h("C", "Health", 0)],
-    });
-    expect(res.status).toBe("insufficient"); // only 2 priced
+  it("scores a thin portfolio (no roadblock) — honestly undiversified, not fabricated", () => {
+    const res = scorePortfolio({ cash: 0, holdings: [h("AAPL", "Technology", 100), h("MSFT", "Technology", 100)] });
+    expect(res.status).toBe("scored");
+    if (res.status === "scored") {
+      expect(res.holdingsCount).toBe(2);
+      // two single-sector names → genuinely low diversification (honest, not a wall)
+      expect(res.diversificationScore).toBeLessThan(50);
+    }
+  });
+
+  it("ignores zero-value holdings when counting (all zero-value → insufficient)", () => {
+    const res = scorePortfolio({ cash: 0, holdings: [h("A", "Tech", 0), h("B", "Energy", 0)] });
+    expect(res.status).toBe("insufficient"); // no priced holdings
   });
 });
 

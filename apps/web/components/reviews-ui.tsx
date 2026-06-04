@@ -158,7 +158,7 @@ export function ReviewsUI({
       )}
       {message && (
         <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          {message} Connect a brokerage and sync at least 3 holdings to generate a review.
+          {message} Connect a brokerage and sync your holdings, or try sample data.
         </div>
       )}
 

@@ -54,8 +54,25 @@ export async function startConnection(
   deps: BrokerageDeps,
   userId: string,
 ): Promise<{ portalUrl: string; connectionId: string }> {
-  let conn = await prisma.brokerageConnection.findFirst({ where: { userId } });
+  // Only a REAL brokerage connection is reusable — never the demo placeholder
+  // (its SnapTrade user is fake). Find the user's real connection, if any.
+  let conn = await prisma.brokerageConnection.findFirst({
+    where: { userId, status: { not: DEMO_STATUS } },
+  });
   let user: SnapTradeUser;
+
+  // A disabled connection is poisoned (SnapTrade revoked it) — reusing its
+  // SnapTrade user just reconnects into a dead authorization (the 410 loop).
+  // Drop it (best-effort upstream cleanup) and register fresh below.
+  if (conn && conn.status === "disabled") {
+    try {
+      await deps.client.deleteUser(conn.snaptradeUserId);
+    } catch {
+      // best-effort
+    }
+    await prisma.brokerageConnection.delete({ where: { id: conn.id } });
+    conn = null;
+  }
 
   if (!conn) {
     // Register under a FRESH unique SnapTrade userId (not the InvestIQ id).

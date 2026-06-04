@@ -23,14 +23,23 @@ export default function Landing() {
           research for US stocks and ETFs. Every insight is grounded in connected data — never
           guesses. Educational only; we never tell you to buy or sell.
         </p>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Link
             href="/dashboard"
             className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
             Open dashboard
           </Link>
-          <Link href="/pricing" className="rounded-md border px-4 py-2 text-sm font-medium">
+          <Link
+            href="/research"
+            className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-neutral-50"
+          >
+            Research a stock
+          </Link>
+          <Link
+            href="/pricing"
+            className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-neutral-50"
+          >
             See plans
           </Link>
         </div>

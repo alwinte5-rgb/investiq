@@ -177,7 +177,9 @@ export function createSnapTradeClient(clientId: string, consumerKey: string): Sn
         sdk.authentication.loginSnapTradeUser({
           userId: user.userId,
           userSecret: user.userSecret,
-          ...(redirectUri ? { customRedirect: redirectUri } : {}),
+          // With a return URL, also skip the portal's success/"Done" screen and
+          // send the user straight back to the app.
+          ...(redirectUri ? { customRedirect: redirectUri, immediateRedirect: true } : {}),
         }),
       );
       const url = (data as { redirectURI?: string }).redirectURI;

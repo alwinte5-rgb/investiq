@@ -49,6 +49,10 @@ const envSchema = z.object({
   SNAPTRADE_CLIENT_ID: z.string().min(1).optional(),
   SNAPTRADE_CONSUMER_KEY: z.string().min(1).optional(),
   CONNECTION_ENCRYPTION_KEY: z.string().min(32).optional(),
+  // Where the SnapTrade connection portal returns users after "Done". Must also
+  // be whitelisted in the SnapTrade dashboard. When unset, the portal has no
+  // return link (the "Done" button doesn't navigate back).
+  SNAPTRADE_REDIRECT_URI: z.string().url().optional(),
 
   // --- Optional: paper trading (Alpaca, Layer 9) ---
   ALPACA_PAPER_KEY_ID: z.string().min(1).optional(),

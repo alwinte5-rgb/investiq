@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
-import { ConnectButton, DemoButton, RemoveDemoButton, SyncButton } from "./portfolio-controls";
+import {
+  ConnectButton,
+  DemoButton,
+  DisconnectButton,
+  ReconnectButton,
+  RemoveDemoButton,
+  SyncButton,
+} from "./portfolio-controls";
 
 export const dynamic = "force-dynamic"; // personalized — never statically cached
 
@@ -63,6 +70,7 @@ export default async function DashboardPage() {
   ]);
   const connection = connections?.[0];
   const isDemo = connection?.status === "demo";
+  const isDisabled = connection?.status === "disabled";
 
   return (
     <div className="space-y-6">
@@ -101,10 +109,26 @@ export default async function DashboardPage() {
           {connection &&
             (isDemo ? (
               <RemoveDemoButton connectionId={connection.id} />
+            ) : isDisabled ? (
+              <span className="flex items-center gap-2">
+                <ReconnectButton />
+                <DisconnectButton connectionId={connection.id} />
+              </span>
             ) : (
-              <SyncButton connectionId={connection.id} />
+              <span className="flex items-center gap-2">
+                <SyncButton connectionId={connection.id} />
+                <DisconnectButton connectionId={connection.id} />
+              </span>
             ))}
         </div>
+
+        {isDisabled && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            This brokerage connection has expired (the broker dropped the authorization). The
+            holdings below may be stale — <strong>Reconnect</strong> to resume syncing, or{" "}
+            <strong>Disconnect</strong> to remove it.
+          </div>
+        )}
 
         {!summary || !summary.connected ? (
           <div className="rounded-md border border-dashed p-6 text-center text-sm text-neutral-600">

@@ -151,8 +151,12 @@ async function call<T>(label: string, fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (e) {
+    // The SDK uses axios; surface the HTTP status so callers can react (e.g. a
+    // 410 means the brokerage connection is disabled and must be reconnected).
+    const status = (e as { response?: { status?: number }; status?: number })?.response?.status
+      ?? (e as { status?: number })?.status;
     const msg = e instanceof Error ? e.message : "snaptrade error";
-    throw new UpstreamError("snaptrade", `${label}: ${msg}`);
+    throw new UpstreamError("snaptrade", `${label}: ${msg}`, typeof status === "number" ? status : undefined);
   }
 }
 

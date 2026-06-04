@@ -35,6 +35,59 @@ export function ConnectButton() {
   );
 }
 
+export function ReconnectButton({ label = "Reconnect" }: { label?: string }) {
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function reconnect() {
+    setError(null);
+    start(async () => {
+      const res = await connectBrokerageAction();
+      if (res.portalUrl) window.location.href = res.portalUrl;
+      else setError(res.error ?? "Failed to start reconnect");
+    });
+  }
+
+  return (
+    <span>
+      <button
+        onClick={reconnect}
+        disabled={pending}
+        className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+      >
+        {pending ? "Starting…" : label}
+      </button>
+      {error && <span className="ml-2 text-xs text-red-600">{error}</span>}
+    </span>
+  );
+}
+
+export function DisconnectButton({ connectionId }: { connectionId: string }) {
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function disconnect() {
+    setError(null);
+    start(async () => {
+      const res = await removeConnectionAction(connectionId);
+      if (!res.ok) setError(res.error ?? "Failed to disconnect");
+    });
+  }
+
+  return (
+    <span>
+      <button
+        onClick={disconnect}
+        disabled={pending}
+        className="rounded-md border px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 disabled:opacity-50"
+      >
+        {pending ? "Removing…" : "Disconnect"}
+      </button>
+      {error && <span className="ml-2 text-xs text-red-600">{error}</span>}
+    </span>
+  );
+}
+
 export function DemoButton() {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);

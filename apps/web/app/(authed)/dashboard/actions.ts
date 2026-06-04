@@ -56,13 +56,14 @@ export async function syncBrokerageAction(
   connectionId: string,
 ): Promise<{ ok: boolean; error?: string; warning?: string }> {
   try {
-    const res = await apiFetch<{ holdingsErrors: number }>(
+    const res = await apiFetch<{ holdingsErrors: number; disabled: boolean }>(
       `/api/v1/connections/${connectionId}/sync`,
       { method: "POST" },
     );
     revalidatePath("/dashboard");
-    const warning =
-      res.holdingsErrors > 0
+    const warning = res.disabled
+      ? "This brokerage connection has expired — reconnect it to resume syncing."
+      : res.holdingsErrors > 0
         ? "Synced, but your broker couldn't return holdings for an account yet — it may still be preparing. Try again shortly."
         : undefined;
     return { ok: true, warning };

@@ -5,12 +5,19 @@ import {
   encryptSecret,
   errors,
 } from "@investiq/shared";
+import { UpstreamError } from "@investiq/integrations";
 import type {
   AccountHoldings,
   NormalizedHolding,
   SnapTradeClient,
   SnapTradeUser,
 } from "@investiq/integrations";
+
+/** SnapTrade returns 410 Gone on data endpoints when the brokerage connection
+ * has been disabled/revoked — it must be reconnected, not retried. */
+function isConnectionGone(e: unknown): boolean {
+  return e instanceof UpstreamError && e.status === 410;
+}
 import { assertOwnedBy } from "../lib/permissions.js";
 import { DEMO_STATUS } from "./demo-portfolio.js";
 
@@ -87,7 +94,13 @@ export async function syncConnection(
   deps: BrokerageDeps,
   userId: string,
   connectionId?: string,
-): Promise<{ accounts: number; holdings: number; transactions: number; holdingsErrors: number }> {
+): Promise<{
+  accounts: number;
+  holdings: number;
+  transactions: number;
+  holdingsErrors: number;
+  disabled: boolean;
+}> {
   const conn = connectionId
     ? await prisma.brokerageConnection.findUnique({ where: { id: connectionId } })
     : await prisma.brokerageConnection.findFirst({ where: { userId } });
@@ -104,6 +117,7 @@ export async function syncConnection(
   const accounts = await deps.client.listAccounts(user);
   let holdingCount = 0;
   let holdingsErrors = 0;
+  let connectionGone = false;
 
   for (const a of accounts) {
     // The holdings snapshot carries the reliable cash + total balance
@@ -116,6 +130,7 @@ export async function syncConnection(
       snapshot = await deps.client.getHoldings(user, a.externalId);
     } catch (e) {
       holdingsErrors++;
+      if (isConnectionGone(e)) connectionGone = true;
       console.error(
         `sync: getHoldings failed for account ${a.externalId} (conn ${conn!.id}):`,
         e instanceof Error ? e.message : e,
@@ -163,6 +178,7 @@ export async function syncConnection(
   try {
     txns = await deps.client.getTransactions(user);
   } catch (e) {
+    if (isConnectionGone(e)) connectionGone = true;
     console.error(`sync: getTransactions failed (conn ${conn!.id}):`, e instanceof Error ? e.message : e);
   }
   const firstAccount = await prisma.account.findFirst({ where: { connectionId: conn!.id }, select: { id: true } });
@@ -188,12 +204,20 @@ export async function syncConnection(
     }
   }
 
+  // A 410 means SnapTrade has dropped the authorization — mark it disabled so
+  // the UI prompts a reconnect instead of letting the user keep hitting sync.
   await prisma.brokerageConnection.update({
     where: { id: conn!.id },
-    data: { status: "active", lastSyncedAt: new Date() },
+    data: { status: connectionGone ? "disabled" : "active", lastSyncedAt: new Date() },
   });
 
-  return { accounts: accounts.length, holdings: holdingCount, transactions: txnCount, holdingsErrors };
+  return {
+    accounts: accounts.length,
+    holdings: holdingCount,
+    transactions: txnCount,
+    holdingsErrors,
+    disabled: connectionGone,
+  };
 }
 
 export async function getAccounts(userId: string) {

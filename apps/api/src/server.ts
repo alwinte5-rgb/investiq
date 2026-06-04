@@ -136,6 +136,7 @@ async function main() {
     const brokerage: BrokerageDeps = {
       client: createSnapTradeClient(env.SNAPTRADE_CLIENT_ID, env.SNAPTRADE_CONSUMER_KEY),
       encKey: env.CONNECTION_ENCRYPTION_KEY,
+      redirectUri: env.SNAPTRADE_REDIRECT_URI,
     };
     await app.register(async (instance) => connectionRoutes(instance, { auth: authDeps, brokerage }));
     app.log.info("SnapTrade brokerage routes enabled");

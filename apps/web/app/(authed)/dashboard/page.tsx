@@ -111,6 +111,7 @@ export default async function DashboardPage() {
               <RemoveDemoButton connectionId={connection.id} />
             ) : isDisabled ? (
               <span className="flex items-center gap-2">
+                <SyncButton connectionId={connection.id} />
                 <ReconnectButton />
                 <DisconnectButton connectionId={connection.id} />
               </span>

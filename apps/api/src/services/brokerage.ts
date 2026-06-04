@@ -118,6 +118,7 @@ export async function syncConnection(
   let holdingCount = 0;
   let holdingsErrors = 0;
   let connectionGone = false;
+  let anyAccountOk = false;
 
   for (const a of accounts) {
     // The holdings snapshot carries the reliable cash + total balance
@@ -128,6 +129,7 @@ export async function syncConnection(
     let snapshot: AccountHoldings | null = null;
     try {
       snapshot = await deps.client.getHoldings(user, a.externalId);
+      anyAccountOk = true;
     } catch (e) {
       holdingsErrors++;
       if (isConnectionGone(e)) connectionGone = true;
@@ -204,11 +206,13 @@ export async function syncConnection(
     }
   }
 
-  // A 410 means SnapTrade has dropped the authorization — mark it disabled so
-  // the UI prompts a reconnect instead of letting the user keep hitting sync.
+  // A 410 means SnapTrade dropped the authorization. Only treat the whole
+  // connection as disabled when NO account synced — after a reconnect, a fresh
+  // account syncing fine shouldn't be marked dead just because a stale one 410s.
+  const isGone = connectionGone && !anyAccountOk;
   await prisma.brokerageConnection.update({
     where: { id: conn!.id },
-    data: { status: connectionGone ? "disabled" : "active", lastSyncedAt: new Date() },
+    data: { status: isGone ? "disabled" : "active", lastSyncedAt: new Date() },
   });
 
   return {
@@ -216,7 +220,7 @@ export async function syncConnection(
     holdings: holdingCount,
     transactions: txnCount,
     holdingsErrors,
-    disabled: connectionGone,
+    disabled: isGone,
   };
 }
 

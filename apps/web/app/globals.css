@@ -3,7 +3,10 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light dark;
+  /* The app is designed light-only (no dark: styles). Pin the color scheme to
+     light so native controls — search inputs, selects — don't render with a
+     dark background in OS dark mode (which made typed text invisible). */
+  color-scheme: light;
 }
 
 body {

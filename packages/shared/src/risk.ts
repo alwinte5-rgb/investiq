@@ -82,6 +82,69 @@ export const CONCENTRATION_RISK_PCT = 25;
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+export interface RiskContext {
+  /** Typical swing percent — drives the volatility warning (omit to skip it). */
+  volatilityPct?: number;
+  earningsInDays?: number | null;
+  newsSentiment?: "POSITIVE" | "NEUTRAL" | "NEGATIVE" | null;
+  heldWeightPct?: number | null;
+  belowBuyZone?: boolean;
+}
+
+/**
+ * The shared warning roll-up: turns risk context (earnings, volatility,
+ * concentration, news, technical) into warnings + a Green/Yellow/Orange/Red
+ * color. Used by both the per-symbol assessment and the portfolio risk view, so
+ * the color logic is identical everywhere. Color = count of serious ("warn")
+ * risks: 0 → GREEN, 1 → YELLOW, 2 → ORANGE, 3+ → RED.
+ */
+export function riskWarnings(ctx: RiskContext): { warnings: RiskWarning[]; warningColor: WarningColor } {
+  const warnings: RiskWarning[] = [];
+  if (ctx.earningsInDays != null && ctx.earningsInDays >= 0 && ctx.earningsInDays <= EARNINGS_RISK_DAYS) {
+    const d = ctx.earningsInDays;
+    warnings.push({
+      type: "earnings",
+      severity: "warn",
+      message: `Earnings in ${d === 0 ? "under a day" : `${d} day${d === 1 ? "" : "s"}`} — expect a larger move.`,
+    });
+  }
+  if (ctx.volatilityPct != null && ctx.volatilityPct >= HIGH_VOLATILITY_PCT) {
+    warnings.push({
+      type: "volatility",
+      severity: "warn",
+      message: `Elevated volatility (~${Math.round(ctx.volatilityPct)}% typical swing) — size positions smaller.`,
+    });
+  }
+  if (ctx.heldWeightPct != null && ctx.heldWeightPct >= CONCENTRATION_RISK_PCT) {
+    warnings.push({
+      type: "concentration",
+      severity: "warn",
+      message: `This position is ${Math.round(ctx.heldWeightPct)}% of your portfolio — concentrated.`,
+    });
+  }
+  if (ctx.newsSentiment === "NEGATIVE") {
+    warnings.push({
+      type: "news",
+      severity: "warn",
+      message: "Recent news skews negative — confirm the thesis before adding.",
+    });
+  } else if (ctx.newsSentiment === "POSITIVE") {
+    warnings.push({ type: "news", severity: "info", message: "Recent news skews positive." });
+  }
+  if (ctx.belowBuyZone) {
+    warnings.push({
+      type: "technical",
+      severity: "warn",
+      message: "Price is below the buy zone — wait for it to stabilize.",
+    });
+  }
+
+  const serious = warnings.filter((w) => w.severity === "warn").length;
+  const warningColor: WarningColor =
+    serious === 0 ? "GREEN" : serious === 1 ? "YELLOW" : serious === 2 ? "ORANGE" : "RED";
+  return { warnings, warningColor };
+}
+
 /**
  * Compute a trade-risk assessment from a current price + volatility, plus
  * optional context (earnings, news, concentration, account size). Returns
@@ -112,49 +175,13 @@ export function assessRisk(input: RiskInput): RiskResult {
     positionSize = Math.max(0, Math.floor(maxRiskAmount / riskPerShare));
   }
 
-  const warnings: RiskWarning[] = [];
-  if (input.earningsInDays != null && input.earningsInDays >= 0 && input.earningsInDays <= EARNINGS_RISK_DAYS) {
-    const d = input.earningsInDays;
-    warnings.push({
-      type: "earnings",
-      severity: "warn",
-      message: `Earnings in ${d === 0 ? "under a day" : `${d} day${d === 1 ? "" : "s"}`} — expect a larger move.`,
-    });
-  }
-  if (vol >= HIGH_VOLATILITY_PCT) {
-    warnings.push({
-      type: "volatility",
-      severity: "warn",
-      message: `Elevated volatility (~${Math.round(vol)}% typical swing) — size positions smaller.`,
-    });
-  }
-  if (input.heldWeightPct != null && input.heldWeightPct >= CONCENTRATION_RISK_PCT) {
-    warnings.push({
-      type: "concentration",
-      severity: "warn",
-      message: `This position is ${Math.round(input.heldWeightPct)}% of your portfolio — concentrated.`,
-    });
-  }
-  if (input.newsSentiment === "NEGATIVE") {
-    warnings.push({
-      type: "news",
-      severity: "warn",
-      message: "Recent news skews negative — confirm the thesis before adding.",
-    });
-  } else if (input.newsSentiment === "POSITIVE") {
-    warnings.push({ type: "news", severity: "info", message: "Recent news skews positive." });
-  }
-  if (input.belowBuyZone) {
-    warnings.push({
-      type: "technical",
-      severity: "warn",
-      message: "Price is below the buy zone — wait for it to stabilize.",
-    });
-  }
-
-  const serious = warnings.filter((w) => w.severity === "warn").length;
-  const warningColor: WarningColor =
-    serious === 0 ? "GREEN" : serious === 1 ? "YELLOW" : serious === 2 ? "ORANGE" : "RED";
+  const { warnings, warningColor } = riskWarnings({
+    volatilityPct: vol,
+    earningsInDays: input.earningsInDays,
+    newsSentiment: input.newsSentiment,
+    heldWeightPct: input.heldWeightPct,
+    belowBuyZone: input.belowBuyZone,
+  });
 
   return {
     status: "assessed",

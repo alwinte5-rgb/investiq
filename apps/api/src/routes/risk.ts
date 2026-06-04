@@ -2,7 +2,12 @@ import type { FastifyInstance } from "fastify";
 import { tickerParamSchema } from "@investiq/shared";
 import { validate } from "../lib/validate.js";
 import { resolveAuthContext, type AuthDeps } from "../lib/guard.js";
-import { assessSymbolRisk, getLatestSymbolRisk, type RiskDeps } from "../services/risk.js";
+import {
+  assessPortfolioRisk,
+  assessSymbolRisk,
+  getLatestSymbolRisk,
+  type RiskDeps,
+} from "../services/risk.js";
 
 export interface RiskRouteDeps {
   auth: AuthDeps;
@@ -28,5 +33,12 @@ export async function riskRoutes(app: FastifyInstance, deps: RiskRouteDeps) {
     const { ticker } = validate(tickerParamSchema, req.params);
     reply.header("Cache-Control", "no-store");
     return { data: await getLatestSymbolRisk(ctx.userId, ticker) };
+  });
+
+  // Portfolio-level risk roll-up (per-holding warning colors + overall).
+  app.get("/api/v1/portfolio/risk", async (req, reply) => {
+    const ctx = await resolveAuthContext(req, deps.auth);
+    reply.header("Cache-Control", "no-store");
+    return { data: await assessPortfolioRisk(ctx.userId) };
   });
 }

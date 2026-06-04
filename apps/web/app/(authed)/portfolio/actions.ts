@@ -58,3 +58,36 @@ export async function generatePortfolioAction(): Promise<PortfolioActionResult> 
     return { ok: false, error: msg, gated };
   }
 }
+
+// --- Layer 6: portfolio-level risk ---
+export interface HoldingRiskView {
+  ticker: string;
+  name: string;
+  weightPct: number;
+  warningColor: "GREEN" | "YELLOW" | "ORANGE" | "RED";
+  warnings: { type: string; severity: "info" | "warn"; message: string }[];
+}
+export type PortfolioRiskView =
+  | {
+      status: "assessed";
+      overallColor: "GREEN" | "YELLOW" | "ORANGE" | "RED";
+      assessedAt: string;
+      holdings: HoldingRiskView[];
+    }
+  | { status: "insufficient"; message: string };
+
+export type PortfolioRiskActionResult =
+  | { ok: true; result: PortfolioRiskView }
+  | { ok: false; error: string };
+
+/** Per-holding risk roll-up for the connected portfolio (stored data only). */
+export async function getPortfolioRiskAction(): Promise<PortfolioRiskActionResult> {
+  try {
+    const result = await apiFetch<PortfolioRiskView>("/api/v1/portfolio/risk");
+    return { ok: true, result };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to load portfolio risk";
+    if (/authentication required|unauthorized|\b401\b/i.test(msg)) redirect("/sign-in");
+    return { ok: false, error: msg };
+  }
+}

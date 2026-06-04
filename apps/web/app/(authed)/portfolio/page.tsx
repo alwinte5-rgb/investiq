@@ -3,6 +3,7 @@ import {
   PortfolioIntelligenceUI,
   type PortfolioView,
 } from "@/components/portfolio-intelligence-ui";
+import { PortfolioRiskPanel } from "@/components/portfolio-risk-ui";
 
 export const dynamic = "force-dynamic"; // personalized — never statically cached
 
@@ -59,6 +60,7 @@ export default async function PortfolioPage() {
         </p>
       </div>
       <PortfolioIntelligenceUI initial={initial} gated={gated} />
+      {!gated && <PortfolioRiskPanel />}
     </div>
   );
 }

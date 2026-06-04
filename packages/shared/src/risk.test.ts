@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { assessRisk, volatilityFromBeta, DEFAULT_VOLATILITY_PCT, TARGET_RR } from "./risk.js";
+import { assessRisk, riskWarnings, volatilityFromBeta, DEFAULT_VOLATILITY_PCT, TARGET_RR } from "./risk.js";
 
 describe("assessRisk", () => {
   it("returns insufficient with no usable price", () => {
@@ -60,6 +60,25 @@ describe("assessRisk", () => {
     if (r.status !== "assessed") throw new Error("expected assessed");
     expect(r.warningColor).toBe("GREEN");
     expect(r.warnings.some((w) => w.type === "news" && w.severity === "info")).toBe(true);
+  });
+});
+
+describe("riskWarnings (portfolio path — no price/levels)", () => {
+  it("a calm, well-sized holding is GREEN with no warnings", () => {
+    const r = riskWarnings({ heldWeightPct: 10, earningsInDays: null, newsSentiment: "NEUTRAL" });
+    expect(r.warningColor).toBe("GREEN");
+    expect(r.warnings).toHaveLength(0);
+  });
+
+  it("concentration alone → YELLOW", () => {
+    const r = riskWarnings({ heldWeightPct: 30 });
+    expect(r.warnings.some((w) => w.type === "concentration")).toBe(true);
+    expect(r.warningColor).toBe("YELLOW");
+  });
+
+  it("concentration + imminent earnings + negative news → RED", () => {
+    const r = riskWarnings({ heldWeightPct: 40, earningsInDays: 2, newsSentiment: "NEGATIVE" });
+    expect(r.warningColor).toBe("RED");
   });
 });
 

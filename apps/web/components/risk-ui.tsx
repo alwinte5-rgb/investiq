@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { assessRiskAction, type RiskView } from "@/app/(authed)/research/actions";
 
 const COLOR_TONE: Record<string, string> = {
@@ -44,6 +44,13 @@ export function RiskPanel({ ticker }: { ticker: string }) {
       }
     });
   }
+
+  // Auto-assess when a stock is accessed — analysis, risk, and news all run
+  // together. Re-running for the same ticker is intentional (fresh price).
+  useEffect(() => {
+    assess();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticker]);
 
   return (
     <div className="space-y-3">

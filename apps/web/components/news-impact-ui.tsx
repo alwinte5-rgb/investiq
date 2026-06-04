@@ -25,13 +25,19 @@ export function NewsImpactPanel({ ticker }: { ticker: string }) {
   const [loading, setLoading] = useState(true);
   const [pending, start] = useTransition();
 
+  // On access, pull + classify the latest news automatically (once per ticker
+  // per session so it isn't re-ingested on every revisit) — so analysis, risk
+  // and news all populate together. Later visits just read the stored set.
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError(null);
     setGated(false);
+    const key = `investiq:autonews:${ticker}`;
+    const auto = typeof window !== "undefined" && !sessionStorage.getItem(key);
     (async () => {
-      const res = await getSymbolNewsAction(ticker);
+      const res = auto ? await refreshSymbolNewsAction(ticker) : await getSymbolNewsAction(ticker);
+      if (auto && typeof window !== "undefined") sessionStorage.setItem(key, "1");
       if (!active) return;
       if (res.ok) setArticles(res.articles);
       else if (res.gated) setGated(true);

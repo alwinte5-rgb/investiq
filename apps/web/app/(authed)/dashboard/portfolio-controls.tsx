@@ -1,12 +1,53 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { type ReactNode, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   connectBrokerageAction,
   loadDemoPortfolioAction,
   removeConnectionAction,
   syncBrokerageAction,
 } from "./actions";
+
+/**
+ * Auto-pull holdings on load for a freshly connected account so the user doesn't
+ * have to hit Sync manually. Runs at most once per browser session per
+ * connection (guarded via sessionStorage) so a sync that returns no holdings
+ * can't loop. While syncing it shows a spinner; otherwise it renders `children`
+ * (the connect/sample-data prompt).
+ */
+export function AutoSync({
+  connectionId,
+  children,
+}: {
+  connectionId: string;
+  children: ReactNode;
+}) {
+  const router = useRouter();
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    const key = `investiq:autosync:${connectionId}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    setSyncing(true);
+    void (async () => {
+      await syncBrokerageAction(connectionId);
+      setSyncing(false);
+      router.refresh();
+    })();
+  }, [connectionId, router]);
+
+  if (syncing) {
+    return (
+      <div className="flex items-center justify-center gap-2 rounded-md border border-dashed p-6 text-sm text-neutral-500">
+        <span className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
+        Syncing your latest holdings…
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
 
 export function ConnectButton() {
   const [pending, start] = useTransition();

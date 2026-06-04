@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import {
+  AutoSync,
   ConnectButton,
   DemoButton,
   DisconnectButton,
@@ -71,6 +72,20 @@ export default async function DashboardPage() {
   const connection = connections?.[0];
   const isDemo = connection?.status === "demo";
   const isDisabled = connection?.status === "disabled";
+  // A real, non-disabled connection with no holdings yet should pull on load
+  // (e.g. right after connecting) instead of making the user hit Sync.
+  const autoSyncable = Boolean(connection) && !isDemo && !isDisabled;
+
+  const connectPrompt = (
+    <div className="rounded-md border border-dashed p-6 text-center text-sm text-neutral-600">
+      <p className="mb-3">Connect a brokerage to see your holdings and a health score.</p>
+      <div className="flex flex-col items-center gap-2">
+        <ConnectButton />
+        <span className="text-xs text-neutral-400">or explore first</span>
+        <DemoButton />
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -132,14 +147,11 @@ export default async function DashboardPage() {
         )}
 
         {!summary || !summary.connected ? (
-          <div className="rounded-md border border-dashed p-6 text-center text-sm text-neutral-600">
-            <p className="mb-3">Connect a brokerage to see your holdings and a health score.</p>
-            <div className="flex flex-col items-center gap-2">
-              <ConnectButton />
-              <span className="text-xs text-neutral-400">or explore first</span>
-              <DemoButton />
-            </div>
-          </div>
+          autoSyncable ? (
+            <AutoSync connectionId={connection!.id}>{connectPrompt}</AutoSync>
+          ) : (
+            connectPrompt
+          )
         ) : (
           <>
             <div className="grid grid-cols-3 gap-3">

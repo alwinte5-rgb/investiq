@@ -139,10 +139,13 @@ export default async function DashboardPage() {
         </div>
 
         {isDisabled && (
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-            This brokerage connection has expired (the broker dropped the authorization). The
-            holdings below may be stale — <strong>Reconnect</strong> to resume syncing, or{" "}
-            <strong>Disconnect</strong> to remove it.
+          <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <p>
+              This brokerage connection has expired (the broker dropped the authorization), so your
+              portfolio can’t sync. <strong>Reconnect</strong>, <strong>Disconnect</strong>, or
+              explore everything with sample data right now:
+            </p>
+            <DemoButton />
           </div>
         )}
 

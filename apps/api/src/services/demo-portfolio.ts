@@ -43,15 +43,22 @@ export async function enableDemoPortfolio(userId: string): Promise<EnableDemoRes
     };
   }
 
-  // Never mix sample data into a real portfolio — it would skew real scores.
+  // Never mix sample data into a real, working portfolio — it would skew real
+  // scores. But a LOCKED/expired (disabled) connection shouldn't block someone
+  // from exploring: clear it (cascade drops its empty account shell) and seed
+  // the demo. An active connection still has to be disconnected first.
   const realConn = await prisma.brokerageConnection.findFirst({
     where: { userId, status: { not: DEMO_STATUS } },
-    select: { id: true },
+    select: { id: true, status: true },
   });
   if (realConn) {
-    throw errors.validation(
-      "You already have a brokerage connected. Disconnect it first to load sample data.",
-    );
+    if (realConn.status === "disabled") {
+      await prisma.brokerageConnection.delete({ where: { id: realConn.id } });
+    } else {
+      throw errors.validation(
+        "You already have an active brokerage connected. Disconnect it first to load sample data.",
+      );
+    }
   }
 
   // Resolve the global Symbol rows. Only fill in an accurate sector on update

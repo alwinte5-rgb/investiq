@@ -76,9 +76,16 @@ async function main() {
     if (req.method === "OPTIONS") reply.code(204).send();
   });
 
-  // Consistent, safe error shape for everything thrown in handlers.
-  app.setErrorHandler((err, _req, reply) => {
+  // Consistent, safe error shape for everything thrown in handlers. The safe
+  // client shape hides the real cause (e.g. an upstream SnapTrade message), so
+  // log it server-side for diagnosis — errors for 5xx, warnings for 4xx.
+  app.setErrorHandler((err, req, reply) => {
     const { body, status } = toApiError(err);
+    if (status >= 500) {
+      req.log.error({ err, code: body.code }, `Request failed (${status}): ${err.message}`);
+    } else {
+      req.log.warn({ code: body.code }, `Request rejected (${status}): ${err.message}`);
+    }
     reply.code(status).send(body);
   });
 

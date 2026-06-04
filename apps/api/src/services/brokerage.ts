@@ -6,6 +6,7 @@ import {
   errors,
 } from "@investiq/shared";
 import type {
+  AccountHoldings,
   NormalizedHolding,
   SnapTradeClient,
   SnapTradeUser,
@@ -86,7 +87,7 @@ export async function syncConnection(
   deps: BrokerageDeps,
   userId: string,
   connectionId?: string,
-): Promise<{ accounts: number; holdings: number; transactions: number }> {
+): Promise<{ accounts: number; holdings: number; transactions: number; holdingsErrors: number }> {
   const conn = connectionId
     ? await prisma.brokerageConnection.findUnique({ where: { id: connectionId } })
     : await prisma.brokerageConnection.findFirst({ where: { userId } });
@@ -102,13 +103,26 @@ export async function syncConnection(
   const user = snaptradeUser(conn!, deps.encKey);
   const accounts = await deps.client.listAccounts(user);
   let holdingCount = 0;
+  let holdingsErrors = 0;
 
   for (const a of accounts) {
-    // Fetch the holdings snapshot first — it carries the reliable cash + total
-    // balance (listUserAccounts omits cash for some brokerages, e.g. Alpaca).
-    const snapshot = await deps.client.getHoldings(user, a.externalId);
-    const cash = snapshot.cash ?? a.cash ?? 0;
-    const totalValue = snapshot.totalValue ?? a.totalValue ?? 0;
+    // The holdings snapshot carries the reliable cash + total balance
+    // (listUserAccounts omits cash for some brokerages, e.g. Alpaca). A single
+    // account's holdings endpoint failing (e.g. still preparing on the broker
+    // side) must NOT abort the whole sync — record the account from
+    // listAccounts and move on. The error handler logs the cause.
+    let snapshot: AccountHoldings | null = null;
+    try {
+      snapshot = await deps.client.getHoldings(user, a.externalId);
+    } catch (e) {
+      holdingsErrors++;
+      console.error(
+        `sync: getHoldings failed for account ${a.externalId} (conn ${conn!.id}):`,
+        e instanceof Error ? e.message : e,
+      );
+    }
+    const cash = snapshot?.cash ?? a.cash ?? 0;
+    const totalValue = snapshot?.totalValue ?? a.totalValue ?? 0;
 
     const account = await prisma.account.upsert({
       where: { connectionId_externalId: { connectionId: conn!.id, externalId: a.externalId } },
@@ -124,7 +138,7 @@ export async function syncConnection(
       select: { id: true },
     });
 
-    for (const h of snapshot.positions) {
+    for (const h of snapshot?.positions ?? []) {
       const symbolId = await resolveSymbolId(h.ticker, h.description);
       await prisma.holding.upsert({
         where: { accountId_symbolId: { accountId: account.id, symbolId } },
@@ -142,8 +156,15 @@ export async function syncConnection(
     }
   }
 
-  // Transactions are immutable history — create-if-absent by externalId.
-  const txns = await deps.client.getTransactions(user);
+  // Transactions are immutable history — create-if-absent by externalId. Like
+  // holdings, a transactions-endpoint failure shouldn't abort an otherwise-good
+  // sync (accounts/holdings are already persisted).
+  let txns: Awaited<ReturnType<typeof deps.client.getTransactions>> = [];
+  try {
+    txns = await deps.client.getTransactions(user);
+  } catch (e) {
+    console.error(`sync: getTransactions failed (conn ${conn!.id}):`, e instanceof Error ? e.message : e);
+  }
   const firstAccount = await prisma.account.findFirst({ where: { connectionId: conn!.id }, select: { id: true } });
   let txnCount = 0;
   if (firstAccount) {
@@ -172,7 +193,7 @@ export async function syncConnection(
     data: { status: "active", lastSyncedAt: new Date() },
   });
 
-  return { accounts: accounts.length, holdings: holdingCount, transactions: txnCount };
+  return { accounts: accounts.length, holdings: holdingCount, transactions: txnCount, holdingsErrors };
 }
 
 export async function getAccounts(userId: string) {

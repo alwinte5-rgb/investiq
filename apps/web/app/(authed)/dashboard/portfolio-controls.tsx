@@ -91,12 +91,15 @@ export function RemoveDemoButton({ connectionId }: { connectionId: string }) {
 export function SyncButton({ connectionId }: { connectionId: string }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   function sync() {
     setError(null);
+    setWarning(null);
     start(async () => {
       const res = await syncBrokerageAction(connectionId);
       if (!res.ok) setError(res.error ?? "Sync failed");
+      else if (res.warning) setWarning(res.warning);
     });
   }
 
@@ -110,6 +113,7 @@ export function SyncButton({ connectionId }: { connectionId: string }) {
         {pending ? "Syncing…" : "Sync holdings"}
       </button>
       {error && <span className="ml-2 text-xs text-red-600">{error}</span>}
+      {warning && <span className="ml-2 text-xs text-amber-600">{warning}</span>}
     </span>
   );
 }

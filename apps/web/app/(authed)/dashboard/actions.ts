@@ -54,11 +54,18 @@ export async function removeConnectionAction(
 /** Sync holdings/transactions for a connection (or the user's only one). */
 export async function syncBrokerageAction(
   connectionId: string,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; warning?: string }> {
   try {
-    await apiFetch(`/api/v1/connections/${connectionId}/sync`, { method: "POST" });
+    const res = await apiFetch<{ holdingsErrors: number }>(
+      `/api/v1/connections/${connectionId}/sync`,
+      { method: "POST" },
+    );
     revalidatePath("/dashboard");
-    return { ok: true };
+    const warning =
+      res.holdingsErrors > 0
+        ? "Synced, but your broker couldn't return holdings for an account yet — it may still be preparing. Try again shortly."
+        : undefined;
+    return { ok: true, warning };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Sync failed";
     if (isAuthError(msg)) redirect("/sign-in");

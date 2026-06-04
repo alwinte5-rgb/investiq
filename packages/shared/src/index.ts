@@ -4,6 +4,7 @@ export * from "./entitlements.js";
 export * from "./portfolio.js";
 export * from "./demo.js";
 export * from "./reviews.js";
+export * from "./risk.js";
 export * from "./news.js";
 export * from "./env.js";
 export * from "./errors.js";

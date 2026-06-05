@@ -176,6 +176,9 @@ export default function Index() {
           <Link href="/portfolio" style={styles.navLink}>
             Portfolio
           </Link>
+          <Link href="/opportunities" style={styles.navLink}>
+            Opportunities
+          </Link>
           <Link href="/reviews" style={styles.navLink}>
             Reviews
           </Link>

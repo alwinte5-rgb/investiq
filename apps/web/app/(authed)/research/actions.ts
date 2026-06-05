@@ -143,6 +143,56 @@ export async function assessRiskAction(ticker: string): Promise<RiskActionResult
   }
 }
 
+// --- Layer 7: Chart Intelligence ---
+export interface ChartLevel {
+  kind: "BUY_ZONE_LOW" | "BUY_ZONE_HIGH" | "STOP_LOSS" | "PROFIT_TARGET";
+  price: number;
+  label: string;
+  color: string;
+}
+export interface ChartEvent {
+  kind: "EARNINGS" | "NEWS";
+  date: string;
+  label: string;
+  tone?: "POSITIVE" | "NEUTRAL" | "NEGATIVE";
+  url?: string;
+}
+export interface ShowMeWhyItem {
+  sourceType: string;
+  role: "SUPPORTING" | "INVALIDATING";
+  note: string | null;
+}
+export interface ChartOverlay {
+  ticker: string;
+  warningColor: "GREEN" | "YELLOW" | "ORANGE" | "RED" | null;
+  riskReward: number | null;
+  recommendationType: string | null;
+  confidenceScore: number | null;
+  riskScore: number | null;
+  levels: ChartLevel[];
+  events: ChartEvent[];
+  showMeWhy: ShowMeWhyItem[];
+  hasRisk: boolean;
+  hasAnalysis: boolean;
+  generatedAt: string;
+}
+
+export type ChartActionResult = { ok: true; overlay: ChartOverlay } | { ok: false; error: string };
+
+/** Stored risk/analysis/events projected into one chart overlay (read-only). */
+export async function getChartOverlayAction(ticker: string): Promise<ChartActionResult> {
+  const t = ticker.trim().toUpperCase();
+  if (!t) return { ok: false, error: "Enter a ticker" };
+  try {
+    const overlay = await apiFetch<ChartOverlay>(`/api/v1/symbols/${t}/chart`);
+    return { ok: true, overlay };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to load chart";
+    if (isAuthError(msg)) redirect("/sign-in");
+    return { ok: false, error: msg };
+  }
+}
+
 export async function getLatestAnalysisAction(ticker: string): Promise<AnalysisActionResult> {
   const t = ticker.trim().toUpperCase();
   if (!t) return { ok: false, error: "Enter a ticker" };

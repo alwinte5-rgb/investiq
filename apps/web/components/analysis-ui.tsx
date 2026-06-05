@@ -8,6 +8,7 @@ import {
 } from "@/app/(authed)/research/actions";
 import { NewsImpactPanel } from "@/components/news-impact-ui";
 import { RiskPanel } from "@/components/risk-ui";
+import { ChartPanel } from "@/components/chart-ui";
 
 // Display labels for the educational (non-advisory) recommendation types.
 const REC_LABELS: Record<string, string> = {
@@ -270,6 +271,7 @@ export function ResearchUI({ initialTicker = "" }: { initialTicker?: string }) {
       )}
 
       {analyzedTicker && !pending && <RiskPanel ticker={analyzedTicker} />}
+      {analyzedTicker && !pending && <ChartPanel ticker={analyzedTicker} />}
       {analyzedTicker && !pending && <NewsImpactPanel ticker={analyzedTicker} />}
     </div>
   );

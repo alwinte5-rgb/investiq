@@ -75,6 +75,36 @@ const RISK_LABEL: Record<string, string> = { GREEN: "Low risk", YELLOW: "Watch",
 const RISK_COLOR: Record<string, string> = { GREEN: "#15803d", YELLOW: "#b45309", ORANGE: "#c2410c", RED: "#b91c1c" };
 const money = (v?: number | null) =>
   v == null ? "—" : `$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
+interface ChartLevel {
+  kind: "BUY_ZONE_LOW" | "BUY_ZONE_HIGH" | "STOP_LOSS" | "PROFIT_TARGET";
+  price: number;
+  label: string;
+  color: string;
+}
+interface ChartEvent {
+  kind: "EARNINGS" | "NEWS";
+  date: string;
+  label: string;
+  tone?: "POSITIVE" | "NEUTRAL" | "NEGATIVE";
+  url?: string;
+}
+interface ShowMeWhyItem {
+  sourceType: string;
+  role: "SUPPORTING" | "INVALIDATING";
+  note: string | null;
+}
+interface ChartOverlay {
+  ticker: string;
+  levels: ChartLevel[];
+  events: ChartEvent[];
+  showMeWhy: ShowMeWhyItem[];
+  hasRisk: boolean;
+  hasAnalysis: boolean;
+}
+const TONE_COLOR: Record<string, string> = { POSITIVE: "#15803d", NEUTRAL: "#6b7280", NEGATIVE: "#b91c1c" };
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 // Tickers whose news was auto-pulled this app session (avoid re-ingesting).
 const autoNewsDone = new Set<string>();
 
@@ -101,6 +131,8 @@ function Researcher() {
   const [newsBusy, setNewsBusy] = useState(false);
   const [risk, setRisk] = useState<RiskView | null>(null);
   const [riskBusy, setRiskBusy] = useState(false);
+  const [chart, setChart] = useState<ChartOverlay | null>(null);
+  const [showWhy, setShowWhy] = useState(false);
 
   async function assessRisk(t: string) {
     setRiskBusy(true);
@@ -111,6 +143,15 @@ function Researcher() {
       /* non-critical */
     } finally {
       setRiskBusy(false);
+    }
+  }
+
+  async function loadChart(t: string) {
+    try {
+      const token = await getToken();
+      setChart(await apiFetch<ChartOverlay>(`/api/v1/symbols/${t}/chart`, token));
+    } catch {
+      /* chart overlay is non-critical */
     }
   }
 
@@ -149,6 +190,8 @@ function Researcher() {
     setResult(null);
     setNews(null);
     setRisk(null);
+    setChart(null);
+    setShowWhy(false);
     setAnalyzedTicker(t);
     try {
       const token = await getToken();
@@ -158,8 +201,9 @@ function Researcher() {
       });
       setResult(r);
       // Run risk + news together with the analysis (news pulled fresh once per
-      // ticker per session).
-      void assessRisk(t);
+      // ticker per session). Chart overlay loads after risk so it reflects the
+      // freshly stored levels.
+      void assessRisk(t).then(() => loadChart(t));
       void loadNews(t, !autoNewsDone.has(t));
       autoNewsDone.add(t);
     } catch (e) {
@@ -263,6 +307,54 @@ function Researcher() {
             <Text style={styles.hint}>{riskBusy ? "Assessing risk…" : "—"}</Text>
           )}
 
+          <Text style={styles.fieldTitle}>Chart & levels</Text>
+          {!chart || (!chart.hasRisk && !chart.hasAnalysis) ? (
+            <Text style={styles.hint}>Run analysis + risk to see levels and the evidence behind them.</Text>
+          ) : (
+            <View style={styles.newsItem}>
+              {chart.levels.map((l) => (
+                <View key={l.kind} style={styles.levelRow}>
+                  <View style={styles.levelLeft}>
+                    <View style={[styles.levelLine, { backgroundColor: l.color }]} />
+                    <Text style={styles.levelLabel}>{l.label}</Text>
+                  </View>
+                  <Text style={[styles.levelPrice, { color: l.color }]}>{money(l.price)}</Text>
+                </View>
+              ))}
+              {chart.events.length > 0 && (
+                <View style={styles.chartEvents}>
+                  {chart.events.map((e, i) => (
+                    <Text key={i} style={styles.eventRow}>
+                      <Text style={styles.eventDate}>{fmtDate(e.date)} </Text>
+                      {e.kind === "EARNINGS" ? (
+                        <Text style={styles.riskStat}>📅 {e.label}</Text>
+                      ) : (
+                        <Text style={{ color: TONE_COLOR[e.tone ?? "NEUTRAL"] }}>📰 {e.label}</Text>
+                      )}
+                    </Text>
+                  ))}
+                </View>
+              )}
+              {chart.showMeWhy.length > 0 && (
+                <View>
+                  <Pressable onPress={() => setShowWhy((v) => !v)}>
+                    <Text style={styles.newsRefresh}>
+                      {showWhy ? "Hide" : "Show me why"} ({chart.showMeWhy.length})
+                    </Text>
+                  </Pressable>
+                  {showWhy &&
+                    chart.showMeWhy.map((w, i) => (
+                      <Text key={i} style={styles.newsRationale}>
+                        {w.role === "SUPPORTING" ? "✓ " : "⚠ "}
+                        {w.sourceType}
+                        {w.note ? ` — ${w.note}` : ""}
+                      </Text>
+                    ))}
+                </View>
+              )}
+            </View>
+          )}
+
           <View style={styles.newsHeader}>
             <Text style={styles.fieldTitle}>News & impact</Text>
             {!newsGated && (
@@ -347,4 +439,12 @@ const styles = StyleSheet.create({
   newsBadge: { fontSize: 11, fontWeight: "700" },
   newsRationale: { fontSize: 12, color: "#4b5563" },
   riskStat: { fontSize: 12, color: "#374151" },
+  levelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 3 },
+  levelLeft: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
+  levelLine: { width: 16, height: 3, borderRadius: 2 },
+  levelLabel: { fontSize: 12, color: "#374151" },
+  levelPrice: { fontSize: 12, fontWeight: "700" },
+  chartEvents: { gap: 2, marginTop: 6, borderTopWidth: 1, borderTopColor: "#eee", paddingTop: 6 },
+  eventRow: { fontSize: 12 },
+  eventDate: { color: "#9ca3af" },
 });

@@ -1,0 +1,194 @@
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import { getChartOverlayAction, type ChartOverlay } from "@/app/(authed)/research/actions";
+
+const money = (v: number | null | undefined) =>
+  v == null ? "—" : `$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
+const TONE_COLOR: Record<string, string> = {
+  POSITIVE: "#15803d",
+  NEUTRAL: "#6b7280",
+  NEGATIVE: "#b91c1c",
+};
+
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+/**
+ * Layer 7 — Chart Intelligence overlay. A self-contained "level ladder" that
+ * places the stored buy-zone / stop / target lines by price (no external chart
+ * script to fail in production), plus the symbol's real earnings/news events and
+ * the stored evidence ("Show Me Why"). Everything shown comes from data the user
+ * already generated — the overlay can't claim a level the risk engine didn't.
+ */
+function LevelLadder({ overlay }: { overlay: ChartOverlay }) {
+  const prices = overlay.levels.map((l) => l.price);
+  const max = Math.max(...prices);
+  const min = Math.min(...prices);
+  const span = max - min || 1;
+  // 6% padding top/bottom so the extreme lines aren't flush against the edge.
+  const pos = (p: number) => 6 + ((max - p) / span) * 88;
+
+  return (
+    <div className="relative h-44 overflow-hidden rounded-md border bg-neutral-50">
+      {overlay.levels.map((l) => (
+        <div key={l.kind} className="absolute inset-x-0 flex items-center" style={{ top: `${pos(l.price)}%` }}>
+          <div className="h-px flex-1" style={{ backgroundColor: l.color }} />
+          <span
+            className="ml-2 whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-medium text-white"
+            style={{ backgroundColor: l.color }}
+          >
+            {l.label} {money(l.price)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ChartPanel({ ticker }: { ticker: string }) {
+  const [overlay, setOverlay] = useState<ChartOverlay | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [showWhy, setShowWhy] = useState(false);
+  const [pending, start] = useTransition();
+  // One auto-retry per ticker: the sibling RiskPanel stores levels async, so the
+  // first chart fetch can land before them — re-pull once to catch up.
+  const retriedFor = useRef<string | null>(null);
+
+  function load() {
+    setError(null);
+    start(async () => {
+      const res = await getChartOverlayAction(ticker);
+      if (res.ok) {
+        setOverlay(res.overlay);
+        if (!res.overlay.hasRisk && retriedFor.current !== ticker) {
+          retriedFor.current = ticker;
+          setTimeout(load, 2000);
+        }
+      } else {
+        setError(res.error);
+        setOverlay(null);
+      }
+    });
+  }
+
+  // Load once a stock is accessed — runs alongside analysis/risk/news.
+  useEffect(() => {
+    retriedFor.current = null;
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticker]);
+
+  const tvUrl = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(ticker)}`;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Chart & levels</h3>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={load}
+            disabled={pending}
+            className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
+          >
+            {pending ? "Loading…" : "Refresh"}
+          </button>
+          <a
+            href={tvUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-medium text-blue-600 hover:underline"
+          >
+            Open candles on TradingView ↗
+          </a>
+        </div>
+      </div>
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
+
+      {pending && !overlay ? (
+        <p className="rounded-md border border-dashed p-4 text-center text-sm text-neutral-500">
+          Building chart overlay…
+        </p>
+      ) : !overlay || (!overlay.hasRisk && !overlay.hasAnalysis) ? (
+        <p className="rounded-md border border-dashed p-4 text-center text-sm text-neutral-500">
+          Run an analysis and risk assessment to see buy/stop/target levels and the evidence behind
+          them.
+        </p>
+      ) : (
+        <div className="space-y-4 rounded-lg border p-4">
+          {overlay.hasRisk ? (
+            <LevelLadder overlay={overlay} />
+          ) : (
+            <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              No stored risk levels yet — assess risk to draw buy/stop/target lines.
+            </p>
+          )}
+
+          {overlay.events.length > 0 && (
+            <div className="space-y-1">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                Events
+              </h4>
+              <ul className="space-y-1 text-xs">
+                {overlay.events.map((e, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="w-20 shrink-0 text-neutral-400">{fmtDate(e.date)}</span>
+                    {e.kind === "EARNINGS" ? (
+                      <span className="text-neutral-700">📅 {e.label}</span>
+                    ) : e.url ? (
+                      <a
+                        href={e.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline"
+                        style={{ color: TONE_COLOR[e.tone ?? "NEUTRAL"] }}
+                      >
+                        📰 {e.label}
+                      </a>
+                    ) : (
+                      <span style={{ color: TONE_COLOR[e.tone ?? "NEUTRAL"] }}>📰 {e.label}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {overlay.showMeWhy.length > 0 && (
+            <div className="border-t pt-2">
+              <button
+                onClick={() => setShowWhy((v) => !v)}
+                className="text-xs font-medium text-blue-600 hover:underline"
+              >
+                {showWhy ? "Hide" : "Show me why"} ({overlay.showMeWhy.length})
+              </button>
+              {showWhy && (
+                <ul className="mt-2 space-y-1 text-xs">
+                  {overlay.showMeWhy.map((w, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className={w.role === "SUPPORTING" ? "text-green-600" : "text-amber-600"}>
+                        {w.role === "SUPPORTING" ? "✓" : "⚠"}
+                      </span>
+                      <span className="text-neutral-600">
+                        <span className="font-medium text-neutral-700">{w.sourceType}</span>
+                        {w.note ? ` — ${w.note}` : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <p className="border-t pt-2 text-[11px] text-neutral-400">
+            Levels and evidence are projected from your stored analysis and risk assessment —
+            educational, not a trade instruction.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

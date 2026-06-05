@@ -31,6 +31,7 @@ import { analysisRoutes } from "./routes/analysis.js";
 import { portfolioRoutes } from "./routes/portfolio.js";
 import { reviewRoutes } from "./routes/reviews.js";
 import { riskRoutes } from "./routes/risk.js";
+import { chartRoutes } from "./routes/chart.js";
 import { newsRoutes } from "./routes/news.js";
 import { createMarketService } from "./services/market.js";
 import { createNewsService } from "./services/news.js";
@@ -133,6 +134,8 @@ async function main() {
   await app.register(async (instance) => reviewRoutes(instance, authDeps));
   // Risk Engine (Layer 6) — deterministic, needs only market + fundamentals.
   await app.register(async (instance) => riskRoutes(instance, { auth: authDeps, risk: { market, fundamentals } }));
+  // Chart Intelligence (Layer 7) — read-only projection of stored risk/analysis.
+  await app.register(async (instance) => chartRoutes(instance, authDeps));
 
   // Brokerage (SnapTrade) — only enabled when credentials + encryption key are set.
   if (env.SNAPTRADE_CLIENT_ID && env.SNAPTRADE_CONSUMER_KEY && env.CONNECTION_ENCRYPTION_KEY) {

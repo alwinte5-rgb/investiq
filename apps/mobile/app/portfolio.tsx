@@ -33,6 +33,19 @@ type GenResult =
   | { status: "scored"; analysis: PortfolioView }
   | { status: "insufficient"; message: string };
 
+interface HoldingRiskView {
+  ticker: string;
+  name: string;
+  weightPct: number;
+  warningColor: "GREEN" | "YELLOW" | "ORANGE" | "RED";
+  warnings: { severity: "info" | "warn"; message: string }[];
+}
+type PortfolioRiskView =
+  | { status: "assessed"; overallColor: "GREEN" | "YELLOW" | "ORANGE" | "RED"; holdings: HoldingRiskView[] }
+  | { status: "insufficient"; message: string };
+const RISK_LABEL: Record<string, string> = { GREEN: "Low", YELLOW: "Watch", ORANGE: "Elevated", RED: "High" };
+const RISK_COLOR: Record<string, string> = { GREEN: "#15803d", YELLOW: "#b45309", ORANGE: "#c2410c", RED: "#b91c1c" };
+
 function ScoreTile({ label, value }: { label: string; value: number }) {
   return (
     <View style={styles.tile}>
@@ -64,12 +77,18 @@ function Intelligence() {
   const [gated, setGated] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [risk, setRisk] = useState<PortfolioRiskView | null>(null);
 
   const load = useCallback(async () => {
     try {
       const token = await getToken();
       const row = await apiFetch<PortfolioView | null>("/api/v1/portfolio/analysis", token);
       if (row) setView(row);
+      try {
+        setRisk(await apiFetch<PortfolioRiskView>("/api/v1/portfolio/risk", token));
+      } catch {
+        /* portfolio risk is non-critical */
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
       if (/\b403\b|investor plan|forbidden/i.test(msg)) setGated(true);
@@ -155,6 +174,27 @@ function Intelligence() {
           <Bullets title="Weaknesses" items={view.weaknesses} color="#b91c1c" />
           <Bullets title="Suggested focus" items={view.improvements} color="#1d4ed8" />
 
+          {risk?.status === "assessed" && risk.holdings.length > 0 && (
+            <View style={{ gap: 6 }}>
+              <View style={styles.riskHeader}>
+                <Text style={styles.fieldTitle}>Portfolio risk</Text>
+                <Text style={[styles.riskBadge, { color: RISK_COLOR[risk.overallColor] }]}>
+                  {RISK_LABEL[risk.overallColor]} risk
+                </Text>
+              </View>
+              {risk.holdings.map((h) => (
+                <View key={h.ticker} style={styles.riskRow}>
+                  <View style={styles.riskLeft}>
+                    <View style={[styles.riskDot, { backgroundColor: RISK_COLOR[h.warningColor] }]} />
+                    <Text style={styles.riskTicker}>{h.ticker}</Text>
+                    <Text style={styles.riskWeight}>{h.weightPct}%</Text>
+                  </View>
+                  <Text style={styles.riskWeight}>{RISK_LABEL[h.warningColor]}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
           <Text style={styles.disclaimer}>
             Deterministic scoring from your stored holdings — educational only.
           </Text>
@@ -199,6 +239,13 @@ const styles = StyleSheet.create({
   sectorRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
   sectorName: { fontSize: 13, color: "#374151" },
   sectorPct: { fontSize: 13, fontWeight: "600" },
+  riskHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  riskBadge: { fontSize: 12, fontWeight: "700" },
+  riskRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 3 },
+  riskLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
+  riskDot: { width: 8, height: 8, borderRadius: 4 },
+  riskTicker: { fontWeight: "600", fontSize: 13 },
+  riskWeight: { fontSize: 12, color: "#888" },
   notice: { backgroundColor: "#fffbeb", borderColor: "#fde68a", borderWidth: 1, borderRadius: 8, padding: 12 },
   noticeText: { color: "#92400e", fontSize: 13 },
   upgrade: { backgroundColor: "#eff6ff", borderColor: "#bfdbfe", borderWidth: 1, borderRadius: 10, padding: 16, gap: 6 },

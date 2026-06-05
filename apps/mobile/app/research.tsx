@@ -59,6 +59,25 @@ interface ArticleWithImpact {
 const IMPACT_LABEL: Record<string, string> = { POSITIVE: "Positive", NEUTRAL: "Neutral", NEGATIVE: "Negative" };
 const IMPACT_COLOR: Record<string, string> = { POSITIVE: "#15803d", NEUTRAL: "#6b7280", NEGATIVE: "#b91c1c" };
 
+interface RiskView {
+  status: "assessed" | "insufficient";
+  message?: string;
+  buyZoneLow?: number;
+  buyZoneHigh?: number;
+  stopLoss?: number;
+  profitTarget?: number;
+  riskReward?: number;
+  positionSize?: number | null;
+  warningColor?: "GREEN" | "YELLOW" | "ORANGE" | "RED";
+  warnings?: { severity: "info" | "warn"; message: string }[];
+}
+const RISK_LABEL: Record<string, string> = { GREEN: "Low risk", YELLOW: "Watch", ORANGE: "Elevated", RED: "High risk" };
+const RISK_COLOR: Record<string, string> = { GREEN: "#15803d", YELLOW: "#b45309", ORANGE: "#c2410c", RED: "#b91c1c" };
+const money = (v?: number | null) =>
+  v == null ? "—" : `$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+// Tickers whose news was auto-pulled this app session (avoid re-ingesting).
+const autoNewsDone = new Set<string>();
+
 function Field({ title, body }: { title: string; body: string | null }) {
   if (!body) return null;
   return (
@@ -80,6 +99,20 @@ function Researcher() {
   const [news, setNews] = useState<ArticleWithImpact[] | null>(null);
   const [newsGated, setNewsGated] = useState(false);
   const [newsBusy, setNewsBusy] = useState(false);
+  const [risk, setRisk] = useState<RiskView | null>(null);
+  const [riskBusy, setRiskBusy] = useState(false);
+
+  async function assessRisk(t: string) {
+    setRiskBusy(true);
+    try {
+      const token = await getToken();
+      setRisk(await apiFetch<RiskView>(`/api/v1/symbols/${t}/risk`, token, { method: "POST" }));
+    } catch {
+      /* non-critical */
+    } finally {
+      setRiskBusy(false);
+    }
+  }
 
   async function loadNews(t: string, refresh = false) {
     setNewsBusy(true);
@@ -115,6 +148,7 @@ function Researcher() {
     setError(null);
     setResult(null);
     setNews(null);
+    setRisk(null);
     setAnalyzedTicker(t);
     try {
       const token = await getToken();
@@ -123,7 +157,11 @@ function Researcher() {
         body: JSON.stringify({ ticker: t }),
       });
       setResult(r);
-      void loadNews(t);
+      // Run risk + news together with the analysis (news pulled fresh once per
+      // ticker per session).
+      void assessRisk(t);
+      void loadNews(t, !autoNewsDone.has(t));
+      autoNewsDone.add(t);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Analysis failed");
     } finally {
@@ -187,6 +225,43 @@ function Researcher() {
           <Text style={styles.disclaimer}>
             Educational research only — not investment advice. Grounded in the evidence above.
           </Text>
+
+          <View style={styles.newsHeader}>
+            <Text style={styles.fieldTitle}>Risk & levels</Text>
+            <Pressable
+              onPress={() => analyzedTicker && assessRisk(analyzedTicker)}
+              disabled={riskBusy || !analyzedTicker}
+            >
+              <Text style={[styles.newsRefresh, riskBusy && styles.btnDisabled]}>
+                {riskBusy ? "…" : "Re-assess"}
+              </Text>
+            </Pressable>
+          </View>
+          {risk?.status === "assessed" ? (
+            <View style={styles.newsItem}>
+              <Text style={[styles.newsBadge, { color: RISK_COLOR[risk.warningColor ?? "GREEN"] }]}>
+                {RISK_LABEL[risk.warningColor ?? "GREEN"]}
+              </Text>
+              <Text style={styles.riskStat}>
+                Buy {money(risk.buyZoneLow)}–{money(risk.buyZoneHigh)} · Stop {money(risk.stopLoss)} ·
+                Target {money(risk.profitTarget)}
+              </Text>
+              <Text style={styles.riskStat}>
+                Reward:risk {risk.riskReward}:1
+                {risk.positionSize != null ? ` · Size ${risk.positionSize} sh` : ""}
+              </Text>
+              {risk.warnings?.map((w, i) => (
+                <Text key={i} style={styles.newsRationale}>
+                  {w.severity === "warn" ? "⚠ " : "• "}
+                  {w.message}
+                </Text>
+              ))}
+            </View>
+          ) : risk?.status === "insufficient" ? (
+            <Text style={styles.hint}>{risk.message}</Text>
+          ) : (
+            <Text style={styles.hint}>{riskBusy ? "Assessing risk…" : "—"}</Text>
+          )}
 
           <View style={styles.newsHeader}>
             <Text style={styles.fieldTitle}>News & impact</Text>
@@ -271,4 +346,5 @@ const styles = StyleSheet.create({
   newsHeadline: { fontSize: 13, color: "#1f2937", flex: 1, fontWeight: "500" },
   newsBadge: { fontSize: 11, fontWeight: "700" },
   newsRationale: { fontSize: 12, color: "#4b5563" },
+  riskStat: { fontSize: 12, color: "#374151" },
 });

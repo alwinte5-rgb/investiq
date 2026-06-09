@@ -206,3 +206,45 @@ export async function getLatestAnalysisAction(ticker: string): Promise<AnalysisA
     return { ok: false, error: msg };
   }
 }
+
+// --- Layer 10: Learning System ---
+export interface LearningContent {
+  slug: string;
+  title: string;
+  body: string;
+  tags: string[];
+}
+
+export type LearningActionResult =
+  | { ok: true; items: LearningContent[] }
+  | { ok: false; error: string };
+
+/** Educational concepts linked to a recommendation type (non-advisory). */
+export async function getRecommendationLearningAction(
+  recType: string,
+): Promise<LearningActionResult> {
+  const t = recType.trim();
+  if (!t) return { ok: false, error: "Missing recommendation type" };
+  try {
+    const items = await apiFetch<LearningContent[]>(
+      `/api/v1/learning/recommendation/${encodeURIComponent(t)}`,
+    );
+    return { ok: true, items };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to load learning content";
+    if (isAuthError(msg)) redirect("/sign-in");
+    return { ok: false, error: msg };
+  }
+}
+
+/** Educational concepts surfaced alongside a trade-risk assessment. */
+export async function getRiskLearningAction(): Promise<LearningActionResult> {
+  try {
+    const items = await apiFetch<LearningContent[]>("/api/v1/learning/risk");
+    return { ok: true, items };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to load learning content";
+    if (isAuthError(msg)) redirect("/sign-in");
+    return { ok: false, error: msg };
+  }
+}

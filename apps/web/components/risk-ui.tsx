@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { assessRiskAction, type RiskView } from "@/app/(authed)/research/actions";
+import { LearnPanel } from "@/components/learn-ui";
 
 const COLOR_TONE: Record<string, string> = {
   GREEN: "bg-green-100 text-green-800 border-green-200",
@@ -115,6 +116,8 @@ export function RiskPanel({ ticker }: { ticker: string }) {
               ))}
             </ul>
           )}
+
+          <LearnPanel kind="risk" />
 
           <p className="border-t pt-2 text-[11px] text-neutral-400">
             Educational levels derived from price + volatility — not a trade instruction. Position

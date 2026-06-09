@@ -9,6 +9,7 @@ import {
 import { NewsImpactPanel } from "@/components/news-impact-ui";
 import { RiskPanel } from "@/components/risk-ui";
 import { ChartPanel } from "@/components/chart-ui";
+import { LearnPanel } from "@/components/learn-ui";
 
 // Display labels for the educational (non-advisory) recommendation types.
 const REC_LABELS: Record<string, string> = {
@@ -122,6 +123,8 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
           </ul>
         </div>
       )}
+
+      <LearnPanel kind="recommendation" recType={analysis.recommendationType} />
 
       <p className="border-t pt-3 text-[11px] text-neutral-400">
         Educational research only — not investment advice. Every point above is grounded in the

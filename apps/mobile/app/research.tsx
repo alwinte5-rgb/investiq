@@ -102,6 +102,12 @@ interface ChartOverlay {
   hasRisk: boolean;
   hasAnalysis: boolean;
 }
+interface LearningContent {
+  slug: string;
+  title: string;
+  body: string;
+  tags: string[];
+}
 const TONE_COLOR: Record<string, string> = { POSITIVE: "#15803d", NEUTRAL: "#6b7280", NEGATIVE: "#b91c1c" };
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -133,6 +139,22 @@ function Researcher() {
   const [riskBusy, setRiskBusy] = useState(false);
   const [chart, setChart] = useState<ChartOverlay | null>(null);
   const [showWhy, setShowWhy] = useState(false);
+  const [learn, setLearn] = useState<LearningContent[]>([]);
+  const [openLearn, setOpenLearn] = useState<string | null>(null);
+
+  async function loadLearning(recType: string) {
+    try {
+      const token = await getToken();
+      setLearn(
+        await apiFetch<LearningContent[]>(
+          `/api/v1/learning/recommendation/${encodeURIComponent(recType)}`,
+          token,
+        ),
+      );
+    } catch {
+      /* educational content is non-critical */
+    }
+  }
 
   async function assessRisk(t: string) {
     setRiskBusy(true);
@@ -192,6 +214,8 @@ function Researcher() {
     setRisk(null);
     setChart(null);
     setShowWhy(false);
+    setLearn([]);
+    setOpenLearn(null);
     setAnalyzedTicker(t);
     try {
       const token = await getToken();
@@ -206,6 +230,8 @@ function Researcher() {
       void assessRisk(t).then(() => loadChart(t));
       void loadNews(t, !autoNewsDone.has(t));
       autoNewsDone.add(t);
+      // Inline education tied to the recommendation type (Layer 10).
+      if (r.status !== "insufficient") void loadLearning(r.analysis.recommendationType);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Analysis failed");
     } finally {
@@ -269,6 +295,26 @@ function Researcher() {
           <Text style={styles.disclaimer}>
             Educational research only — not investment advice. Grounded in the evidence above.
           </Text>
+
+          {learn.length > 0 && (
+            <View style={styles.learnBox}>
+              <Text style={styles.learnTitle}>📘 Learn the concepts</Text>
+              <Text style={styles.learnIntro}>
+                Background to help you interpret this for yourself — not advice.
+              </Text>
+              {learn.map((c) => (
+                <View key={c.slug} style={styles.learnItem}>
+                  <Pressable onPress={() => setOpenLearn((s) => (s === c.slug ? null : c.slug))}>
+                    <Text style={styles.learnItemTitle}>
+                      {openLearn === c.slug ? "– " : "+ "}
+                      {c.title}
+                    </Text>
+                  </Pressable>
+                  {openLearn === c.slug && <Text style={styles.learnBody}>{c.body}</Text>}
+                </View>
+              ))}
+            </View>
+          )}
 
           <View style={styles.newsHeader}>
             <Text style={styles.fieldTitle}>Risk & levels</Text>
@@ -447,4 +493,10 @@ const styles = StyleSheet.create({
   chartEvents: { gap: 2, marginTop: 6, borderTopWidth: 1, borderTopColor: "#eee", paddingTop: 6 },
   eventRow: { fontSize: 12 },
   eventDate: { color: "#9ca3af" },
+  learnBox: { backgroundColor: "#eff6ff", borderColor: "#bfdbfe", borderWidth: 1, borderRadius: 10, padding: 12, gap: 4 },
+  learnTitle: { fontWeight: "700", color: "#1e40af", fontSize: 14 },
+  learnIntro: { fontSize: 11, color: "#3b5b8c" },
+  learnItem: { borderTopWidth: 1, borderTopColor: "#dbeafe", paddingTop: 6, gap: 3 },
+  learnItemTitle: { fontSize: 13, fontWeight: "600", color: "#1d4ed8" },
+  learnBody: { fontSize: 13, color: "#374151", lineHeight: 19 },
 });

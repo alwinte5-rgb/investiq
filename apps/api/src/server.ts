@@ -33,6 +33,7 @@ import { reviewRoutes } from "./routes/reviews.js";
 import { riskRoutes } from "./routes/risk.js";
 import { chartRoutes } from "./routes/chart.js";
 import { opportunityRoutes } from "./routes/opportunities.js";
+import { paperRoutes } from "./routes/paper.js";
 import { newsRoutes } from "./routes/news.js";
 import { createMarketService } from "./services/market.js";
 import { createNewsService } from "./services/news.js";
@@ -139,6 +140,8 @@ async function main() {
   await app.register(async (instance) => chartRoutes(instance, authDeps));
   // Opportunity Engine (Layer 8) — Investor+ gated in-service; derives from L2–L6.
   await app.register(async (instance) => opportunityRoutes(instance, authDeps));
+  // Paper Trading (Layer 9) — self-contained simulator; fills at live quotes.
+  await app.register(async (instance) => paperRoutes(instance, { auth: authDeps, paper: { market } }));
 
   // Brokerage (SnapTrade) — only enabled when credentials + encryption key are set.
   if (env.SNAPTRADE_CLIENT_ID && env.SNAPTRADE_CONSUMER_KEY && env.CONNECTION_ENCRYPTION_KEY) {

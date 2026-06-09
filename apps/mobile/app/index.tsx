@@ -179,6 +179,9 @@ export default function Index() {
           <Link href="/opportunities" style={styles.navLink}>
             Opportunities
           </Link>
+          <Link href="/paper" style={styles.navLink}>
+            Paper Trading
+          </Link>
           <Link href="/reviews" style={styles.navLink}>
             Reviews
           </Link>

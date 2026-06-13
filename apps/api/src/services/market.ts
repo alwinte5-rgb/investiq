@@ -4,10 +4,12 @@ import {
   MassiveProvider,
   TwelveDataProvider,
   UpstreamError,
+  fetchPolygonTechnicals,
   type MarketDataProvider,
   type MoverDirection,
   type MoverQuote,
   type NormalizedQuote,
+  type NormalizedTechnicals,
 } from "@investiq/integrations";
 
 /** Index + sector proxies for the market overview (must be in the symbol universe). */
@@ -35,6 +37,8 @@ export interface MarketService {
   getQuote(ticker: string): Promise<NormalizedQuote>;
   getOverview(): Promise<MarketOverview>;
   getMovers(): Promise<MarketMovers>;
+  /** Technical indicators (Polygon). Null when no Polygon key, or none resolved. */
+  getTechnicals(ticker: string): Promise<NormalizedTechnicals | null>;
   /** True when at least one provider key is configured. */
   readonly enabled: boolean;
 }
@@ -117,5 +121,26 @@ export function createMarketService(opts: MarketServiceOptions): MarketService {
     });
   }
 
-  return { getQuote, getOverview, getMovers, enabled: providers.length > 0 };
+  async function getTechnicals(ticker: string): Promise<NormalizedTechnicals | null> {
+    // Technical indicators come from Polygon (Massive) only.
+    if (!opts.massiveKey) return null;
+    const key = opts.massiveKey;
+    return cache.wrap(`tech:${ticker.toUpperCase()}`, QUOTE_TTL_MS, async () => {
+      try {
+        const t = await fetchPolygonTechnicals({
+          apiKey: key,
+          baseUrl: opts.massiveBaseUrl,
+          ticker,
+        });
+        // Only return it if at least one indicator resolved — never an empty shell.
+        const any =
+          t.rsi14 != null || t.sma50 != null || t.sma200 != null || t.macd != null;
+        return any ? t : null;
+      } catch {
+        return null;
+      }
+    });
+  }
+
+  return { getQuote, getOverview, getMovers, getTechnicals, enabled: providers.length > 0 };
 }

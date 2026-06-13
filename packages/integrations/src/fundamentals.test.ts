@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { parseFmpProfile } from "./fundamentals.js";
+import { applyFmpAnalyst, applyFmpRatios, parseFmpProfile } from "./fundamentals.js";
+import { parsePolygonIndicatorLatest } from "./market-data.js";
 
 describe("parseFmpProfile", () => {
   it("maps an FMP profile array row to normalized fundamentals", () => {
@@ -27,5 +28,70 @@ describe("parseFmpProfile", () => {
     const f = parseFmpProfile("XYZ", []);
     expect(f.ticker).toBe("XYZ");
     expect(f.marketCap).toBeNull();
+  });
+});
+
+describe("applyFmpRatios", () => {
+  const base = parseFmpProfile("AAPL", [{ marketCap: 1 }]);
+
+  it("merges TTM valuation/quality ratios, tolerating field-name variants", () => {
+    const merged = applyFmpRatios(base, [
+      {
+        priceToEarningsRatioTTM: 28.5,
+        priceToSalesRatioTTM: 7.1,
+        pbRatioTTM: 45,
+        returnOnEquityTTM: 1.5,
+        debtToEquityRatioTTM: 1.8,
+        netProfitMarginTTM: 0.25,
+      },
+    ]);
+    expect(merged.pe).toBe(28.5);
+    expect(merged.ps).toBe(7.1);
+    expect(merged.pb).toBe(45);
+    expect(merged.roe).toBe(1.5);
+    expect(merged.debtToEquity).toBe(1.8);
+    expect(merged.netMargin).toBe(0.25);
+  });
+
+  it("leaves ratios null on an empty payload", () => {
+    const merged = applyFmpRatios(base, []);
+    expect(merged.ps).toBeNull();
+    expect(merged.roe).toBeNull();
+  });
+});
+
+describe("applyFmpAnalyst", () => {
+  const base = parseFmpProfile("AAPL", [{ marketCap: 1 }]);
+
+  it("merges price target and rating consensus", () => {
+    const merged = applyFmpAnalyst(
+      base,
+      [{ lastQuarterAvgPriceTarget: 240 }],
+      [{ consensus: "Buy" }],
+    );
+    expect(merged.priceTargetAvg).toBe(240);
+    expect(merged.analystConsensus).toBe("Buy");
+  });
+
+  it("stays null when analyst data is absent", () => {
+    const merged = applyFmpAnalyst(base, null, null);
+    expect(merged.priceTargetAvg).toBeNull();
+    expect(merged.analystConsensus).toBeNull();
+  });
+});
+
+describe("parsePolygonIndicatorLatest", () => {
+  it("extracts the latest value and MACD signal", () => {
+    expect(parsePolygonIndicatorLatest({ results: { values: [{ value: 61.2 }] } })).toEqual({
+      value: 61.2,
+      signal: null,
+    });
+    expect(
+      parsePolygonIndicatorLatest({ results: { values: [{ value: 1.1, signal: 0.9 }] } }),
+    ).toEqual({ value: 1.1, signal: 0.9 });
+  });
+
+  it("returns nulls for an empty indicator response", () => {
+    expect(parsePolygonIndicatorLatest({})).toEqual({ value: null, signal: null });
   });
 });

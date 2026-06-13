@@ -57,6 +57,28 @@ async function assembleBundle(
   }
 
   try {
+    // Technicals (RSI/SMA/MACD) sharpen the model's technical read — without them
+    // it only sees a single price point. Best-effort; tagged PRICE for citation.
+    const tech = await deps.market.getTechnicals(T);
+    if (tech) {
+      data.push({
+        ref: `price:${T}:technicals`,
+        sourceType: "PRICE",
+        value: {
+          rsi14: tech.rsi14,
+          sma50: tech.sma50,
+          sma200: tech.sma200,
+          macd: tech.macd,
+          macdSignal: tech.macdSignal,
+          asOf: tech.asOf,
+        },
+      });
+    }
+  } catch {
+    /* no technicals datum */
+  }
+
+  try {
     const articles = (await deps.news.getNews(T)).slice(0, MAX_NEWS_EVIDENCE);
     // Layer 5: enrich news evidence with any stored grounded impact
     // classifications for this symbol (best-effort — never blocks analysis).
@@ -105,8 +127,29 @@ async function assembleBundle(
       data.push({
         ref: `fund:${T}:profile`,
         sourceType: "FUNDAMENTAL",
-        value: { marketCap: f.marketCap, beta: f.beta, pe: f.pe, eps: f.eps, sector: f.sector, industry: f.industry },
+        value: {
+          marketCap: f.marketCap,
+          beta: f.beta,
+          pe: f.pe,
+          eps: f.eps,
+          sector: f.sector,
+          industry: f.industry,
+          ps: f.ps,
+          pb: f.pb,
+          roe: f.roe,
+          debtToEquity: f.debtToEquity,
+          netMargin: f.netMargin,
+        },
       });
+      // Analyst price target + rating consensus is its own evidence category, so
+      // the model can weigh "what analysts think" distinctly. Only when present.
+      if (f.priceTargetAvg != null || f.analystConsensus) {
+        data.push({
+          ref: `analyst:${T}:consensus`,
+          sourceType: "ANALYST",
+          value: { priceTargetAvg: f.priceTargetAvg, consensus: f.analystConsensus, asOf: f.asOf },
+        });
+      }
     }
   } catch {
     /* no fundamentals datum */

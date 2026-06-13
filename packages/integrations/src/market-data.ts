@@ -200,3 +200,64 @@ export class TwelveDataProvider implements MarketDataProvider {
     throw new UpstreamError("twelvedata", "movers not supported");
   }
 }
+
+// ---------- Technical indicators (Polygon) ----------
+export interface NormalizedTechnicals {
+  ticker: string;
+  rsi14: number | null;
+  sma50: number | null;
+  sma200: number | null;
+  macd: number | null;
+  macdSignal: number | null;
+  asOf: string; // ISO
+  source: string;
+}
+
+export interface PolygonIndicatorResponse {
+  results?: { values?: { timestamp?: number; value?: number; signal?: number; histogram?: number }[] };
+}
+
+/** Pure parser — latest value (+ signal for MACD) from a Polygon indicator response. */
+export function parsePolygonIndicatorLatest(
+  json: PolygonIndicatorResponse,
+): { value: number | null; signal: number | null } {
+  const v = json.results?.values?.[0];
+  return { value: num(v?.value), signal: num(v?.signal) };
+}
+
+/**
+ * Fetch RSI(14), SMA(50/200) and MACD from Polygon's indicator endpoints. Each
+ * is best-effort (Promise.allSettled), so a partial result still enriches the
+ * evidence bundle and nothing is fabricated when an indicator is unavailable.
+ */
+export async function fetchPolygonTechnicals(opts: {
+  apiKey: string;
+  baseUrl?: string;
+  ticker: string;
+}): Promise<NormalizedTechnicals> {
+  const base = opts.baseUrl ?? "https://api.polygon.io";
+  const t = encodeURIComponent(opts.ticker.toUpperCase());
+  const u = (indicator: string, extra: string) =>
+    `${base}/v1/indicators/${indicator}/${t}?timespan=day&series_type=close&order=desc&limit=1&${extra}apiKey=${opts.apiKey}`;
+
+  const [rsi, sma50, sma200, macd] = await Promise.allSettled([
+    fetchJson<PolygonIndicatorResponse>("massive", u("rsi", "window=14&")),
+    fetchJson<PolygonIndicatorResponse>("massive", u("sma", "window=50&")),
+    fetchJson<PolygonIndicatorResponse>("massive", u("sma", "window=200&")),
+    fetchJson<PolygonIndicatorResponse>("massive", u("macd", "")),
+  ]);
+  const latest = (r: PromiseSettledResult<PolygonIndicatorResponse>) =>
+    r.status === "fulfilled" ? parsePolygonIndicatorLatest(r.value) : { value: null, signal: null };
+
+  const m = latest(macd);
+  return {
+    ticker: opts.ticker.toUpperCase(),
+    rsi14: latest(rsi).value,
+    sma50: latest(sma50).value,
+    sma200: latest(sma200).value,
+    macd: m.value,
+    macdSignal: m.signal,
+    asOf: new Date().toISOString(),
+    source: "massive",
+  };
+}

@@ -65,8 +65,30 @@ export type OrderResult =
   | { ok: true; result: SubmitOrderResult }
   | { ok: false; error: string };
 
+export interface Quote {
+  ticker: string;
+  price: number;
+  change: number | null;
+  changePct: number | null;
+}
+export type QuoteResult = { ok: true; quote: Quote } | { ok: false; error: string };
+
 function authRedirect(msg: string) {
   if (/authentication required|unauthorized|\b401\b/i.test(msg)) redirect("/sign-in");
+}
+
+/** Live quote for the ticker being ordered, so the ticket shows the fill price. */
+export async function getQuoteAction(ticker: string): Promise<QuoteResult> {
+  const t = ticker.trim().toUpperCase();
+  if (!t) return { ok: false, error: "Enter a ticker" };
+  try {
+    const quote = await apiFetch<Quote>(`/api/v1/symbols/${encodeURIComponent(t)}/quote`);
+    return { ok: true, quote };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "No quote available";
+    authRedirect(msg);
+    return { ok: false, error: msg };
+  }
 }
 
 /** Account snapshot: cash, equity, P&L and positions valued at live quotes. */

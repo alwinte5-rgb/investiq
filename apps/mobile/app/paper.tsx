@@ -51,6 +51,13 @@ interface SubmitOrderResult {
   duplicate?: boolean;
 }
 
+interface Quote {
+  ticker: string;
+  price: number;
+  change: number | null;
+  changePct: number | null;
+}
+
 const usd = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
 const plColor = (n: number) => (n > 0 ? "#15803d" : n < 0 ? "#b91c1c" : "#6b7280");
@@ -71,6 +78,7 @@ function Paper() {
   const [qty, setQty] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "ok" | "warn" | "err"; text: string } | null>(null);
+  const [quote, setQuote] = useState<Quote | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -91,6 +99,29 @@ function Paper() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Debounced live quote for the entered ticker so the ticket shows the fill price.
+  useEffect(() => {
+    const t = ticker.trim().toUpperCase();
+    if (!t) {
+      setQuote(null);
+      return;
+    }
+    let active = true;
+    const id = setTimeout(async () => {
+      try {
+        const token = await getToken();
+        const q = await apiFetch<Quote>(`/api/v1/symbols/${encodeURIComponent(t)}/quote`, token);
+        if (active) setQuote(q);
+      } catch {
+        if (active) setQuote(null);
+      }
+    }, 400);
+    return () => {
+      active = false;
+      clearTimeout(id);
+    };
+  }, [ticker, getToken]);
 
   async function submit() {
     if (busy) return;
@@ -193,6 +224,25 @@ function Paper() {
             </Pressable>
           ))}
         </View>
+        {quote && (
+          <Text style={styles.quoteLine}>
+            Current price <Text style={styles.quotePrice}>{usd(quote.price)}</Text>
+            {quote.changePct != null ? (
+              <Text style={{ color: plColor(quote.changePct) }}>
+                {"  "}
+                {quote.changePct >= 0 ? "+" : ""}
+                {quote.changePct.toFixed(2)}%
+              </Text>
+            ) : null}
+            {Number(qty) > 0 ? (
+              <Text style={styles.muted}>
+                {"  ·  Est. "}
+                {side === "BUY" ? "cost " : "proceeds "}
+                {usd(quote.price * Number(qty))}
+              </Text>
+            ) : null}
+          </Text>
+        )}
         <Pressable onPress={submit} disabled={busy} style={[styles.submitBtn, busy && styles.btnDisabled]}>
           <Text style={styles.submitText}>{busy ? "Submitting…" : "Submit market order"}</Text>
         </Pressable>
@@ -322,6 +372,8 @@ const styles = StyleSheet.create({
   notice: { fontSize: 13 },
   fine: { fontSize: 11, color: "#9ca3af" },
   muted: { fontSize: 13, color: "#6b7280" },
+  quoteLine: { fontSize: 13, color: "#374151" },
+  quotePrice: { fontWeight: "700", color: "#111827" },
   posRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: "#f3f4f6", paddingTop: 8 },
   posTicker: { fontSize: 14, fontWeight: "600", color: "#111" },
   posValue: { fontSize: 14, fontWeight: "600", color: "#111" },

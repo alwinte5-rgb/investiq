@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   getPaperAccountAction,
   getPaperOrdersAction,
   getPaperPerformanceAction,
+  getQuoteAction,
   submitPaperOrderAction,
   type EquityPoint,
   type PaperAccount,
   type PaperOrder,
+  type Quote,
 } from "@/app/(authed)/paper/actions";
 
 const usd = (n: number) =>
@@ -72,8 +74,28 @@ export function PaperUI({
   const [side, setSide] = useState<"BUY" | "SELL">("BUY");
   const [qty, setQty] = useState("");
 
+  const [quote, setQuote] = useState<Quote | null>(null);
   const [notice, setNotice] = useState<{ tone: "ok" | "warn" | "err"; text: string } | null>(null);
   const [pending, start] = useTransition();
+
+  // Debounced live quote for the entered ticker so the ticket shows the price it
+  // will fill at (and an estimated order value). Cleared while empty or typing.
+  useEffect(() => {
+    const t = ticker.trim().toUpperCase();
+    if (!t) {
+      setQuote(null);
+      return;
+    }
+    let active = true;
+    const id = setTimeout(async () => {
+      const res = await getQuoteAction(t);
+      if (active) setQuote(res.ok ? res.quote : null);
+    }, 400);
+    return () => {
+      active = false;
+      clearTimeout(id);
+    };
+  }, [ticker]);
 
   async function reload() {
     const [a, o, p] = await Promise.all([
@@ -188,6 +210,25 @@ export function PaperUI({
             {pending ? "Submitting…" : "Submit market order"}
           </button>
         </div>
+
+        {quote && (
+          <p className="mt-3 text-sm text-neutral-700">
+            Current price <span className="font-semibold">{usd(quote.price)}</span>
+            {quote.changePct != null && (
+              <span className={`ml-1 ${plColor(quote.changePct)}`}>
+                ({quote.changePct >= 0 ? "+" : ""}
+                {quote.changePct.toFixed(2)}%)
+              </span>
+            )}
+            {Number(qty) > 0 && (
+              <span className="text-neutral-500">
+                {" · Est. "}
+                {side === "BUY" ? "cost" : "proceeds"}{" "}
+                <span className="font-medium text-neutral-700">{usd(quote.price * Number(qty))}</span>
+              </span>
+            )}
+          </p>
+        )}
         {notice && (
           <p
             className={`mt-3 text-sm ${

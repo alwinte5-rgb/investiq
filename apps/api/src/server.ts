@@ -43,6 +43,8 @@ import { createFundamentalsService } from "./services/fundamentals.js";
 import { createSnapTradeClient } from "@investiq/integrations";
 import { createAnthropicAnalysisModel, createAnthropicNewsClassifier } from "@investiq/ai";
 import type { BrokerageDeps } from "./services/brokerage.js";
+import { warmUpDemoAnalyses } from "./services/demo-warmup.js";
+import type { Plan } from "@investiq/shared";
 
 /**
  * InvestIQ API. Boots with FAIL-FAST env validation. Every protected route
@@ -149,31 +151,57 @@ async function main() {
   // Glossary — plain-English term library powering inline tooltips (web + mobile).
   await app.register(async (instance) => glossaryRoutes(instance, authDeps));
 
-  // Brokerage (SnapTrade) — only enabled when credentials + encryption key are set.
-  if (env.SNAPTRADE_CLIENT_ID && env.SNAPTRADE_CONSUMER_KEY && env.CONNECTION_ENCRYPTION_KEY) {
-    const brokerage: BrokerageDeps = {
-      client: createSnapTradeClient(env.SNAPTRADE_CLIENT_ID, env.SNAPTRADE_CONSUMER_KEY),
-      encKey: env.CONNECTION_ENCRYPTION_KEY,
-      redirectUri: env.SNAPTRADE_REDIRECT_URI,
-    };
-    await app.register(async (instance) => connectionRoutes(instance, { auth: authDeps, brokerage }));
-    app.log.info("SnapTrade brokerage routes enabled");
-  } else {
-    app.log.warn("SnapTrade not configured — brokerage routes disabled");
-  }
+  // AI analysis deps are built up-front so BOTH the demo warm-up and the
+  // analysis routes can share one model instance.
+  const anthropicKey = env.ANTHROPIC_API_KEY;
+  const model = anthropicKey
+    ? createAnthropicAnalysisModel({ apiKey: anthropicKey, model: env.AI_MODEL })
+    : null;
+  const analysisDeps = model ? { market, news, fundamentals, model } : null;
+
+  // After sample data is seeded, generate REAL grounded analyses for the demo
+  // holdings so the AI screens (Research/Risk/Opportunities) populate. Best-
+  // effort, fire-and-forget; only available when the AI model is configured.
+  const onDemoEnabled = analysisDeps
+    ? (userId: string, plan: Plan) => {
+        void warmUpDemoAnalyses(
+          userId,
+          plan,
+          { analysis: analysisDeps, risk: { market, fundamentals } },
+          (m, e) => app.log.warn({ err: e }, m),
+        );
+      }
+    : undefined;
+
+  // Brokerage (SnapTrade) is OPTIONAL — connect/sync need credentials, but the
+  // demo + dashboard reads must always work, so connectionRoutes always registers.
+  const brokerage: BrokerageDeps | undefined =
+    env.SNAPTRADE_CLIENT_ID && env.SNAPTRADE_CONSUMER_KEY && env.CONNECTION_ENCRYPTION_KEY
+      ? {
+          client: createSnapTradeClient(env.SNAPTRADE_CLIENT_ID, env.SNAPTRADE_CONSUMER_KEY),
+          encKey: env.CONNECTION_ENCRYPTION_KEY,
+          redirectUri: env.SNAPTRADE_REDIRECT_URI,
+        }
+      : undefined;
+  await app.register(async (instance) =>
+    connectionRoutes(instance, { auth: authDeps, brokerage, onDemoEnabled }),
+  );
+  app.log.info(
+    brokerage
+      ? "SnapTrade brokerage routes enabled"
+      : "SnapTrade not configured — connect/sync disabled (demo + dashboard still available)",
+  );
 
   // AI analysis (Layer 2) — only enabled when an Anthropic key is set.
-  if (env.ANTHROPIC_API_KEY) {
-    const model = createAnthropicAnalysisModel({ apiKey: env.ANTHROPIC_API_KEY, model: env.AI_MODEL });
-    const analysis = { market, news, fundamentals, model };
-    await app.register(async (instance) => analysisRoutes(instance, { auth: authDeps, analysis }));
+  if (analysisDeps) {
+    await app.register(async (instance) => analysisRoutes(instance, { auth: authDeps, analysis: analysisDeps }));
     app.log.info(
       `AI analysis routes enabled (model=${env.AI_MODEL}, fundamentals=${fundamentals.enabled})`,
     );
 
     // Layer 5 — News Intelligence (needs the AI key + at least one news provider).
-    if (news.enabled) {
-      const classifier = createAnthropicNewsClassifier({ apiKey: env.ANTHROPIC_API_KEY, model: env.AI_MODEL });
+    if (anthropicKey && news.enabled) {
+      const classifier = createAnthropicNewsClassifier({ apiKey: anthropicKey, model: env.AI_MODEL });
       await app.register(async (instance) =>
         newsRoutes(instance, { auth: authDeps, newsIntel: { news, classifier } }),
       );

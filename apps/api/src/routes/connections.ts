@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { cuidSchema } from "@investiq/shared";
+import { cuidSchema, errors, type Plan } from "@investiq/shared";
 import { validate } from "../lib/validate.js";
 import { resolveAuthContext, type AuthDeps } from "../lib/guard.js";
 import {
@@ -18,20 +18,35 @@ const idParam = z.object({ id: cuidSchema }).strict();
 
 export interface ConnectionRouteDeps {
   auth: AuthDeps;
-  brokerage: BrokerageDeps;
+  /**
+   * SnapTrade deps. Optional: when absent, the connect/sync endpoints report a
+   * clear "not configured" error, but demo + dashboard reads still work — sample
+   * data must never depend on brokerage credentials being set.
+   */
+  brokerage?: BrokerageDeps;
+  /** Fire-and-forget hook run after sample data is seeded (real-AI warm-up). */
+  onDemoEnabled?: (userId: string, plan: Plan) => void;
 }
 
 /**
- * Brokerage (SnapTrade) routes. All personalized -> no-store. Object-level
- * ownership enforced in the service layer.
+ * Brokerage + portfolio routes. All personalized -> no-store. Object-level
+ * ownership enforced in the service layer. The demo + read endpoints are always
+ * available; only connect/sync require SnapTrade credentials.
  */
 export async function connectionRoutes(app: FastifyInstance, deps: ConnectionRouteDeps) {
+  function requireBrokerage(): BrokerageDeps {
+    if (!deps.brokerage) {
+      throw errors.validation("Brokerage connection isn’t configured. Explore with sample data instead.");
+    }
+    return deps.brokerage;
+  }
+
   // Start/resume a connection -> returns the SnapTrade portal URL to open.
   app.post("/api/v1/connections", async (req, reply) => {
     const ctx = await resolveAuthContext(req, deps.auth);
     reply.header("Cache-Control", "no-store");
     reply.code(201);
-    return { data: await startConnection(deps.brokerage, ctx.userId) };
+    return { data: await startConnection(requireBrokerage(), ctx.userId) };
   });
 
   // Seed a read-only sample-data portfolio so users can explore before
@@ -41,7 +56,10 @@ export async function connectionRoutes(app: FastifyInstance, deps: ConnectionRou
     const ctx = await resolveAuthContext(req, deps.auth);
     reply.header("Cache-Control", "no-store");
     reply.code(201);
-    return { data: await enableDemoPortfolio(ctx.userId) };
+    const result = await enableDemoPortfolio(ctx.userId);
+    // Kick off real grounded analyses for the sample holdings (fire-and-forget).
+    deps.onDemoEnabled?.(ctx.userId, ctx.plan);
+    return { data: result };
   });
 
   app.get("/api/v1/connections", async (req, reply) => {
@@ -55,13 +73,13 @@ export async function connectionRoutes(app: FastifyInstance, deps: ConnectionRou
     const ctx = await resolveAuthContext(req, deps.auth);
     const { id } = validate(idParam, req.params);
     reply.header("Cache-Control", "no-store");
-    return { data: await syncConnection(deps.brokerage, ctx.userId, id) };
+    return { data: await syncConnection(requireBrokerage(), ctx.userId, id) };
   });
 
   app.delete("/api/v1/connections/:id", async (req, reply) => {
     const ctx = await resolveAuthContext(req, deps.auth);
     const { id } = validate(idParam, req.params);
-    await disconnect(deps.brokerage, ctx.userId, id);
+    await disconnect(requireBrokerage(), ctx.userId, id);
     reply.header("Cache-Control", "no-store");
     return { data: { deleted: true } };
   });

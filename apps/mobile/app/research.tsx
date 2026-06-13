@@ -109,6 +109,17 @@ interface LearningContent {
   body: string;
   tags: string[];
 }
+interface Mover {
+  ticker: string;
+  price: number;
+  change: number | null;
+  changePct: number | null;
+}
+interface MarketMovers {
+  gainers: Mover[];
+  losers: Mover[];
+  asOf: string;
+}
 const TONE_COLOR: Record<string, string> = { POSITIVE: "#15803d", NEUTRAL: "#6b7280", NEGATIVE: "#b91c1c" };
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -142,6 +153,24 @@ function Researcher() {
   const [showWhy, setShowWhy] = useState(false);
   const [learn, setLearn] = useState<LearningContent[]>([]);
   const [openLearn, setOpenLearn] = useState<string | null>(null);
+  const [movers, setMovers] = useState<MarketMovers | null>(null);
+
+  // Real top gainers/losers, loaded once. Best-effort — stays hidden on failure.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const token = await getToken();
+        const m = await apiFetch<MarketMovers>("/api/v1/market/movers", token);
+        if (active) setMovers(m);
+      } catch {
+        /* movers are an optional discovery aid */
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [getToken]);
 
   async function loadLearning(recType: string) {
     try {
@@ -267,6 +296,36 @@ function Researcher() {
         <View style={styles.notice}>
           <Text style={styles.noticeText}>{result.message}</Text>
         </View>
+      )}
+
+      {!a && !loading && movers && (movers.gainers.length > 0 || movers.losers.length > 0) && (
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
+          <Text style={styles.moversTitle}>Today’s movers</Text>
+          <Text style={styles.moversHint}>Top US gainers and losers — tap any ticker to analyze it.</Text>
+          {(["gainers", "losers"] as const).map((dir) => (
+            <View key={dir} style={{ gap: 2 }}>
+              <Text style={styles.fieldTitle}>{dir === "gainers" ? "📈 Top gainers" : "📉 Top losers"}</Text>
+              {movers[dir].map((m) => (
+                <Pressable
+                  key={m.ticker}
+                  onPress={() => {
+                    setTicker(m.ticker);
+                    void analyze(m.ticker);
+                  }}
+                  style={styles.moverRow}
+                >
+                  <Text style={styles.moverTicker}>{m.ticker}</Text>
+                  <Text style={styles.moverPrice}>${m.price.toFixed(2)}</Text>
+                  <Text
+                    style={[styles.moverPct, { color: (m.changePct ?? 0) >= 0 ? "#15803d" : "#b91c1c" }]}
+                  >
+                    {m.changePct == null ? "—" : `${m.changePct >= 0 ? "+" : ""}${m.changePct.toFixed(2)}%`}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ))}
+        </ScrollView>
       )}
 
       {a && (
@@ -492,6 +551,19 @@ const styles = StyleSheet.create({
   notice: { backgroundColor: "#fffbeb", borderColor: "#fde68a", borderWidth: 1, borderRadius: 8, padding: 12 },
   noticeText: { color: "#92400e", fontSize: 13 },
   hint: { fontSize: 13, color: "#888" },
+  moversTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
+  moversHint: { fontSize: 12, color: "#6b7280" },
+  moverRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  moverTicker: { fontWeight: "600", color: "#2563eb", flex: 1 },
+  moverPrice: { color: "#374151", width: 90, textAlign: "right" },
+  moverPct: { fontSize: 12, fontWeight: "600", width: 80, textAlign: "right" },
   error: { color: "#b91c1c", fontSize: 13 },
   disclaimer: { fontSize: 11, color: "#999", marginTop: 8 },
   newsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 6 },

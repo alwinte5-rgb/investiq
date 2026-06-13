@@ -27,6 +27,10 @@ export async function findOrProvisionUser(input: ProvisionInput): Promise<User> 
       email: input.email,
       name: input.name ?? null,
       avatarUrl: input.avatarUrl ?? null,
+      // New users start on INVESTOR so the full app (portfolio intelligence,
+      // reviews, news, opportunities) is usable out of the box. Set on CREATE
+      // only — an admin-adjusted plan on an existing user is never overwritten.
+      plan: "INVESTOR",
     },
   });
 }

@@ -7,6 +7,7 @@ import {
   learningBySlug,
   learningForRecommendation,
   learningForRisk,
+  learningSections,
   recommendationsWithLearning,
 } from "./learning.js";
 
@@ -49,6 +50,24 @@ describe("recommendation links", () => {
 
   it("returns an empty list for an unknown recommendation type", () => {
     expect(learningForRecommendation("NOT_A_TYPE")).toEqual([]);
+  });
+});
+
+describe("learn hub curriculum", () => {
+  it("covers every explainer exactly once across sections", () => {
+    const inSections = learningSections().flatMap((s) => s.items.map((i) => i.slug));
+    // no duplicates across the curriculum
+    expect(new Set(inSections).size).toBe(inSections.length);
+    // every library slug is placed, and nothing extra
+    expect(new Set(inSections)).toEqual(new Set(LEARNING_CONTENT.map((c) => c.slug)));
+  });
+
+  it("every section has a title, intro, and at least one item", () => {
+    for (const s of learningSections()) {
+      expect(s.title.length).toBeGreaterThan(0);
+      expect(s.intro.length).toBeGreaterThan(0);
+      expect(s.items.length).toBeGreaterThan(0);
+    }
   });
 });
 

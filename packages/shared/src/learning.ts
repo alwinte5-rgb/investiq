@@ -192,3 +192,61 @@ export function learningForRisk(): LearningContent[] {
 export function recommendationsWithLearning(): RecommendationType[] {
   return RECOMMENDATION_TYPES.filter((t) => learningForRecommendation(t).length > 0);
 }
+
+/**
+ * The Learn hub curriculum — an ordered, beginner-first path through the whole
+ * library. Every LEARNING_CONTENT slug appears in exactly one section (enforced
+ * by test), so the hub is complete and nothing is orphaned.
+ */
+export interface LearningSection {
+  title: string;
+  intro: string;
+  items: LearningContent[];
+}
+
+const LEARNING_SECTION_DEFS: { title: string; intro: string; slugs: string[] }[] = [
+  {
+    title: "Start here — the basics",
+    intro: "What InvestIQ’s signals and scores actually mean.",
+    slugs: [
+      "what-is-a-watch-recommendation",
+      "reading-confidence-scores",
+      "reading-risk-scores",
+      "etfs-vs-single-stocks",
+    ],
+  },
+  {
+    title: "Reading the signals",
+    intro: "How news, earnings, and warnings change the picture.",
+    slugs: ["news-and-price-impact", "earnings-risk", "high-risk-signals", "rebuy-watch-explained"],
+  },
+  {
+    title: "Managing risk & entries",
+    intro: "Buy zones, stops, targets, and how much to put on.",
+    slugs: [
+      "buy-zones-and-entry-points",
+      "stop-losses-explained",
+      "profit-targets-and-risk-reward",
+      "position-sizing",
+    ],
+  },
+  {
+    title: "Building a portfolio",
+    intro: "Putting positions together and knowing when to adjust.",
+    slugs: ["diversification-and-concentration", "when-to-trim-or-exit", "avoiding-value-traps"],
+  },
+];
+
+/** The curriculum, grouped into ordered sections (drops any empty section). */
+export function learningSections(): LearningSection[] {
+  return LEARNING_SECTION_DEFS.map((s) => ({
+    title: s.title,
+    intro: s.intro,
+    items: resolve(s.slugs),
+  })).filter((s) => s.items.length > 0);
+}
+
+/** The full flat library (for search/index). */
+export function learningLibrary(): LearningContent[] {
+  return LEARNING_CONTENT;
+}

@@ -26,6 +26,9 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
           <Link href="/reviews" className="hover:underline">
             Reviews
           </Link>
+          <Link href="/learn" className="hover:underline">
+            Learn
+          </Link>
           <Link href="/watchlists" className="hover:underline">
             Watchlists
           </Link>

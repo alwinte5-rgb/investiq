@@ -199,6 +199,9 @@ export default function Index() {
           <Link href="/reviews" style={styles.navLink}>
             Reviews
           </Link>
+          <Link href="/learn" style={styles.navLink}>
+            Learn
+          </Link>
           <Link href="/watchlists" style={styles.navLink}>
             Watchlists
           </Link>

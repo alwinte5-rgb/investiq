@@ -165,6 +165,7 @@ export interface ShowMeWhyItem {
 }
 export interface ChartOverlay {
   ticker: string;
+  currentPrice: number | null;
   warningColor: "GREEN" | "YELLOW" | "ORANGE" | "RED" | null;
   riskReward: number | null;
   recommendationType: string | null;

@@ -46,6 +46,8 @@ export interface ShowMeWhyItem {
 
 export interface ChartOverlay {
   ticker: string;
+  /** Latest live price, when available — anchors the level ladder. */
+  currentPrice: number | null;
   warningColor: WarningColor | null;
   riskReward: number | null;
   recommendationType: string | null;
@@ -109,6 +111,7 @@ export function buildChartOverlay(args: {
   risk: ChartRiskInput | null;
   analysis: ChartAnalysisInput | null;
   events: ChartEvent[];
+  currentPrice?: number | null;
   now?: Date;
 }): ChartOverlay {
   const { ticker, risk, analysis, events } = args;
@@ -136,6 +139,7 @@ export function buildChartOverlay(args: {
 
   return {
     ticker: ticker.toUpperCase(),
+    currentPrice: args.currentPrice ?? null,
     warningColor: risk?.warningColor ?? null,
     riskReward: risk?.riskReward ?? null,
     recommendationType: analysis?.recommendationType ?? null,

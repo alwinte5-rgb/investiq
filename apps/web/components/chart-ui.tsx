@@ -24,15 +24,30 @@ function fmtDate(iso: string) {
  * already generated — the overlay can't claim a level the risk engine didn't.
  */
 function LevelLadder({ overlay }: { overlay: ChartOverlay }) {
+  // Anchor the scale on every level AND the live price, so the ladder shows
+  // where price actually sits relative to the zones (not a disconnected box).
   const prices = overlay.levels.map((l) => l.price);
+  if (overlay.currentPrice != null) prices.push(overlay.currentPrice);
   const max = Math.max(...prices);
   const min = Math.min(...prices);
-  const span = max - min || 1;
-  // 6% padding top/bottom so the extreme lines aren't flush against the edge.
-  const pos = (p: number) => 6 + ((max - p) / span) * 88;
+  const pad = (max - min || 1) * 0.08; // headroom so labels aren't flush to the edge
+  const hi = max + pad;
+  const lo = min - pad;
+  const fullSpan = hi - lo || 1;
+  const pos = (p: number) => ((hi - p) / fullSpan) * 100; // 0% = top, 100% = bottom
+
+  const buyLow = overlay.levels.find((l) => l.kind === "BUY_ZONE_LOW")?.price;
+  const buyHigh = overlay.levels.find((l) => l.kind === "BUY_ZONE_HIGH")?.price;
 
   return (
-    <div className="relative h-44 overflow-hidden rounded-md border bg-neutral-50">
+    <div className="relative h-56 overflow-hidden rounded-md border bg-neutral-50">
+      {/* Shaded buy-zone band so it reads as a zone, not two thin lines. */}
+      {buyLow != null && buyHigh != null && (
+        <div
+          className="absolute inset-x-0 bg-blue-500/10"
+          style={{ top: `${pos(buyHigh)}%`, height: `${Math.max(0, pos(buyLow) - pos(buyHigh))}%` }}
+        />
+      )}
       {overlay.levels.map((l) => (
         <div key={l.kind} className="absolute inset-x-0 flex items-center" style={{ top: `${pos(l.price)}%` }}>
           <div className="h-px flex-1" style={{ backgroundColor: l.color }} />
@@ -44,6 +59,18 @@ function LevelLadder({ overlay }: { overlay: ChartOverlay }) {
           </span>
         </div>
       ))}
+      {/* Live price marker — the anchor that makes the ladder meaningful. */}
+      {overlay.currentPrice != null && (
+        <div
+          className="absolute inset-x-0 flex items-center"
+          style={{ top: `${pos(overlay.currentPrice)}%` }}
+        >
+          <div className="flex-1 border-t border-dashed border-neutral-900" />
+          <span className="ml-2 whitespace-nowrap rounded bg-neutral-900 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+            Now {money(overlay.currentPrice)}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

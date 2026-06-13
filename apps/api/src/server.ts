@@ -140,8 +140,8 @@ async function main() {
   await app.register(async (instance) => reviewRoutes(instance, authDeps));
   // Risk Engine (Layer 6) — deterministic, needs only market + fundamentals.
   await app.register(async (instance) => riskRoutes(instance, { auth: authDeps, risk: { market, fundamentals } }));
-  // Chart Intelligence (Layer 7) — read-only projection of stored risk/analysis.
-  await app.register(async (instance) => chartRoutes(instance, authDeps));
+  // Chart Intelligence (Layer 7) — projection of stored risk/analysis + live price anchor.
+  await app.register(async (instance) => chartRoutes(instance, { auth: authDeps, market }));
   // Opportunity Engine (Layer 8) — Investor+ gated in-service; derives from L2–L6.
   await app.register(async (instance) => opportunityRoutes(instance, authDeps));
   // Paper Trading (Layer 9) — self-contained simulator; fills at live quotes.

@@ -43,8 +43,18 @@ describe("categorizeOpportunity", () => {
     expect(categorizeOpportunity({ ...base, recommendationType: "TRIM_POSITION", held: false })).toBeNull();
   });
 
-  it("drops HOLD (not an opportunity)", () => {
+  it("drops a calm HOLD, but flags a held HOLD that has turned risky for review", () => {
     expect(categorizeOpportunity({ ...base, recommendationType: "HOLD" })).toBeNull();
+    expect(
+      categorizeOpportunity({ ...base, recommendationType: "HOLD", held: true, warningColor: "GREEN" }),
+    ).toBeNull();
+    expect(
+      categorizeOpportunity({ ...base, recommendationType: "HOLD", held: true, warningColor: "RED" })!.type,
+    ).toBe("REVIEW");
+    // Risky but not held → still nothing to act on.
+    expect(
+      categorizeOpportunity({ ...base, recommendationType: "HOLD", held: false, warningColor: "RED" }),
+    ).toBeNull();
   });
 
   it("scores higher confidence + lower risk above the reverse for buy-type", () => {

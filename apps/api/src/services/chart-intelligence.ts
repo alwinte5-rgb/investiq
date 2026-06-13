@@ -10,6 +10,7 @@ import {
   type WarningColor,
 } from "@investiq/shared";
 import { findSymbolByTicker } from "./symbols.js";
+import type { MarketService } from "./market.js";
 
 /**
  * Layer 7 — Chart Intelligence. Projects the user's already-stored risk
@@ -17,9 +18,10 @@ import { findSymbolByTicker } from "./symbols.js";
  * real earnings/classified-news events into one overlay payload that web and
  * mobile render identically.
  *
- * Read-only and personalized: it makes NO live market or model calls, so the
- * overlay is a faithful, reproducible projection of what the user already has —
- * the chart can never claim a level the risk engine didn't compute.
+ * Personalized + read-only over stored data: the levels are a faithful
+ * projection of what the risk engine computed (the chart can never claim a level
+ * it didn't). The ONLY live value is the current price (best-effort), used to
+ * anchor the level ladder so users see where price sits relative to the zones.
  */
 
 /** Earnings markers within ±90 days of now. */
@@ -44,11 +46,25 @@ function noteOf(snapshot: unknown): string | null {
   return null;
 }
 
-export async function getChartOverlay(userId: string, ticker: string): Promise<ChartOverlay> {
+export async function getChartOverlay(
+  userId: string,
+  ticker: string,
+  market?: MarketService,
+): Promise<ChartOverlay> {
   const T = ticker.toUpperCase();
   const symbol = await findSymbolByTicker(T);
   if (!symbol) throw errors.notFound(`Unknown or unsupported symbol: ${ticker}`);
   const now = new Date();
+
+  // Live current price — best-effort; the ladder still renders without it.
+  let currentPrice: number | null = null;
+  if (market) {
+    try {
+      currentPrice = (await market.getQuote(T)).price;
+    } catch {
+      /* no live price — ladder falls back to level-only scaling */
+    }
+  }
 
   const [riskRow, analysisRow, earnings, impacts] = await Promise.all([
     prisma.riskAssessment.findFirst({
@@ -142,5 +158,5 @@ export async function getChartOverlay(userId: string, ticker: string): Promise<C
     })),
   ];
 
-  return buildChartOverlay({ ticker: T, risk, analysis, events, now });
+  return buildChartOverlay({ ticker: T, risk, analysis, events, currentPrice, now });
 }

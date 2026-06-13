@@ -82,11 +82,12 @@ export interface Opportunity {
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
-/** Map a recommendation (+ held / asset type) to an opportunity bucket, or null. */
+/** Map a recommendation (+ held / asset type / risk color) to a bucket, or null. */
 function mapType(
   rec: RecommendationType,
   assetType: "STOCK" | "ETF",
   held: boolean,
+  warningColor?: WarningColor | null,
 ): OpportunityType | null {
   switch (rec) {
     case "STRONG_BUY_WATCH":
@@ -104,7 +105,9 @@ function mapType(
       // Only actionable on something you actually hold.
       return held ? "REVIEW" : null;
     case "HOLD":
-      return null;
+      // A "Hold" you own that has turned risky (orange/red) is still worth a
+      // look — surface it for review rather than hiding it. Calm holds stay out.
+      return held && (warningColor === "ORANGE" || warningColor === "RED") ? "REVIEW" : null;
   }
 }
 
@@ -150,7 +153,7 @@ function explain(type: OpportunityType, input: OpportunityInput): string {
 
 /** Categorize a single stored analysis into an opportunity, or null if it isn't one. */
 export function categorizeOpportunity(input: OpportunityInput): Opportunity | null {
-  const type = mapType(input.recommendationType, input.assetType, input.held);
+  const type = mapType(input.recommendationType, input.assetType, input.held, input.warningColor);
   if (!type) return null;
   return {
     ticker: input.ticker.toUpperCase(),

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 
 const RECOMMENDATION_TYPES = [
   "Strong Buy Watch",
@@ -11,7 +13,11 @@ const RECOMMENDATION_TYPES = [
   "Rebuy Watch",
 ];
 
-export default function Landing() {
+export default async function Landing() {
+  // Signed-in users open straight into the app, not the marketing page.
+  const { userId } = await auth();
+  if (userId) redirect("/dashboard");
+
   return (
     <div className="space-y-10">
       <section className="space-y-4">

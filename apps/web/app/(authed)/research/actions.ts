@@ -156,6 +156,7 @@ export interface ChartEvent {
   label: string;
   tone?: "POSITIVE" | "NEUTRAL" | "NEGATIVE";
   url?: string;
+  rationale?: string;
 }
 export interface ShowMeWhyItem {
   sourceType: string;

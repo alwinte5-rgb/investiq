@@ -48,10 +48,53 @@ function LevelLadder({ overlay }: { overlay: ChartOverlay }) {
   );
 }
 
+/**
+ * Real price chart via TradingView's embeddable Advanced Chart widget (the L7
+ * spec). Self-cleaning per ticker. If the external widget is blocked or fails,
+ * the surrounding panel (level ladder, events, evidence) still renders, and the
+ * "Open on TradingView" link remains as a fallback.
+ */
+function TradingViewChart({ ticker }: { ticker: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.innerHTML = "";
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.async = true;
+    script.type = "text/javascript";
+    script.innerHTML = JSON.stringify({
+      symbol: ticker,
+      autosize: true,
+      interval: "D",
+      timezone: "Etc/UTC",
+      theme: "light",
+      style: "1",
+      locale: "en",
+      hide_top_toolbar: false,
+      allow_symbol_change: false,
+      save_image: false,
+      hide_volume: false,
+    });
+    container.appendChild(script);
+    return () => {
+      container.innerHTML = "";
+    };
+  }, [ticker]);
+
+  return (
+    <div className="h-72 w-full overflow-hidden rounded-md border bg-white">
+      <div ref={containerRef} className="tradingview-widget-container h-full w-full" />
+    </div>
+  );
+}
+
 export function ChartPanel({ ticker }: { ticker: string }) {
   const [overlay, setOverlay] = useState<ChartOverlay | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showWhy, setShowWhy] = useState(false);
+  const [showWhy, setShowWhy] = useState(true);
   const [pending, start] = useTransition();
   // One auto-retry per ticker: the sibling RiskPanel stores levels async, so the
   // first chart fetch can land before them — re-pull once to catch up.
@@ -119,8 +162,15 @@ export function ChartPanel({ ticker }: { ticker: string }) {
         </p>
       ) : (
         <div className="space-y-4 rounded-lg border p-4">
+          <TradingViewChart ticker={ticker} />
+
           {overlay.hasRisk ? (
-            <LevelLadder overlay={overlay} />
+            <div className="space-y-1">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                Your levels
+              </h4>
+              <LevelLadder overlay={overlay} />
+            </div>
           ) : (
             <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
               No stored risk levels yet — assess risk to draw buy/stop/target lines.
@@ -132,25 +182,45 @@ export function ChartPanel({ ticker }: { ticker: string }) {
               <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
                 Events
               </h4>
-              <ul className="space-y-1 text-xs">
+              <ul className="space-y-2 text-xs">
                 {overlay.events.map((e, i) => (
                   <li key={i} className="flex items-start gap-2">
                     <span className="w-20 shrink-0 text-neutral-400">{fmtDate(e.date)}</span>
-                    {e.kind === "EARNINGS" ? (
-                      <span className="text-neutral-700">📅 {e.label}</span>
-                    ) : e.url ? (
-                      <a
-                        href={e.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:underline"
-                        style={{ color: TONE_COLOR[e.tone ?? "NEUTRAL"] }}
-                      >
-                        📰 {e.label}
-                      </a>
-                    ) : (
-                      <span style={{ color: TONE_COLOR[e.tone ?? "NEUTRAL"] }}>📰 {e.label}</span>
-                    )}
+                    <div className="min-w-0">
+                      {e.kind === "EARNINGS" ? (
+                        <span className="text-neutral-700">📅 {e.label}</span>
+                      ) : (
+                        <>
+                          {e.url ? (
+                            <a
+                              href={e.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline"
+                              style={{ color: TONE_COLOR[e.tone ?? "NEUTRAL"] }}
+                            >
+                              📰 {e.label}
+                            </a>
+                          ) : (
+                            <span style={{ color: TONE_COLOR[e.tone ?? "NEUTRAL"] }}>
+                              📰 {e.label}
+                            </span>
+                          )}
+                          {e.tone && (
+                            <span
+                              className="ml-1.5 align-middle text-[10px] font-medium uppercase"
+                              style={{ color: TONE_COLOR[e.tone] }}
+                            >
+                              · {e.tone.toLowerCase()}
+                            </span>
+                          )}
+                          {/* The grounded "why" for THIS article (L5 classification). */}
+                          {e.rationale && (
+                            <p className="mt-0.5 text-neutral-500">{e.rationale}</p>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -162,8 +232,10 @@ export function ChartPanel({ ticker }: { ticker: string }) {
               <button
                 onClick={() => setShowWhy((v) => !v)}
                 className="text-xs font-medium text-blue-600 hover:underline"
+                aria-expanded={showWhy}
               >
-                {showWhy ? "Hide" : "Show me why"} ({overlay.showMeWhy.length})
+                Why these levels — supporting &amp; ⚠ caution evidence ({overlay.showMeWhy.length}){" "}
+                {showWhy ? "▲" : "▼"}
               </button>
               {showWhy && (
                 <ul className="mt-2 space-y-1 text-xs">

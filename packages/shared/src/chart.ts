@@ -35,6 +35,7 @@ export interface ChartEvent {
   label: string;
   tone?: NewsTone; // news only
   url?: string; // news only
+  rationale?: string; // news only — the grounded "why" for this article (L5)
 }
 
 export interface ShowMeWhyItem {

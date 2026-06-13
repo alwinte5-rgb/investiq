@@ -80,6 +80,7 @@ export async function getChartOverlay(userId: string, ticker: string): Promise<C
       take: MAX_NEWS_EVENTS,
       select: {
         impact: true,
+        rationale: true,
         article: { select: { headline: true, url: true, publishedAt: true } },
       },
     }),
@@ -137,6 +138,7 @@ export async function getChartOverlay(userId: string, ticker: string): Promise<C
       label: i.article.headline,
       tone: i.impact as NewsTone,
       url: i.article.url,
+      rationale: i.rationale,
     })),
   ];
 

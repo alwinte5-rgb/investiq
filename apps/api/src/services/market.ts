@@ -5,6 +5,8 @@ import {
   TwelveDataProvider,
   UpstreamError,
   type MarketDataProvider,
+  type MoverDirection,
+  type MoverQuote,
   type NormalizedQuote,
 } from "@investiq/integrations";
 
@@ -14,6 +16,8 @@ const SECTOR_TICKERS = ["XLK", "XLE"];
 
 const QUOTE_TTL_MS = 15_000;
 const OVERVIEW_TTL_MS = 30_000;
+const MOVERS_TTL_MS = 60_000;
+const MOVERS_LIMIT = 10;
 
 export interface MarketOverview {
   indices: NormalizedQuote[];
@@ -21,9 +25,16 @@ export interface MarketOverview {
   asOf: string;
 }
 
+export interface MarketMovers {
+  gainers: MoverQuote[];
+  losers: MoverQuote[];
+  asOf: string;
+}
+
 export interface MarketService {
   getQuote(ticker: string): Promise<NormalizedQuote>;
   getOverview(): Promise<MarketOverview>;
+  getMovers(): Promise<MarketMovers>;
   /** True when at least one provider key is configured. */
   readonly enabled: boolean;
 }
@@ -44,6 +55,9 @@ function buildProvider(
     return {
       name: "none",
       async getQuote(): Promise<NormalizedQuote> {
+        throw new UpstreamError("market", "No market-data provider configured");
+      },
+      async getMovers(): Promise<MoverQuote[]> {
         throw new UpstreamError("market", "No market-data provider configured");
       },
     };
@@ -88,5 +102,20 @@ export function createMarketService(opts: MarketServiceOptions): MarketService {
     });
   }
 
-  return { getQuote, getOverview, enabled: providers.length > 0 };
+  async function moversFor(direction: MoverDirection): Promise<MoverQuote[]> {
+    try {
+      return await provider.getMovers(direction, MOVERS_LIMIT);
+    } catch {
+      return []; // tolerate provider gaps — show what we have, never fabricate
+    }
+  }
+
+  async function getMovers(): Promise<MarketMovers> {
+    return cache.wrap("movers", MOVERS_TTL_MS, async () => {
+      const [gainers, losers] = await Promise.all([moversFor("gainers"), moversFor("losers")]);
+      return { gainers, losers, asOf: new Date().toISOString() };
+    });
+  }
+
+  return { getQuote, getOverview, getMovers, enabled: providers.length > 0 };
 }

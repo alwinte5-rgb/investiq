@@ -46,10 +46,16 @@ describe("FailoverMarketData", () => {
     async getQuote(t): Promise<NormalizedQuote> {
       return { ticker: t, price: 1, change: null, changePct: null, volume: null, asOf: "", source };
     },
+    async getMovers() {
+      return [{ ticker: source.toUpperCase(), price: 1, change: 1, changePct: 1 }];
+    },
   });
   const bad: MarketDataProvider = {
     name: "primary",
     async getQuote() {
+      throw new Error("down");
+    },
+    async getMovers() {
       throw new Error("down");
     },
   };
@@ -64,6 +70,12 @@ describe("FailoverMarketData", () => {
     const f = new FailoverMarketData(bad, good("twelvedata"), () => (reported = true));
     expect((await f.getQuote("AAPL")).source).toBe("twelvedata");
     expect(reported).toBe(true);
+  });
+
+  it("falls back to the secondary provider for movers when primary throws", async () => {
+    const f = new FailoverMarketData(bad, good("twelvedata"));
+    const movers = await f.getMovers("gainers", 5);
+    expect(movers[0]?.ticker).toBe("TWELVEDATA");
   });
 });
 

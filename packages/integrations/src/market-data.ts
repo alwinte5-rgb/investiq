@@ -15,9 +15,20 @@ export interface NormalizedQuote {
   source: string;
 }
 
+/** A single market mover (top gainer/loser), from a real provider snapshot. */
+export interface MoverQuote {
+  ticker: string;
+  price: number;
+  change: number | null;
+  changePct: number | null;
+}
+
+export type MoverDirection = "gainers" | "losers";
+
 export interface MarketDataProvider {
   readonly name: string;
   getQuote(ticker: string): Promise<NormalizedQuote>;
+  getMovers(direction: MoverDirection, limit: number): Promise<MoverQuote[]>;
 }
 
 /**
@@ -40,6 +51,15 @@ export class FailoverMarketData implements MarketDataProvider {
     } catch (err) {
       this.onFailover?.(err);
       return this.fallback.getQuote(ticker);
+    }
+  }
+
+  async getMovers(direction: MoverDirection, limit: number): Promise<MoverQuote[]> {
+    try {
+      return await this.primary.getMovers(direction, limit);
+    } catch (err) {
+      this.onFailover?.(err);
+      return this.fallback.getMovers(direction, limit);
     }
   }
 }
@@ -75,6 +95,30 @@ export function parseMassiveSnapshot(json: MassiveSnapshot, ticker: string): Nor
   };
 }
 
+export interface MassiveMoversResponse {
+  status?: string;
+  tickers?: NonNullable<MassiveSnapshot["ticker"]>[];
+}
+
+/** Pure parser — maps a Polygon gainers/losers snapshot to MoverQuotes. */
+export function parseMassiveMovers(json: MassiveMoversResponse, limit: number): MoverQuote[] {
+  const rows = json.tickers ?? [];
+  const out: MoverQuote[] = [];
+  for (const t of rows) {
+    const ticker = t.ticker;
+    const price = t.lastTrade?.p ?? t.day?.c ?? t.prevDay?.c;
+    if (!ticker || price == null || Number.isNaN(price)) continue;
+    out.push({
+      ticker: ticker.toUpperCase(),
+      price,
+      change: t.todaysChange ?? null,
+      changePct: t.todaysChangePerc ?? null,
+    });
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
 /**
  * Massive provider (the rebranded Polygon.io). The snapshot endpoint shape is
  * the Polygon v2 format; `baseUrl` is configurable via env (MASSIVE_BASE_URL)
@@ -93,6 +137,12 @@ export class MassiveProvider implements MarketDataProvider {
     )}?apiKey=${this.apiKey}`;
     const json = await fetchJson<MassiveSnapshot>("massive", url);
     return parseMassiveSnapshot(json, ticker);
+  }
+
+  async getMovers(direction: MoverDirection, limit: number): Promise<MoverQuote[]> {
+    const url = `${this.baseUrl}/v2/snapshot/locale/us/markets/stocks/${direction}?apiKey=${this.apiKey}`;
+    const json = await fetchJson<MassiveMoversResponse>("massive", url);
+    return parseMassiveMovers(json, limit);
   }
 }
 
@@ -142,5 +192,11 @@ export class TwelveDataProvider implements MarketDataProvider {
     )}&apikey=${this.apiKey}`;
     const json = await fetchJson<TwelveDataQuote>("twelvedata", url);
     return parseTwelveDataQuote(json, ticker);
+  }
+
+  // Twelve Data has no comparable free gainers/losers snapshot; defer to the
+  // failover chain (Polygon) so movers come from real data, never fabricated.
+  async getMovers(): Promise<MoverQuote[]> {
+    throw new UpstreamError("twelvedata", "movers not supported");
   }
 }

@@ -31,6 +31,11 @@ export async function marketRoutes(app: FastifyInstance, deps: MarketRouteDeps) 
     return { data: await deps.market.getOverview() };
   });
 
+  app.get("/api/v1/market/movers", async (req) => {
+    await resolveAuthContext(req, deps.auth);
+    return { data: await deps.market.getMovers() };
+  });
+
   app.get("/api/v1/news", async (req) => {
     await resolveAuthContext(req, deps.auth);
     const { symbol } = validate(newsQuery, req.query);

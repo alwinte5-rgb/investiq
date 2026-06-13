@@ -12,6 +12,7 @@ import {
 import { SignedIn, SignedOut, useAuth } from "@clerk/clerk-expo";
 import { Link, useLocalSearchParams } from "expo-router";
 import { apiFetch } from "../lib/api";
+import { Term } from "../components/glossary";
 
 const REC_LABELS: Record<string, string> = {
   STRONG_BUY_WATCH: "Strong Buy Watch",
@@ -271,11 +272,19 @@ function Researcher() {
       {a && (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 12, paddingBottom: 24 }}>
           <View style={styles.badgeRow}>
-            <Text style={styles.badge}>{REC_LABELS[a.recommendationType] ?? a.recommendationType}</Text>
+            <Text style={styles.badge}>
+              <Term k={a.recommendationType}>
+                {REC_LABELS[a.recommendationType] ?? a.recommendationType}
+              </Term>
+            </Text>
           </View>
           <View style={styles.scoreRow}>
-            <Text style={styles.score}>Confidence {a.confidenceScore}/100</Text>
-            <Text style={styles.score}>Risk {a.riskScore}/100</Text>
+            <Text style={styles.score}>
+              <Term k="confidence score">Confidence</Term> {a.confidenceScore}/100
+            </Text>
+            <Text style={styles.score}>
+              <Term k="risk score">Risk</Term> {a.riskScore}/100
+            </Text>
           </View>
           <Field title="Summary" body={a.summary} />
           <Field title="Bull case" body={a.bullCase} />
@@ -333,12 +342,20 @@ function Researcher() {
                 {RISK_LABEL[risk.warningColor ?? "GREEN"]}
               </Text>
               <Text style={styles.riskStat}>
-                Buy {money(risk.buyZoneLow)}–{money(risk.buyZoneHigh)} · Stop {money(risk.stopLoss)} ·
-                Target {money(risk.profitTarget)}
+                <Term k="buy zone">Buy</Term> {money(risk.buyZoneLow)}–{money(risk.buyZoneHigh)} ·{" "}
+                <Term k="stop loss">Stop</Term> {money(risk.stopLoss)} ·{" "}
+                <Term k="profit target">Target</Term> {money(risk.profitTarget)}
               </Text>
               <Text style={styles.riskStat}>
-                Reward:risk {risk.riskReward}:1
-                {risk.positionSize != null ? ` · Size ${risk.positionSize} sh` : ""}
+                <Term k="reward : risk">Reward:risk</Term> {risk.riskReward}:1
+                {risk.positionSize != null ? (
+                  <>
+                    {" · "}
+                    <Term k="position sizing">Size</Term> {risk.positionSize} sh
+                  </>
+                ) : (
+                  ""
+                )}
               </Text>
               {risk.warnings?.map((w, i) => (
                 <Text key={i} style={styles.newsRationale}>

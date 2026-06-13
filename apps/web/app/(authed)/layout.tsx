@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { GlossaryProvider } from "@/components/term";
 
 // In-app sub-nav for the authed routes. The ClerkProvider + account menu live in
 // the root layout header, so this layout only renders navigation.
 export default function AuthedLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <GlossaryProvider>
       <div className="mb-6 flex items-center justify-between gap-3 border-b pb-3 text-sm">
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <Link href="/dashboard" className="hover:underline">
@@ -34,6 +35,6 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
         </nav>
       </div>
       {children}
-    </>
+    </GlossaryProvider>
   );
 }

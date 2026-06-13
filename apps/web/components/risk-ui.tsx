@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import { assessRiskAction, type RiskView } from "@/app/(authed)/research/actions";
 import { LearnPanel } from "@/components/learn-ui";
+import { Term } from "@/components/term";
 
 const COLOR_TONE: Record<string, string> = {
   GREEN: "bg-green-100 text-green-800 border-green-200",
@@ -20,7 +21,7 @@ const COLOR_LABEL: Record<string, string> = {
 const money = (v: number | null | undefined) =>
   v == null ? "—" : `$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value }: { label: ReactNode; value: string }) {
   return (
     <div className="rounded-md border p-3">
       <div className="text-xs text-neutral-500">{label}</div>
@@ -90,16 +91,26 @@ export function RiskPanel({ ticker }: { ticker: string }) {
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Stat label="Buy zone" value={`${money(risk.buyZoneLow)} – ${money(risk.buyZoneHigh)}`} />
-            <Stat label="Stop loss" value={money(risk.stopLoss)} />
-            <Stat label="Profit target" value={money(risk.profitTarget)} />
-            <Stat label="Reward : risk" value={risk.riskReward != null ? `${risk.riskReward}:1` : "—"} />
             <Stat
-              label="Suggested size"
+              label={<Term k="buy zone">Buy zone</Term>}
+              value={`${money(risk.buyZoneLow)} – ${money(risk.buyZoneHigh)}`}
+            />
+            <Stat label={<Term k="stop loss">Stop loss</Term>} value={money(risk.stopLoss)} />
+            <Stat label={<Term k="profit target">Profit target</Term>} value={money(risk.profitTarget)} />
+            <Stat
+              label={<Term k="reward : risk">Reward : risk</Term>}
+              value={risk.riskReward != null ? `${risk.riskReward}:1` : "—"}
+            />
+            <Stat
+              label={<Term k="position sizing">Suggested size</Term>}
               value={risk.positionSize != null ? `${risk.positionSize} sh` : "—"}
             />
             <Stat
-              label={`Max risk (${risk.maxRiskPct ?? 1}%)`}
+              label={
+                <>
+                  <Term k="max risk">Max risk</Term> ({risk.maxRiskPct ?? 1}%)
+                </>
+              }
               value={money(risk.maxRiskAmount)}
             />
           </div>

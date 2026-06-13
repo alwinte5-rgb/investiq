@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import {
   generateAnalysisAction,
   type Analysis,
@@ -10,6 +10,7 @@ import { NewsImpactPanel } from "@/components/news-impact-ui";
 import { RiskPanel } from "@/components/risk-ui";
 import { ChartPanel } from "@/components/chart-ui";
 import { LearnPanel } from "@/components/learn-ui";
+import { Term } from "@/components/term";
 
 // Display labels for the educational (non-advisory) recommendation types.
 const REC_LABELS: Record<string, string> = {
@@ -39,7 +40,7 @@ interface SymbolResult {
   assetType: "STOCK" | "ETF";
 }
 
-function ScoreBar({ label, value, tone }: { label: string; value: number; tone: string }) {
+function ScoreBar({ label, value, tone }: { label: ReactNode; value: number; tone: string }) {
   return (
     <div>
       <div className="mb-1 flex justify-between text-xs text-neutral-500">
@@ -81,13 +82,19 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
             REC_TONE[analysis.recommendationType] ?? "bg-neutral-100 text-neutral-700 border-neutral-200"
           }`}
         >
-          {REC_LABELS[analysis.recommendationType] ?? analysis.recommendationType}
+          <Term k={analysis.recommendationType}>
+            {REC_LABELS[analysis.recommendationType] ?? analysis.recommendationType}
+          </Term>
         </span>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <ScoreBar label="Confidence" value={analysis.confidenceScore} tone="bg-blue-500" />
-        <ScoreBar label="Risk" value={analysis.riskScore} tone="bg-red-500" />
+        <ScoreBar
+          label={<Term k="confidence score">Confidence</Term>}
+          value={analysis.confidenceScore}
+          tone="bg-blue-500"
+        />
+        <ScoreBar label={<Term k="risk score">Risk</Term>} value={analysis.riskScore} tone="bg-red-500" />
       </div>
 
       <Section title="Summary" body={analysis.summary} />

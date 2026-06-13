@@ -35,6 +35,7 @@ import { chartRoutes } from "./routes/chart.js";
 import { opportunityRoutes } from "./routes/opportunities.js";
 import { paperRoutes } from "./routes/paper.js";
 import { learningRoutes } from "./routes/learning.js";
+import { glossaryRoutes } from "./routes/glossary.js";
 import { newsRoutes } from "./routes/news.js";
 import { createMarketService } from "./services/market.js";
 import { createNewsService } from "./services/news.js";
@@ -145,6 +146,8 @@ async function main() {
   await app.register(async (instance) => paperRoutes(instance, { auth: authDeps, paper: { market } }));
   // Learning System (Layer 10) — curated non-advisory education linked to each recommendation/risk.
   await app.register(async (instance) => learningRoutes(instance, authDeps));
+  // Glossary — plain-English term library powering inline tooltips (web + mobile).
+  await app.register(async (instance) => glossaryRoutes(instance, authDeps));
 
   // Brokerage (SnapTrade) — only enabled when credentials + encryption key are set.
   if (env.SNAPTRADE_CLIENT_ID && env.SNAPTRADE_CONSUMER_KEY && env.CONNECTION_ENCRYPTION_KEY) {

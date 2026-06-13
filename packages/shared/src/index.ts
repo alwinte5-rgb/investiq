@@ -9,6 +9,7 @@ export * from "./chart.js";
 export * from "./opportunities.js";
 export * from "./paper.js";
 export * from "./learning.js";
+export * from "./glossary.js";
 export * from "./news.js";
 export * from "./env.js";
 export * from "./errors.js";

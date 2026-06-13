@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { OnboardingGuide } from "@/components/onboarding";
 import {
   AutoSync,
   ConnectButton,
@@ -70,6 +71,9 @@ export default async function DashboardPage() {
     safe<Account[]>("/api/v1/accounts"),
   ]);
   const connection = connections?.[0];
+  // Brand-new = connections fetched successfully and there are none (real or
+  // demo). A failed fetch (null) is NOT treated as new — never greet over an error.
+  const isNewUser = connections !== null && connections.length === 0;
   const isDemo = connection?.status === "demo";
   const isDisabled = connection?.status === "disabled";
   // A real, non-disabled connection with no holdings yet should pull on load
@@ -90,6 +94,8 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Dashboard</h1>
+
+      <OnboardingGuide isNewUser={isNewUser} />
 
       {error ? (
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">

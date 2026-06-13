@@ -149,10 +149,24 @@ function SampleData() {
         </>
       ) : (
         <>
-          <Text style={styles.row}>No brokerage connected yet.</Text>
+          <Text style={styles.welcomeTitle}>👋 New to InvestIQ?</Text>
+          <Text style={styles.row}>
+            Research stocks and ETFs and learn as you go — in plain English. We never tell you to buy
+            or sell; we help you decide for yourself.
+          </Text>
+          <Text style={styles.welcomeStep}>
+            1. Explore the whole app with an example portfolio — no brokerage needed.
+          </Text>
           <Pressable onPress={loadDemo} disabled={busy} style={styles.demoBtn}>
-            <Text style={styles.demoBtnText}>{busy ? "Loading…" : "Try with sample data"}</Text>
+            <Text style={styles.demoBtnText}>{busy ? "Loading…" : "Explore with sample data"}</Text>
           </Pressable>
+          <Text style={styles.welcomeStep}>
+            2. Or research any stock for an evidence-based breakdown.
+          </Text>
+          <Link href="/research" style={styles.welcomeLink}>
+            Research a stock →
+          </Link>
+          <Text style={styles.welcomeTip}>Tip: tap any underlined term to learn what it means.</Text>
         </>
       )}
       {error && <Text style={styles.error}>{error}</Text>}
@@ -224,6 +238,10 @@ const styles = StyleSheet.create({
   link: { color: "#2563eb", fontWeight: "600", textAlign: "center" },
   demoBtn: { borderWidth: 1, borderColor: "#2563eb", borderRadius: 8, paddingVertical: 9, alignItems: "center", marginTop: 4 },
   demoBtnText: { color: "#2563eb", fontWeight: "600" },
+  welcomeTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
+  welcomeStep: { fontSize: 14, color: "#374151", marginTop: 4 },
+  welcomeLink: { color: "#2563eb", fontWeight: "600", marginTop: 2 },
+  welcomeTip: { fontSize: 12, color: "#6b7280", marginTop: 6 },
   nav: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 16 },
   navLink: { color: "#2563eb", fontWeight: "600" },
   linkMuted: { color: "#666", textAlign: "center" },

@@ -98,6 +98,79 @@ export function applyFmpRatios(base: NormalizedFundamentals, raw: unknown): Norm
   };
 }
 
+// ---------- Stock screener (FMP) — discovery of NEW ideas to research ----------
+export interface ScreenedStock {
+  ticker: string;
+  name: string;
+  sector: string | null;
+  marketCap: number | null;
+  price: number | null;
+  beta: number | null;
+  assetType: "STOCK" | "ETF";
+}
+
+export interface ScreenCriteria {
+  marketCapMoreThan?: number;
+  marketCapLowerThan?: number;
+  betaLowerThan?: number;
+  betaMoreThan?: number;
+  dividendMoreThan?: number;
+  priceMoreThan?: number;
+  isEtf?: boolean;
+  limit?: number;
+}
+
+/** Parse an FMP `stable/company-screener` array response. Exported for tests. */
+export function parseFmpScreener(raw: unknown): ScreenedStock[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ScreenedStock[] = [];
+  for (const item of raw) {
+    const r = (item ?? {}) as Record<string, unknown>;
+    const ticker = typeof r.symbol === "string" ? r.symbol.toUpperCase() : null;
+    if (!ticker) continue;
+    out.push({
+      ticker,
+      name: typeof r.companyName === "string" && r.companyName ? r.companyName : ticker,
+      sector: typeof r.sector === "string" && r.sector ? r.sector : null,
+      marketCap: num(r.marketCap),
+      price: num(r.price),
+      beta: num(r.beta),
+      assetType: r.isEtf === true ? "ETF" : "STOCK",
+    });
+  }
+  return out;
+}
+
+/**
+ * Run the FMP company screener. Returns REAL listed stocks matching the criteria
+ * (US, actively trading) — discovery candidates to research, never AI signals.
+ * Best-effort: an empty/failed response yields an empty list, never fabrication.
+ */
+export async function fetchFmpScreener(opts: {
+  apiKey: string;
+  baseUrl?: string;
+  criteria: ScreenCriteria;
+}): Promise<ScreenedStock[]> {
+  const base = opts.baseUrl ?? "https://financialmodelingprep.com";
+  const c = opts.criteria;
+  const params = new URLSearchParams({
+    country: "US",
+    isActivelyTrading: "true",
+    isFund: "false",
+    limit: String(c.limit ?? 10),
+    apikey: opts.apiKey,
+  });
+  if (c.marketCapMoreThan != null) params.set("marketCapMoreThan", String(c.marketCapMoreThan));
+  if (c.marketCapLowerThan != null) params.set("marketCapLowerThan", String(c.marketCapLowerThan));
+  if (c.betaLowerThan != null) params.set("betaLowerThan", String(c.betaLowerThan));
+  if (c.betaMoreThan != null) params.set("betaMoreThan", String(c.betaMoreThan));
+  if (c.dividendMoreThan != null) params.set("dividendMoreThan", String(c.dividendMoreThan));
+  if (c.priceMoreThan != null) params.set("priceMoreThan", String(c.priceMoreThan));
+  if (c.isEtf != null) params.set("isEtf", String(c.isEtf));
+  const raw = await fetchJson<unknown>("fmp", `${base}/stable/company-screener?${params.toString()}`);
+  return parseFmpScreener(raw);
+}
+
 /** Merge FMP analyst price-target + rating consensus. Exported for tests. */
 export function applyFmpAnalyst(
   base: NormalizedFundamentals,

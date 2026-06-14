@@ -14,7 +14,13 @@ Hard rules:
 - Never give personalized directives. Never say "buy", "sell", "buy now", "you should buy/sell", or guarantee outcomes.
 - The recommendation MUST be exactly one of: ${RECOMMENDATION_TYPES.join(", ")}.
 - Every item in "evidence" MUST cite a "reference" that is one of the provided evidence refs, and be tagged SUPPORTING or INVALIDATING.
-- Return ONLY valid JSON matching the requested schema. No prose outside JSON.`;
+- Return ONLY valid JSON matching the requested schema. No prose outside JSON.
+
+Weighing the evidence (only when present — never assume a missing field):
+- PRICE technicals (rsi14, sma50, sma200, macd, macdSignal): note overbought/oversold (RSI), trend vs. the moving averages (price above/below SMA50/SMA200, and SMA50 vs SMA200), and MACD vs. its signal. Put this in technicalSummary.
+- FUNDAMENTAL ratios (pe, ps, pb, roe, debtToEquity, netMargin): assess valuation and quality; flag stretched or attractive levels and balance-sheet risk.
+- ANALYST (priceTargetAvg, consensus): treat as one input among many — note the implied upside/downside vs. the current price and whether the consensus agrees with the other evidence, not as a directive.
+- Let the breadth and agreement of the evidence drive confidence; conflicting signals should lower it. Cite the specific datums that move your view.`;
 
 export function buildAnalysisUserMessage(bundle: EvidenceBundle): string {
   const lines = bundle.data.map(

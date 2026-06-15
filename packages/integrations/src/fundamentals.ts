@@ -116,6 +116,8 @@ export interface ScreenCriteria {
   betaMoreThan?: number;
   dividendMoreThan?: number;
   priceMoreThan?: number;
+  sector?: string;
+  industry?: string;
   isEtf?: boolean;
   limit?: number;
 }
@@ -166,6 +168,8 @@ export async function fetchFmpScreener(opts: {
   if (c.betaMoreThan != null) params.set("betaMoreThan", String(c.betaMoreThan));
   if (c.dividendMoreThan != null) params.set("dividendMoreThan", String(c.dividendMoreThan));
   if (c.priceMoreThan != null) params.set("priceMoreThan", String(c.priceMoreThan));
+  if (c.sector) params.set("sector", c.sector);
+  if (c.industry) params.set("industry", c.industry);
   if (c.isEtf != null) params.set("isEtf", String(c.isEtf));
   const raw = await fetchJson<unknown>("fmp", `${base}/stable/company-screener?${params.toString()}`);
   return parseFmpScreener(raw);

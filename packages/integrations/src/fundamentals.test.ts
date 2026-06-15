@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyFmpAnalyst, applyFmpRatios, parseFmpProfile } from "./fundamentals.js";
+import { applyFmpAnalyst, applyFmpRatios, parseFmpProfile, parseFmpScreener } from "./fundamentals.js";
 import { parsePolygonIndicatorLatest } from "./market-data.js";
 
 describe("parseFmpProfile", () => {
@@ -77,6 +77,23 @@ describe("applyFmpAnalyst", () => {
     const merged = applyFmpAnalyst(base, null, null);
     expect(merged.priceTargetAvg).toBeNull();
     expect(merged.analystConsensus).toBeNull();
+  });
+});
+
+describe("parseFmpScreener", () => {
+  it("maps screener rows to candidates and flags ETFs", () => {
+    const rows = parseFmpScreener([
+      { symbol: "nvda", companyName: "NVIDIA", sector: "Technology", marketCap: 3e12, price: 120, beta: 1.7, isEtf: false },
+      { symbol: "SPY", companyName: "SPDR S&P 500", marketCap: 5e11, price: 540, isEtf: true },
+      { companyName: "no symbol — dropped" },
+    ]);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ ticker: "NVDA", assetType: "STOCK", price: 120 });
+    expect(rows[1]).toMatchObject({ ticker: "SPY", assetType: "ETF" });
+  });
+
+  it("returns [] for a non-array payload", () => {
+    expect(parseFmpScreener({ error: "x" })).toEqual([]);
   });
 });
 

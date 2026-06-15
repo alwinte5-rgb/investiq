@@ -54,26 +54,53 @@ function MoverColumn({ title, items }: { title: string; items: Mover[] }) {
   );
 }
 
-export function MoversList({ movers }: { movers: MarketMovers | null }) {
-  const empty = !movers || (movers.gainers.length === 0 && movers.losers.length === 0);
-  return (
-    <div className="space-y-2">
-      <div>
-        <h2 className="text-lg font-semibold">Today’s movers</h2>
-        <p className="text-sm text-neutral-500">
-          Top US gainers and losers right now — tap any ticker to get a grounded analysis.
-        </p>
-      </div>
-      {empty ? (
-        <p className="rounded-md border border-dashed p-4 text-center text-sm text-neutral-500">
-          Market movers are unavailable right now. Use the search above to analyze any US stock or ETF.
-        </p>
-      ) : (
+export function MoversList({
+  movers,
+  popular,
+}: {
+  movers: MarketMovers | null;
+  popular?: Mover[];
+}) {
+  const hasMovers = !!movers && (movers.gainers.length > 0 || movers.losers.length > 0);
+
+  if (hasMovers) {
+    return (
+      <div className="space-y-2">
+        <div>
+          <h2 className="text-lg font-semibold">Today’s movers</h2>
+          <p className="text-sm text-neutral-500">
+            Top US gainers and losers right now — tap any ticker to get a grounded analysis.
+          </p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <MoverColumn title="📈 Top gainers" items={movers!.gainers} />
           <MoverColumn title="📉 Top losers" items={movers!.losers} />
         </div>
-      )}
-    </div>
+      </div>
+    );
+  }
+
+  // Fallback: widely-held names with live quotes, so there are always ideas to research.
+  if (popular && popular.length > 0) {
+    return (
+      <div className="space-y-2">
+        <div>
+          <h2 className="text-lg font-semibold">Popular to research</h2>
+          <p className="text-sm text-neutral-500">
+            Widely-held US stocks and ETFs — tap any ticker to get a grounded analysis.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <MoverColumn title="Most-followed" items={popular.slice(0, Math.ceil(popular.length / 2))} />
+          <MoverColumn title=" " items={popular.slice(Math.ceil(popular.length / 2))} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <p className="rounded-md border border-dashed p-4 text-center text-sm text-neutral-500">
+      Suggestions are unavailable right now. Use the search above to analyze any US stock or ETF.
+    </p>
   );
 }

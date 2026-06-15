@@ -112,7 +112,7 @@ export function OpportunitiesUI({
           disabled={pending}
           className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
         >
-          {pending ? "Refreshing…" : total > 0 ? "Refresh" : "Generate"}
+          {pending ? "Refreshing…" : "Refresh"}
         </button>
       </div>
 

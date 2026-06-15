@@ -154,17 +154,21 @@ function Researcher() {
   const [learn, setLearn] = useState<LearningContent[]>([]);
   const [openLearn, setOpenLearn] = useState<string | null>(null);
   const [movers, setMovers] = useState<MarketMovers | null>(null);
+  const [popular, setPopular] = useState<Mover[]>([]);
 
-  // Real top gainers/losers, loaded once. Best-effort — stays hidden on failure.
+  // Movers + a curated popular fallback, loaded once. Best-effort — popular
+  // ensures there are ALWAYS suggestions even when movers are unavailable.
   useEffect(() => {
     let active = true;
     (async () => {
-      try {
-        const token = await getToken();
-        const m = await apiFetch<MarketMovers>("/api/v1/market/movers", token);
-        if (active) setMovers(m);
-      } catch {
-        /* movers are an optional discovery aid */
+      const token = await getToken().catch(() => null);
+      const [m, p] = await Promise.all([
+        apiFetch<MarketMovers>("/api/v1/market/movers", token).catch(() => null),
+        apiFetch<Mover[]>("/api/v1/market/popular", token).catch(() => [] as Mover[]),
+      ]);
+      if (active) {
+        setMovers(m);
+        setPopular(p);
       }
     })();
     return () => {
@@ -298,35 +302,46 @@ function Researcher() {
         </View>
       )}
 
-      {!a && !loading && movers && (movers.gainers.length > 0 || movers.losers.length > 0) && (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
-          <Text style={styles.moversTitle}>Today’s movers</Text>
-          <Text style={styles.moversHint}>Top US gainers and losers — tap any ticker to analyze it.</Text>
-          {(["gainers", "losers"] as const).map((dir) => (
-            <View key={dir} style={{ gap: 2 }}>
-              <Text style={styles.fieldTitle}>{dir === "gainers" ? "📈 Top gainers" : "📉 Top losers"}</Text>
-              {movers[dir].map((m) => (
-                <Pressable
-                  key={m.ticker}
-                  onPress={() => {
-                    setTicker(m.ticker);
-                    void analyze(m.ticker);
-                  }}
-                  style={styles.moverRow}
-                >
-                  <Text style={styles.moverTicker}>{m.ticker}</Text>
-                  <Text style={styles.moverPrice}>${m.price.toFixed(2)}</Text>
-                  <Text
-                    style={[styles.moverPct, { color: (m.changePct ?? 0) >= 0 ? "#15803d" : "#b91c1c" }]}
-                  >
-                    {m.changePct == null ? "—" : `${m.changePct >= 0 ? "+" : ""}${m.changePct.toFixed(2)}%`}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          ))}
-        </ScrollView>
-      )}
+      {!a && !loading && (() => {
+        const hasMovers = !!movers && (movers.gainers.length > 0 || movers.losers.length > 0);
+        if (!hasMovers && popular.length === 0) return null;
+        const row = (m: Mover) => (
+          <Pressable
+            key={m.ticker}
+            onPress={() => {
+              setTicker(m.ticker);
+              void analyze(m.ticker);
+            }}
+            style={styles.moverRow}
+          >
+            <Text style={styles.moverTicker}>{m.ticker}</Text>
+            <Text style={styles.moverPrice}>${m.price.toFixed(2)}</Text>
+            <Text style={[styles.moverPct, { color: (m.changePct ?? 0) >= 0 ? "#15803d" : "#b91c1c" }]}>
+              {m.changePct == null ? "—" : `${m.changePct >= 0 ? "+" : ""}${m.changePct.toFixed(2)}%`}
+            </Text>
+          </Pressable>
+        );
+        return (
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
+            <Text style={styles.moversTitle}>{hasMovers ? "Today’s movers" : "Popular to research"}</Text>
+            <Text style={styles.moversHint}>
+              {hasMovers
+                ? "Top US gainers and losers — tap any ticker to analyze it."
+                : "Widely-held US stocks & ETFs — tap any ticker to analyze it."}
+            </Text>
+            {hasMovers
+              ? (["gainers", "losers"] as const).map((dir) => (
+                  <View key={dir} style={{ gap: 2 }}>
+                    <Text style={styles.fieldTitle}>
+                      {dir === "gainers" ? "📈 Top gainers" : "📉 Top losers"}
+                    </Text>
+                    {movers![dir].map(row)}
+                  </View>
+                ))
+              : popular.map(row)}
+          </ScrollView>
+        );
+      })()}
 
       {a && (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 12, paddingBottom: 24 }}>

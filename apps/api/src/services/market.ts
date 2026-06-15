@@ -15,6 +15,9 @@ import {
 /** Index + sector proxies for the market overview (must be in the symbol universe). */
 const INDEX_TICKERS = ["SPY", "QQQ", "DIA", "IWM"];
 const SECTOR_TICKERS = ["XLK", "XLE"];
+/** Widely-held US names — a reliable "ideas to research" fallback when the
+ *  provider's gainers/losers snapshot isn't available (e.g. plan tier). */
+const POPULAR_TICKERS = ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "JPM", "V", "SPY", "QQQ", "AMD"];
 
 const QUOTE_TTL_MS = 15_000;
 const OVERVIEW_TTL_MS = 30_000;
@@ -37,6 +40,8 @@ export interface MarketService {
   getQuote(ticker: string): Promise<NormalizedQuote>;
   getOverview(): Promise<MarketOverview>;
   getMovers(): Promise<MarketMovers>;
+  /** Widely-held names with live quotes — reliable discovery fallback. */
+  getPopular(): Promise<NormalizedQuote[]>;
   /** Technical indicators (Polygon). Null when no Polygon key, or none resolved. */
   getTechnicals(ticker: string): Promise<NormalizedTechnicals | null>;
   /** True when at least one provider key is configured. */
@@ -121,6 +126,10 @@ export function createMarketService(opts: MarketServiceOptions): MarketService {
     });
   }
 
+  async function getPopular(): Promise<NormalizedQuote[]> {
+    return cache.wrap("popular", OVERVIEW_TTL_MS, () => quotesFor(POPULAR_TICKERS));
+  }
+
   async function getTechnicals(ticker: string): Promise<NormalizedTechnicals | null> {
     // Technical indicators come from Polygon (Massive) only.
     if (!opts.massiveKey) return null;
@@ -142,5 +151,5 @@ export function createMarketService(opts: MarketServiceOptions): MarketService {
     });
   }
 
-  return { getQuote, getOverview, getMovers, getTechnicals, enabled: providers.length > 0 };
+  return { getQuote, getOverview, getMovers, getPopular, getTechnicals, enabled: providers.length > 0 };
 }

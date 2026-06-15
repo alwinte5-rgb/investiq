@@ -14,7 +14,16 @@ export default async function OpportunitiesPage() {
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
     if (/\b403\b|investor plan|forbidden/i.test(msg)) gated = true;
-    // other errors fall through — the client shows an empty state with Generate
+  }
+  // Auto-build from the user's stored analyses when nothing is cached yet — the
+  // page should just show results, not require a manual "Generate" click.
+  // (Generation is deterministic over stored data: no AI/market calls.)
+  if (!gated && initial.length === 0) {
+    try {
+      initial = await apiFetch<OpportunityGroup[]>("/api/v1/opportunities", { method: "POST" });
+    } catch {
+      /* leave empty — the UI shows the "run some analyses first" guidance */
+    }
   }
 
   // Screened "ideas to research" — best-effort, never blocks the page.

@@ -120,7 +120,16 @@ function Opportunities() {
   const load = useCallback(async () => {
     try {
       const token = await getToken();
-      setGroups(await apiFetch<OpportunityGroup[]>("/api/v1/opportunities", token));
+      let g = await apiFetch<OpportunityGroup[]>("/api/v1/opportunities", token);
+      // Auto-build from stored analyses if nothing is cached — no manual Generate.
+      if (g.length === 0) {
+        try {
+          g = await apiFetch<OpportunityGroup[]>("/api/v1/opportunities", token, { method: "POST" });
+        } catch {
+          /* leave empty — UI shows guidance */
+        }
+      }
+      setGroups(g);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
       if (/\b403\b|investor plan|forbidden/i.test(msg)) setGated(true);

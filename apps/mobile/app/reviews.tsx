@@ -61,6 +61,17 @@ function Reviewer() {
       if (row) {
         setContent(row.content);
         setPeriod(row.period);
+      } else {
+        // Auto-generate today's briefing if none is stored — no manual Generate.
+        try {
+          const gen = await apiFetch<GenResult>("/api/v1/portfolio/reviews?period=MORNING", token, {
+            method: "POST",
+          });
+          if (gen.status !== "insufficient") setContent(gen.content ?? gen.review.content);
+          else setMessage(gen.message);
+        } catch {
+          /* leave empty — UI shows guidance */
+        }
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";

@@ -64,9 +64,69 @@ function Section({ title, body }: { title: string; body: string | null }) {
   );
 }
 
+/**
+ * The verdict card — the synthesized "what's the takeaway" up top, so the
+ * conclusion is clear in seconds before any detail. Non-advisory: it's a "Watch"
+ * signal with the top supporting reasons, explicitly not a buy/sell instruction.
+ */
+function Verdict({ analysis }: { analysis: Analysis }) {
+  const reasons = analysis.evidence
+    .filter((e) => e.role === "SUPPORTING" && e.snapshot?.note)
+    .slice(0, 3);
+  const tone =
+    REC_TONE[analysis.recommendationType] ?? "bg-neutral-100 text-neutral-700 border-neutral-200";
+  return (
+    <div className="space-y-3 rounded-lg border bg-neutral-50 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-[11px] font-medium uppercase tracking-wide text-neutral-500">
+            AI verdict · educational signal
+          </div>
+          <span
+            className={`mt-1 inline-block rounded-full border px-3 py-1 text-base font-semibold ${tone}`}
+          >
+            <Term k={analysis.recommendationType}>
+              {REC_LABELS[analysis.recommendationType] ?? analysis.recommendationType}
+            </Term>
+          </span>
+        </div>
+        <div className="flex gap-4 text-right">
+          <div>
+            <div className="text-[11px] text-neutral-500">Confidence</div>
+            <div className="text-xl font-bold text-neutral-800">{analysis.confidenceScore}</div>
+          </div>
+          <div>
+            <div className="text-[11px] text-neutral-500">Risk</div>
+            <div className="text-xl font-bold text-neutral-800">{analysis.riskScore}</div>
+          </div>
+        </div>
+      </div>
+      {reasons.length > 0 && (
+        <div>
+          <div className="text-xs font-semibold text-neutral-700">Top reasons</div>
+          <ul className="mt-1 space-y-1 text-sm text-neutral-600">
+            {reasons.map((e) => (
+              <li key={e.id} className="flex gap-2">
+                <span className="text-green-600">✓</span>
+                <span>{e.snapshot?.note}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <p className="text-[11px] text-neutral-400">
+        A research signal to weigh against your own goals, time horizon and risk tolerance — not a
+        buy/sell instruction.
+      </p>
+    </div>
+  );
+}
+
 function AnalysisCard({ analysis }: { analysis: Analysis }) {
   return (
     <div className="space-y-4 rounded-lg border p-5">
+      <Verdict analysis={analysis} />
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="text-lg font-semibold">
@@ -77,15 +137,6 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
             {analysis.model} · {new Date(analysis.generatedAt).toLocaleString()}
           </div>
         </div>
-        <span
-          className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-            REC_TONE[analysis.recommendationType] ?? "bg-neutral-100 text-neutral-700 border-neutral-200"
-          }`}
-        >
-          <Term k={analysis.recommendationType}>
-            {REC_LABELS[analysis.recommendationType] ?? analysis.recommendationType}
-          </Term>
-        </span>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">

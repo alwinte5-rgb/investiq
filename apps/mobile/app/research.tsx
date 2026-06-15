@@ -360,6 +360,20 @@ function Researcher() {
               <Term k="risk score">Risk</Term> {a.riskScore}/100
             </Text>
           </View>
+          {(() => {
+            const reasons = a.evidence.filter((e) => e.role === "SUPPORTING" && e.snapshot?.note).slice(0, 3);
+            if (reasons.length === 0) return null;
+            return (
+              <View style={styles.verdictBox}>
+                <Text style={styles.verdictTitle}>Top reasons</Text>
+                {reasons.map((e) => (
+                  <Text key={e.id} style={styles.verdictReason}>
+                    ✓ {e.snapshot?.note}
+                  </Text>
+                ))}
+              </View>
+            );
+          })()}
           <Field title="Summary" body={a.summary} />
           <Field title="Bull case" body={a.bullCase} />
           <Field title="Bear case" body={a.bearCase} />
@@ -566,6 +580,9 @@ const styles = StyleSheet.create({
   notice: { backgroundColor: "#fffbeb", borderColor: "#fde68a", borderWidth: 1, borderRadius: 8, padding: 12 },
   noticeText: { color: "#92400e", fontSize: 13 },
   hint: { fontSize: 13, color: "#888" },
+  verdictBox: { backgroundColor: "#f9fafb", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 8, padding: 10, gap: 3 },
+  verdictTitle: { fontSize: 12, fontWeight: "700", color: "#374151" },
+  verdictReason: { fontSize: 13, color: "#4b5563", lineHeight: 18 },
   moversTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
   moversHint: { fontSize: 12, color: "#6b7280" },
   moverRow: {

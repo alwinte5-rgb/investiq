@@ -96,27 +96,35 @@ export function createDiscoveryService(opts: {
     }
   }
 
+  async function compute(): Promise<DiscoveryGroup[]> {
+    const groups: DiscoveryGroup[] = [];
+    if (opts.fmpKey) {
+      const key = opts.fmpKey;
+      const settled = await Promise.allSettled(
+        SCREENS.map((s) =>
+          fetchFmpScreener({ apiKey: key, baseUrl: opts.fmpBaseUrl, criteria: s.criteria }),
+        ),
+      );
+      settled.forEach((r, i) => {
+        const s = SCREENS[i];
+        if (!s) return;
+        const items = r.status === "fulfilled" ? r.value : [];
+        if (items.length > 0) groups.push({ key: s.key, title: s.title, blurb: s.blurb, items });
+      });
+    }
+    // Never leave the section empty — fall back to live popular quotes.
+    if (groups.length === 0) return popularFallback();
+    return groups;
+  }
+
   async function getDiscovery(): Promise<DiscoveryGroup[]> {
-    return cache.wrap("discovery", DISCOVERY_TTL_MS, async () => {
-      const groups: DiscoveryGroup[] = [];
-      if (opts.fmpKey) {
-        const key = opts.fmpKey;
-        const settled = await Promise.allSettled(
-          SCREENS.map((s) =>
-            fetchFmpScreener({ apiKey: key, baseUrl: opts.fmpBaseUrl, criteria: s.criteria }),
-          ),
-        );
-        settled.forEach((r, i) => {
-          const s = SCREENS[i];
-          if (!s) return;
-          const items = r.status === "fulfilled" ? r.value : [];
-          if (items.length > 0) groups.push({ key: s.key, title: s.title, blurb: s.blurb, items });
-        });
-      }
-      // Never leave the section empty — fall back to live popular quotes.
-      if (groups.length === 0) return popularFallback();
-      return groups;
-    });
+    // Cache only NON-empty results, so a transient empty (provider hiccup) can't
+    // poison the section for the whole TTL — the next request just recomputes.
+    const cached = cache.get<DiscoveryGroup[]>("discovery");
+    if (cached && cached.length > 0) return cached;
+    const groups = await compute();
+    if (groups.length > 0) cache.set("discovery", groups, DISCOVERY_TTL_MS);
+    return groups;
   }
 
   return { getDiscovery, enabled: Boolean(opts.fmpKey || opts.market) };

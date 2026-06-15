@@ -120,8 +120,10 @@ export function OpportunitiesUI({
 
       {total === 0 ? (
         <div className="rounded-md border border-dashed p-6 text-center text-sm text-neutral-500">
-          Run some stock analyses first — opportunities are built from your stored research, risk, and
-          news. Then come back and hit Generate.
+          No watch signals from your analyses yet. These are built from stocks you&apos;ve analyzed —
+          and steady, well-known names often come back <span className="font-medium">Hold</span> (no
+          signal). Analyze a few of the <span className="font-medium">Ideas to research</span> below
+          (growth, AI, small-cap…) to generate watches here.
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">

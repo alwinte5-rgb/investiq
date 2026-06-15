@@ -57,6 +57,8 @@ interface ReviewContent {
   diversificationScore: number;
   cashScore: number;
   flags: ReviewFlag[];
+  healthDelta?: number | null;
+  topMovers?: { ticker: string; changePct: number }[];
 }
 interface StoredReview {
   content: ReviewContent;
@@ -192,6 +194,20 @@ export default async function DashboardPage() {
               <span className="font-medium">{f.title}</span> — {f.detail}
             </div>
           ))}
+          {briefing.topMovers && briefing.topMovers.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-neutral-500">Today’s moves:</span>
+              {briefing.topMovers.map((m) => (
+                <span key={m.ticker} className="rounded-md border bg-white px-2 py-0.5">
+                  <span className="font-medium">{m.ticker}</span>{" "}
+                  <span className={m.changePct >= 0 ? "text-green-600" : "text-red-600"}>
+                    {m.changePct >= 0 ? "+" : ""}
+                    {m.changePct.toFixed(2)}%
+                  </span>
+                </span>
+              ))}
+            </div>
+          )}
         </section>
       )}
 

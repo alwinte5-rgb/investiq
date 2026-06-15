@@ -8,12 +8,85 @@ import {
   type ReviewPeriod,
   type ReviewEarnings,
   type ReviewContent,
+  type ReviewNewsItem,
   type UpdateNotificationPreferences,
 } from "@investiq/shared";
 import { requireEntitlement } from "../lib/auth.js";
 import { loadPortfolioInput } from "./portfolio.js";
+import type { MarketService } from "./market.js";
 
 const FEATURE_LABEL = "Daily reviews";
+const NEWS_LOOKBACK_DAYS = 7;
+
+/** Optional dependencies for richer briefings (live moves). */
+export interface ReviewDeps {
+  market?: MarketService;
+}
+
+/** Health score from the prior review of the same period (for a week/month delta). */
+async function loadPriorHealthScore(
+  userId: string,
+  period: ReviewPeriod,
+  periodKey: string,
+): Promise<number | null> {
+  const prior = await prisma.portfolioReview.findFirst({
+    where: { userId, period, periodKey: { not: periodKey } },
+    orderBy: { generatedAt: "desc" },
+    select: { content: true },
+  });
+  const health = (prior?.content as { healthScore?: unknown } | null)?.healthScore;
+  return typeof health === "number" ? health : null;
+}
+
+/** Recent grounded news for the user's held tickers (newest first, deduped per ticker). */
+async function loadHeldNews(userId: string, now: Date): Promise<ReviewNewsItem[]> {
+  const since = new Date(now.getTime() - NEWS_LOOKBACK_DAYS * 86400000);
+  const holdings = await prisma.holding.findMany({
+    where: { account: { connection: { userId } }, marketValue: { gt: 0 } },
+    select: { symbolId: true, symbol: { select: { ticker: true } } },
+  });
+  if (holdings.length === 0) return [];
+  const tickerById = new Map(holdings.map((h) => [h.symbolId, h.symbol.ticker]));
+
+  const rows = await prisma.newsImpact.findMany({
+    where: {
+      symbolId: { in: [...tickerById.keys()] },
+      article: { publishedAt: { gte: since } },
+    },
+    orderBy: { article: { publishedAt: "desc" } },
+    take: 20,
+    select: { impact: true, symbolId: true, article: { select: { headline: true } } },
+  });
+  const seen = new Set<string>();
+  const out: ReviewNewsItem[] = [];
+  for (const r of rows) {
+    const ticker = tickerById.get(r.symbolId);
+    if (!ticker || seen.has(ticker)) continue; // one highlight per ticker
+    seen.add(ticker);
+    out.push({
+      ticker,
+      headline: r.article.headline,
+      impact: r.impact as ReviewNewsItem["impact"],
+    });
+  }
+  return out;
+}
+
+/** Today's % change per held ticker (best-effort live quotes; empty without a market dep). */
+async function loadHoldingChanges(
+  market: MarketService | undefined,
+  tickers: string[],
+): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (!market || tickers.length === 0) return map;
+  const settled = await Promise.allSettled(tickers.map((t) => market.getQuote(t)));
+  settled.forEach((r) => {
+    if (r.status === "fulfilled" && r.value.changePct != null) {
+      map.set(r.value.ticker.toUpperCase(), r.value.changePct);
+    }
+  });
+  return map;
+}
 
 /** Read the user's notification preferences, creating defaults on first access
  * so callers always get a complete row (timezone, channel + period toggles). */
@@ -73,6 +146,7 @@ export async function generateReview(
   plan: Plan,
   period: ReviewPeriod,
   now: Date = new Date(),
+  deps: ReviewDeps = {},
 ): Promise<GenerateReviewResult> {
   requireEntitlement(plan, "dailyReviews", FEATURE_LABEL);
 
@@ -88,13 +162,26 @@ export async function generateReview(
     return { status: "insufficient", message: scored.message, holdingsCount: scored.holdingsCount };
   }
 
-  const earnings = await loadHeldEarnings(userId, now);
+  // Enrich the briefing with held-ticker context (all best-effort).
+  const tickers = input.holdings.map((h) => h.ticker);
+  const [earnings, priorHealthScore, news, changes] = await Promise.all([
+    loadHeldEarnings(userId, now),
+    loadPriorHealthScore(userId, period, periodKey),
+    loadHeldNews(userId, now),
+    loadHoldingChanges(deps.market, tickers),
+  ]);
   const content = buildPortfolioReview({
     period,
     asOf: now,
     scores: scored,
-    holdings: input.holdings.map((h) => ({ ticker: h.ticker, marketValue: h.marketValue })),
+    holdings: input.holdings.map((h) => ({
+      ticker: h.ticker,
+      marketValue: h.marketValue,
+      changePct: changes.get(h.ticker.toUpperCase()) ?? null,
+    })),
     earnings,
+    priorHealthScore,
+    news,
   });
 
   try {

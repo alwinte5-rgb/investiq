@@ -167,6 +167,18 @@ export interface ReviewFlag {
   tickers?: string[];
 }
 
+/** A held position's daily move, for the "movers in your holdings" highlight. */
+export interface HoldingMover {
+  ticker: string;
+  changePct: number;
+}
+/** A recent grounded news item for a held ticker. */
+export interface ReviewNewsItem {
+  ticker: string;
+  headline: string;
+  impact: "POSITIVE" | "NEUTRAL" | "NEGATIVE";
+}
+
 export interface ReviewContent {
   period: ReviewPeriod;
   asOf: string; // ISO timestamp the review was computed for
@@ -180,11 +192,19 @@ export interface ReviewContent {
   cashPct: number;
   topSectors: SectorWeight[];
   flags: ReviewFlag[];
+  /** Change in health since the prior review of the same period (null if first). */
+  healthDelta: number | null;
+  /** Biggest daily movers among the user's holdings (largest absolute move first). */
+  topMovers: HoldingMover[];
+  /** Recent grounded news for held names. */
+  newsHighlights: ReviewNewsItem[];
 }
 
 export interface ReviewHolding {
   ticker: string;
   marketValue: number;
+  /** Today's % change, when a live quote is available. */
+  changePct?: number | null;
 }
 
 /** An upcoming/recent earnings date for a held ticker. */
@@ -199,6 +219,10 @@ export interface BuildReviewInput {
   scores: PortfolioScores;
   holdings: ReviewHolding[];
   earnings: ReviewEarnings[];
+  /** Health score from the prior review of this period, for a week/month delta. */
+  priorHealthScore?: number | null;
+  /** Recent grounded news for held tickers. */
+  news?: ReviewNewsItem[];
 }
 
 const PERIOD_LABEL: Record<ReviewPeriod, string> = {
@@ -298,6 +322,19 @@ export function buildPortfolioReview(input: BuildReviewInput): ReviewContent {
           .map((f) => f.title)
           .join("; ")}.`;
 
+  // Biggest daily movers among holdings (largest absolute move first).
+  const topMovers: HoldingMover[] = holdings
+    .filter((h): h is ReviewHolding & { changePct: number } => typeof h.changePct === "number")
+    .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
+    .slice(0, 4)
+    .map((h) => ({ ticker: h.ticker, changePct: h.changePct }));
+
+  const healthDelta =
+    input.priorHealthScore != null ? scores.healthScore - input.priorHealthScore : null;
+
+  const heldTickers = new Set(holdings.map((h) => h.ticker));
+  const newsHighlights = (input.news ?? []).filter((n) => heldTickers.has(n.ticker)).slice(0, 5);
+
   return {
     period,
     asOf: asOf.toISOString(),
@@ -311,6 +348,9 @@ export function buildPortfolioReview(input: BuildReviewInput): ReviewContent {
     cashPct: scores.cashPct,
     topSectors: scores.sectorConcentration.slice(0, 5),
     flags,
+    healthDelta,
+    topMovers,
+    newsHighlights,
   };
 }
 

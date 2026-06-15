@@ -8,24 +8,34 @@ import {
   getPreferences,
   updatePreferences,
 } from "../services/reviews.js";
+import type { MarketService } from "../services/market.js";
+
+export interface ReviewRouteDeps {
+  auth: AuthDeps;
+  market: MarketService;
+}
 
 /**
  * Layer 4 — portfolio reviews + notification preferences. Investor+ only
  * (enforced server-side in the service via the `dailyReviews` entitlement).
  * All responses are personalized -> no-store.
  */
-export async function reviewRoutes(app: FastifyInstance, deps: AuthDeps) {
+export async function reviewRoutes(app: FastifyInstance, deps: ReviewRouteDeps) {
   // Generate (or return the existing) review for the current period.
   app.post("/api/v1/portfolio/reviews", async (req, reply) => {
-    const ctx = await resolveAuthContext(req, deps);
+    const ctx = await resolveAuthContext(req, deps.auth);
     const { period } = validate(reviewQuerySchema, req.query);
     reply.header("Cache-Control", "no-store");
-    return { data: await generateReview(ctx.userId, ctx.plan, period ?? "MORNING") };
+    return {
+      data: await generateReview(ctx.userId, ctx.plan, period ?? "MORNING", new Date(), {
+        market: deps.market,
+      }),
+    };
   });
 
   // Latest stored review (optionally filtered by period).
   app.get("/api/v1/portfolio/reviews", async (req, reply) => {
-    const ctx = await resolveAuthContext(req, deps);
+    const ctx = await resolveAuthContext(req, deps.auth);
     const { period } = validate(reviewQuerySchema, req.query);
     reply.header("Cache-Control", "no-store");
     return { data: await getLatestReview(ctx.userId, ctx.plan, period) };
@@ -34,13 +44,13 @@ export async function reviewRoutes(app: FastifyInstance, deps: AuthDeps) {
   // Notification preferences (timezone, channels, quiet hours). Available to
   // all authenticated users — gating applies to review *generation*, not prefs.
   app.get("/api/v1/me/notification-preferences", async (req, reply) => {
-    const ctx = await resolveAuthContext(req, deps);
+    const ctx = await resolveAuthContext(req, deps.auth);
     reply.header("Cache-Control", "no-store");
     return { data: await getPreferences(ctx.userId) };
   });
 
   app.patch("/api/v1/me/notification-preferences", async (req, reply) => {
-    const ctx = await resolveAuthContext(req, deps);
+    const ctx = await resolveAuthContext(req, deps.auth);
     const patch = validate(updateNotificationPreferencesSchema, req.body);
     reply.header("Cache-Control", "no-store");
     return { data: await updatePreferences(ctx.userId, patch) };

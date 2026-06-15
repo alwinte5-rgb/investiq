@@ -26,6 +26,9 @@ export interface ReviewContent {
   cashPct: number;
   topSectors: { sector: string; pct: number }[];
   flags: ReviewFlag[];
+  healthDelta?: number | null;
+  topMovers?: { ticker: string; changePct: number }[];
+  newsHighlights?: { ticker: string; headline: string; impact: "POSITIVE" | "NEUTRAL" | "NEGATIVE" }[];
 }
 
 export interface StoredReview {

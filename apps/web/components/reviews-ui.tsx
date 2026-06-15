@@ -32,7 +32,18 @@ function ReviewBody({ content, generatedAt }: { content: ReviewContent; generate
   return (
     <div className="space-y-4 rounded-lg border p-5">
       <div>
-        <h3 className="text-lg font-semibold">{content.headline}</h3>
+        <h3 className="flex flex-wrap items-center gap-2 text-lg font-semibold">
+          {content.headline}
+          {content.healthDelta != null && content.healthDelta !== 0 && (
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                content.healthDelta > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+              }`}
+            >
+              {content.healthDelta > 0 ? "▲" : "▼"} {Math.abs(content.healthDelta)} vs last
+            </span>
+          )}
+        </h3>
         <p className="mt-1 text-sm text-neutral-700">{content.summary}</p>
         {generatedAt && (
           <p className="mt-1 text-xs text-neutral-400">{new Date(generatedAt).toLocaleString()}</p>
@@ -65,6 +76,48 @@ function ReviewBody({ content, generatedAt }: { content: ReviewContent; generate
           </ul>
         )}
       </div>
+
+      {content.topMovers && content.topMovers.length > 0 && (
+        <div>
+          <h4 className="mb-2 text-sm font-semibold">Today’s moves in your holdings</h4>
+          <div className="flex flex-wrap gap-2">
+            {content.topMovers.map((m) => (
+              <span key={m.ticker} className="rounded-md border px-2 py-1 text-xs">
+                <span className="font-medium">{m.ticker}</span>{" "}
+                <span className={m.changePct >= 0 ? "text-green-600" : "text-red-600"}>
+                  {m.changePct >= 0 ? "+" : ""}
+                  {m.changePct.toFixed(2)}%
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {content.newsHighlights && content.newsHighlights.length > 0 && (
+        <div>
+          <h4 className="mb-2 text-sm font-semibold">News in your holdings</h4>
+          <ul className="space-y-1 text-xs text-neutral-600">
+            {content.newsHighlights.map((n, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="font-medium text-neutral-700">{n.ticker}</span>
+                <span
+                  className={
+                    n.impact === "POSITIVE"
+                      ? "text-green-600"
+                      : n.impact === "NEGATIVE"
+                        ? "text-red-600"
+                        : "text-neutral-400"
+                  }
+                >
+                  ·
+                </span>
+                <span className="min-w-0 flex-1">{n.headline}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <p className="border-t pt-3 text-[11px] text-neutral-400">
         Educational only — not investment advice.

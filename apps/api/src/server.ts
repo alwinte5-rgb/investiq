@@ -140,7 +140,7 @@ async function main() {
   await app.register(async (instance) => marketRoutes(instance, { auth: authDeps, market, news }));
   await app.register(async (instance) => adminRoutes(instance, authDeps));
   await app.register(async (instance) => portfolioRoutes(instance, authDeps));
-  await app.register(async (instance) => reviewRoutes(instance, authDeps));
+  await app.register(async (instance) => reviewRoutes(instance, { auth: authDeps, market }));
   // Risk Engine (Layer 6) — deterministic, needs only market + fundamentals.
   await app.register(async (instance) => riskRoutes(instance, { auth: authDeps, risk: { market, fundamentals } }));
   // Chart Intelligence (Layer 7) — projection of stored risk/analysis + live price anchor.

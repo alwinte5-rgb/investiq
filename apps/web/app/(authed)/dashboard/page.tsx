@@ -44,6 +44,27 @@ interface Account {
   totalValue: string | number;
   holdings: Holding[];
 }
+interface ReviewFlag {
+  severity: "info" | "warn";
+  title: string;
+  detail: string;
+}
+interface ReviewContent {
+  headline: string;
+  summary: string;
+  healthScore: number;
+  riskScore: number;
+  diversificationScore: number;
+  cashScore: number;
+  flags: ReviewFlag[];
+}
+interface StoredReview {
+  content: ReviewContent;
+  generatedAt: string;
+}
+type GenerateReviewResult =
+  | { status: "created" | "exists"; review: StoredReview }
+  | { status: "insufficient" };
 
 const money = (v: number | string | null) =>
   v == null ? "—" : `$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -74,6 +95,26 @@ export default async function DashboardPage() {
   // Brand-new = connections fetched successfully and there are none (real or
   // demo). A failed fetch (null) is NOT treated as new — never greet over an error.
   const isNewUser = connections !== null && connections.length === 0;
+
+  // Today's briefing — the dashboard is a daily overview, so surface it here.
+  // Use the stored review; generate one on the fly if none exists yet.
+  let briefing: ReviewContent | null = null;
+  if (summary?.connected) {
+    const stored = await safe<StoredReview | null>("/api/v1/portfolio/reviews");
+    if (stored?.content) {
+      briefing = stored.content;
+    } else {
+      try {
+        const gen = await apiFetch<GenerateReviewResult>(
+          "/api/v1/portfolio/reviews?period=MORNING",
+          { method: "POST" },
+        );
+        if (gen.status === "created" || gen.status === "exists") briefing = gen.review.content;
+      } catch {
+        /* briefing is best-effort */
+      }
+    }
+  }
   const isDemo = connection?.status === "demo";
   const isDisabled = connection?.status === "disabled";
   // A real, non-disabled connection with no holdings yet should pull on load
@@ -114,6 +155,44 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="text-sm text-neutral-500">Loading…</div>
+      )}
+
+      {/* Today's briefing — daily overview */}
+      {briefing && (
+        <section className="space-y-3 rounded-lg border border-blue-100 bg-blue-50/40 p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-neutral-900">Today’s briefing</h2>
+            <Link href="/reviews" className="text-xs text-blue-600 hover:underline">
+              Full review →
+            </Link>
+          </div>
+          <p className="text-sm text-neutral-700">{briefing.summary}</p>
+          <div className="grid grid-cols-4 gap-2">
+            {([
+              ["Health", briefing.healthScore],
+              ["Diversification", briefing.diversificationScore],
+              ["Risk", briefing.riskScore],
+              ["Cash", briefing.cashScore],
+            ] as const).map(([label, val]) => (
+              <div key={label} className="rounded-md border bg-white p-2 text-center">
+                <div className="text-[11px] text-neutral-500">{label}</div>
+                <div className="text-base font-semibold">{val}</div>
+              </div>
+            ))}
+          </div>
+          {briefing.flags.slice(0, 2).map((f, i) => (
+            <div
+              key={i}
+              className={`rounded-md border p-2 text-xs ${
+                f.severity === "warn"
+                  ? "border-amber-200 bg-amber-50 text-amber-800"
+                  : "border-neutral-200 bg-white text-neutral-600"
+              }`}
+            >
+              <span className="font-medium">{f.title}</span> — {f.detail}
+            </div>
+          ))}
+        </section>
       )}
 
       {/* Portfolio */}
@@ -217,11 +296,32 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      <p className="text-xs text-neutral-400">
-        <Link href="/watchlists" className="hover:underline">
-          Manage watchlists →
-        </Link>
-      </p>
+      {/* Next steps — quick jumps into the core flows */}
+      <section className="space-y-2">
+        <h2 className="text-lg font-semibold">Next steps</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ["Research a stock", "Get a grounded AI analysis", "/research"],
+            ["See opportunities", "Ranked watches + ideas to research", "/opportunities"],
+            ["Practice risk-free", "Paper-trade with fake money", "/paper"],
+            ["Learn the basics", "Plain-English investing lessons", "/learn"],
+          ].map(([title, desc, href]) => (
+            <Link
+              key={href}
+              href={href}
+              className="rounded-lg border p-4 transition hover:border-blue-300 hover:bg-blue-50/40"
+            >
+              <div className="text-sm font-medium text-neutral-900">{title}</div>
+              <div className="mt-0.5 text-xs text-neutral-500">{desc}</div>
+            </Link>
+          ))}
+        </div>
+        <p className="text-xs text-neutral-400">
+          <Link href="/watchlists" className="hover:underline">
+            Manage watchlists →
+          </Link>
+        </p>
+      </section>
     </div>
   );
 }

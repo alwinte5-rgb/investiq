@@ -70,7 +70,7 @@ async function main() {
     marketauxKey: env.MARKETAUX_API_KEY,
   });
   const fundamentals = createFundamentalsService({ fmpKey: env.FMP_API_KEY });
-  const discovery = createDiscoveryService({ fmpKey: env.FMP_API_KEY });
+  const discovery = createDiscoveryService({ fmpKey: env.FMP_API_KEY, market });
 
   const app = Fastify({ logger: true });
 

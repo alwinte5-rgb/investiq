@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { currentUser } from "@clerk/nextjs/server";
 import { apiFetch } from "@/lib/api";
 import { OnboardingGuide } from "@/components/onboarding";
 import {
@@ -48,7 +49,24 @@ interface ReviewFlag {
   severity: "info" | "warn";
   title: string;
   detail: string;
+  type?: string;
+  tickers?: string[];
 }
+interface MarketIndex {
+  ticker: string;
+  price: number;
+  changePct: number | null;
+}
+interface MarketOverview {
+  indices: MarketIndex[];
+  asOf: string;
+}
+const INDEX_LABELS: Record<string, string> = {
+  SPY: "S&P 500",
+  QQQ: "Nasdaq 100",
+  DIA: "Dow Jones",
+  IWM: "Russell 2000",
+};
 interface ReviewContent {
   headline: string;
   summary: string;
@@ -77,6 +95,35 @@ async function safe<T>(path: string): Promise<T | null> {
   } catch {
     return null;
   }
+}
+
+function Chip({
+  label,
+  value,
+  href,
+  tone,
+}: {
+  label: string;
+  value: string;
+  href?: string;
+  tone?: string | null;
+}) {
+  const toneClass =
+    tone === "Bullish" ? "text-green-600" : tone === "Bearish" ? "text-red-600" : "text-neutral-900";
+  const cls = `block rounded-lg border p-3${href ? " transition hover:border-blue-300 hover:bg-blue-50/40" : ""}`;
+  const body = (
+    <>
+      <div className="text-[11px] text-neutral-500">{label}</div>
+      <div className={`text-lg font-bold ${toneClass}`}>{value}</div>
+    </>
+  );
+  return href ? (
+    <Link href={href} className={cls}>
+      {body}
+    </Link>
+  ) : (
+    <div className={cls}>{body}</div>
+  );
 }
 
 export default async function DashboardPage() {
@@ -117,6 +164,28 @@ export default async function DashboardPage() {
       }
     }
   }
+
+  // Market overview + at-a-glance counts (all best-effort).
+  const [overview, oppGroups, clerkUser] = await Promise.all([
+    safe<MarketOverview>("/api/v1/market/overview"),
+    safe<{ items: unknown[] }[]>("/api/v1/opportunities"),
+    currentUser().catch(() => null),
+  ]);
+  const firstName = clerkUser?.firstName ?? null;
+  const indices = overview?.indices ?? [];
+  const avgChg = indices.length
+    ? indices.reduce((s, i) => s + (i.changePct ?? 0), 0) / indices.length
+    : 0;
+  const sentiment = indices.length === 0 ? null : avgChg > 0.3 ? "Bullish" : avgChg < -0.3 ? "Bearish" : "Mixed";
+  const oppCount = oppGroups?.reduce((n, g) => n + g.items.length, 0) ?? 0;
+  const riskAlerts = briefing?.flags.filter((f) => f.severity === "warn").length ?? 0;
+  const earningsAhead =
+    briefing?.flags
+      .filter((f) => f.type === "earnings")
+      .reduce((n, f) => n + (f.tickers?.length ?? 0), 0) ?? 0;
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const isDemo = connection?.status === "demo";
   const isDisabled = connection?.status === "disabled";
   // A real, non-disabled connection with no holdings yet should pull on load
@@ -136,9 +205,47 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      <div>
+        <h1 className="text-2xl font-semibold">
+          {greeting}
+          {firstName ? `, ${firstName}` : ""}
+        </h1>
+        <p className="text-sm text-neutral-500">Your daily overview</p>
+      </div>
 
       <OnboardingGuide isNewUser={isNewUser} />
+
+      {/* At-a-glance chips */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Chip label="Market sentiment" value={sentiment ?? "—"} tone={sentiment} />
+        <Chip label="Opportunities" value={String(oppCount)} href="/opportunities" />
+        <Chip label="Risk alerts" value={String(riskAlerts)} href="/reviews" />
+        <Chip label="Earnings ahead" value={String(earningsAhead)} href="/reviews" />
+      </div>
+
+      {/* Market overview */}
+      {indices.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">Market overview</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {indices.map((i) => (
+              <div key={i.ticker} className="rounded-md border p-3">
+                <div className="text-xs text-neutral-500">{INDEX_LABELS[i.ticker] ?? i.ticker}</div>
+                <div className="text-base font-semibold">{money(i.price)}</div>
+                <div
+                  className={`text-xs font-medium ${
+                    (i.changePct ?? 0) >= 0 ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {i.changePct == null
+                    ? "—"
+                    : `${i.changePct >= 0 ? "+" : ""}${i.changePct.toFixed(2)}%`}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {error ? (
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">

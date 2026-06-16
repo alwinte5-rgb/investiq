@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api";
-import { OpportunitiesUI } from "@/components/opportunities-ui";
+import { OpportunitiesUI, MarketWatches } from "@/components/opportunities-ui";
 import { DiscoverIdeas, type DiscoveryGroup } from "@/components/discover-ui";
 import type { OpportunityGroup } from "@/app/(authed)/opportunities/actions";
 
@@ -8,6 +8,12 @@ export const dynamic = "force-dynamic"; // personalized — never statically cac
 export default async function OpportunitiesPage() {
   let initial: OpportunityGroup[] = [];
   let gated = false;
+
+  // AI-surfaced market watches (global, non-personalized) + the user's personal
+  // opportunities. The market list is best-effort and never blocks the page.
+  const market = await apiFetch<OpportunityGroup[]>("/api/v1/opportunities/market").catch(
+    () => [] as OpportunityGroup[],
+  );
 
   try {
     initial = await apiFetch<OpportunityGroup[]>("/api/v1/opportunities");
@@ -39,10 +45,15 @@ export default async function OpportunitiesPage() {
       <div>
         <h1 className="text-2xl font-semibold">Opportunities</h1>
         <p className="text-sm text-neutral-500">
-          Ranked watches and warnings built from your own analyses, risk and news.
+          AI-surfaced market watches plus ranked signals from your own analyses — educational, not
+          advice.
         </p>
       </div>
-      <OpportunitiesUI initial={initial} gated={gated} />
+      <MarketWatches groups={market} />
+      <div className="space-y-3 border-t pt-6">
+        <h2 className="text-lg font-semibold">From your analyses</h2>
+        <OpportunitiesUI initial={initial} gated={gated} />
+      </div>
       <DiscoverIdeas groups={discovery} />
     </div>
   );

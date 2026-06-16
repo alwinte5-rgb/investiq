@@ -29,6 +29,11 @@ const envSchema = z.object({
   // --- Optional: cache/queues (in-memory used until provided) ---
   REDIS_URL: z.string().url().optional(),
 
+  // --- Optional: scheduled jobs (e.g. daily market opportunity scan) ---
+  // When set, the /api/v1/cron/* routes accept a `Bearer <CRON_SECRET>` caller
+  // (a Railway scheduled job). When unset, those routes return 404 (disabled).
+  CRON_SECRET: z.string().min(1).optional(),
+
   // --- Optional: AI (Layer 2) ---
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
   AI_MODEL: z.string().default("claude-opus-4-8"),

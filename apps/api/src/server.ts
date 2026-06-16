@@ -38,6 +38,7 @@ import { learningRoutes } from "./routes/learning.js";
 import { glossaryRoutes } from "./routes/glossary.js";
 import { discoveryRoutes } from "./routes/discovery.js";
 import { newsRoutes } from "./routes/news.js";
+import { cronRoutes } from "./routes/cron.js";
 import { createMarketService } from "./services/market.js";
 import { createNewsService } from "./services/news.js";
 import { createFundamentalsService } from "./services/fundamentals.js";
@@ -163,6 +164,17 @@ async function main() {
     ? createAnthropicAnalysisModel({ apiKey: anthropicKey, model: env.AI_MODEL })
     : null;
   const analysisDeps = model ? { market, news, fundamentals, model } : null;
+
+  // Cron routes (scheduled jobs, e.g. the daily market opportunity scan).
+  // Secret-gated; disabled (404) unless CRON_SECRET is set. Needs AI deps to scan.
+  await app.register(async (instance) =>
+    cronRoutes(instance, { secret: env.CRON_SECRET, analysis: analysisDeps }),
+  );
+  app.log.info(
+    env.CRON_SECRET
+      ? "Cron routes enabled (scheduled market scan available)"
+      : "CRON_SECRET not set — cron routes disabled",
+  );
 
   // After sample data is seeded, generate REAL grounded analyses for the demo
   // holdings so the AI screens (Research/Risk/Opportunities) populate. Best-

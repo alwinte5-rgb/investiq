@@ -62,6 +62,55 @@ function OpportunityRow({ o }: { o: Opportunity }) {
   );
 }
 
+/** Shared grid of opportunity sections — used by both market + personal lists. */
+function GroupGrid({ groups }: { groups: OpportunityGroup[] }) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {groups.map((g) => (
+        <section key={g.type} className={`rounded-lg border p-4 ${SECTION_TONE[g.type]}`}>
+          <div className="mb-1 flex items-center justify-between">
+            <h3 className="text-sm font-semibold">{g.label}</h3>
+            <span className="text-xs text-neutral-400">{g.items.length}</span>
+          </div>
+          <ul className="divide-y">
+            {g.items.map((o) => (
+              <OpportunityRow key={o.ticker} o={o} />
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * AI-surfaced MARKET watches — global, non-personalized, the same for everyone.
+ * Populated by the scheduled scan, shown even to users with zero analyses of
+ * their own. Read-only. Educational "Watch" candidates, never buy/sell advice.
+ */
+export function MarketWatches({ groups }: { groups: OpportunityGroup[] }) {
+  const total = groups.reduce((n, g) => n + g.items.length, 0);
+  return (
+    <div className="space-y-3">
+      <div>
+        <h2 className="text-lg font-semibold">Market watches</h2>
+        <p className="text-sm text-neutral-500">
+          AI-surfaced across the market from grounded analysis — the same educational “Watch”
+          candidates for everyone. Not buy/sell or personalized advice.
+        </p>
+      </div>
+      {total === 0 ? (
+        <div className="rounded-md border border-dashed p-6 text-center text-sm text-neutral-500">
+          The market scan hasn’t produced watches yet — it refreshes on a schedule. Check back soon,
+          or analyze any ticker below to build your own list.
+        </div>
+      ) : (
+        <GroupGrid groups={groups} />
+      )}
+    </div>
+  );
+}
+
 export function OpportunitiesUI({
   initial,
   gated,
@@ -127,21 +176,7 @@ export function OpportunitiesUI({
           <span className="font-medium">Ideas to research</span> below to get started.
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {groups.map((g) => (
-            <section key={g.type} className={`rounded-lg border p-4 ${SECTION_TONE[g.type]}`}>
-              <div className="mb-1 flex items-center justify-between">
-                <h2 className="text-sm font-semibold">{g.label}</h2>
-                <span className="text-xs text-neutral-400">{g.items.length}</span>
-              </div>
-              <ul className="divide-y">
-                {g.items.map((o) => (
-                  <OpportunityRow key={o.ticker} o={o} />
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
+        <GroupGrid groups={groups} />
       )}
 
       <p className="text-[11px] text-neutral-400">

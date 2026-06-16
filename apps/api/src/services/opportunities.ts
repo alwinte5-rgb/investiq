@@ -28,8 +28,9 @@ import { requireEntitlement } from "../lib/auth.js";
 
 const FEATURE_LABEL = "Opportunities";
 
-/** Pull the first SUPPORTING evidence note from a stored analysis, if any. */
-function supportingNote(evidence: { role: string; snapshot: unknown }[]): string | null {
+/** Pull the first SUPPORTING evidence note from a stored analysis, if any.
+ *  Exported for reuse by the global market scan (same evidence shape). */
+export function supportingNote(evidence: { role: string; snapshot: unknown }[]): string | null {
   for (const e of evidence) {
     if (e.role !== "SUPPORTING") continue;
     const snap = e.snapshot;

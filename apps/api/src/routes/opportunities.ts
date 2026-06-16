@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { resolveAuthContext, type AuthDeps } from "../lib/guard.js";
 import { generateOpportunities, getOpportunities } from "../services/opportunities.js";
+import { getMarketOpportunities } from "../services/market-scan.js";
 
 /**
  * Opportunity Engine routes (Layer 8). Pipeline: authenticate -> (entitlement
@@ -13,6 +14,15 @@ export async function opportunityRoutes(app: FastifyInstance, auth: AuthDeps) {
     const ctx = await resolveAuthContext(req, auth);
     reply.header("Cache-Control", "no-store");
     return { data: await getOpportunities(ctx.userId, ctx.plan) };
+  });
+
+  // AI-surfaced MARKET watches — global, non-personalized, available to every
+  // authenticated user (no entitlement gate). Read-only over stored global
+  // analyses; populated by the scheduled scan. Educational, not advice.
+  app.get("/api/v1/opportunities/market", async (req, reply) => {
+    await resolveAuthContext(req, auth);
+    reply.header("Cache-Control", "no-store");
+    return { data: await getMarketOpportunities() };
   });
 
   // Regenerate the opportunity set from the user's stored analyses + context.

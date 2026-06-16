@@ -3,6 +3,7 @@ import {
   entitlementsFor,
   errors,
   withinAiQuota,
+  type AnalysisOutput,
   type Plan,
 } from "@investiq/shared";
 import {
@@ -165,6 +166,44 @@ function loadAnalysisById(id: string) {
 }
 
 /**
+ * Build the Prisma `create` payload for a validated analysis (+ its evidence
+ * snapshot). Centralized so the per-user and global (userId=null, market-scan)
+ * paths persist identically — only the owner differs.
+ */
+function analysisCreateData(
+  userId: string | null,
+  symbolId: string,
+  args: { output: AnalysisOutput; bundle: EvidenceBundle; inputsHash: string; model: string },
+) {
+  const { output, bundle, inputsHash, model } = args;
+  const valueByRef = new Map(bundle.data.map((d) => [d.ref, d.value]));
+  return {
+    userId,
+    symbolId,
+    recommendationType: output.recommendationType,
+    summary: output.summary,
+    bullCase: output.bullCase,
+    bearCase: output.bearCase,
+    keyRisks: output.keyRisks,
+    newsImpactSummary: output.newsImpactSummary,
+    technicalSummary: output.technicalSummary,
+    confidenceScore: output.confidenceScore,
+    riskScore: output.riskScore,
+    model,
+    inputsHash,
+    evidence: {
+      create: output.evidence.map((e) => ({
+        sourceType: e.sourceType,
+        reference: e.reference,
+        role: e.role,
+        // Snapshot the cited value at generation time + the model's note.
+        snapshot: { note: e.note, value: valueByRef.get(e.reference) ?? null },
+      })),
+    },
+  };
+}
+
+/**
  * Generate (or reuse) an AI analysis for a symbol on behalf of a user.
  * Delegates the decision flow to the grounded pipeline; this module supplies the
  * prisma-backed ports (cache lookup, quota check, persistence + usage increment).
@@ -195,35 +234,11 @@ export async function generateAnalysis(
       });
       return withinAiQuota(plan, counter?.count ?? 0);
     },
-    async persist({ output, bundle: b, inputsHash, model }) {
-      const valueByRef = new Map(b.data.map((d) => [d.ref, d.value]));
+    async persist(args) {
       try {
         return await prisma.$transaction(async (tx) => {
           const created = await tx.analysis.create({
-            data: {
-              userId,
-              symbolId: symbol.id,
-              recommendationType: output.recommendationType,
-              summary: output.summary,
-              bullCase: output.bullCase,
-              bearCase: output.bearCase,
-              keyRisks: output.keyRisks,
-              newsImpactSummary: output.newsImpactSummary,
-              technicalSummary: output.technicalSummary,
-              confidenceScore: output.confidenceScore,
-              riskScore: output.riskScore,
-              model,
-              inputsHash,
-              evidence: {
-                create: output.evidence.map((e) => ({
-                  sourceType: e.sourceType,
-                  reference: e.reference,
-                  role: e.role,
-                  // Snapshot the cited value at generation time + the model's note.
-                  snapshot: { note: e.note, value: valueByRef.get(e.reference) ?? null },
-                })),
-              },
-            },
+            data: analysisCreateData(userId, symbol.id, args),
             include: { evidence: true },
           });
           await tx.usageCounter.upsert({
@@ -238,7 +253,9 @@ export async function generateAnalysis(
         // request created; do not double-count usage.
         if ((e as { code?: string }).code === "P2002") {
           return prisma.analysis.findUniqueOrThrow({
-            where: { userId_symbolId_inputsHash: { userId, symbolId: symbol.id, inputsHash } },
+            where: {
+              userId_symbolId_inputsHash: { userId, symbolId: symbol.id, inputsHash: args.inputsHash },
+            },
             include: { evidence: true },
           });
         }
@@ -264,6 +281,46 @@ export async function generateAnalysis(
     case "created":
       return { status: "created" as const, analysis: result.analysis };
   }
+}
+
+/**
+ * Generate (or reuse) a GLOBAL, non-personalized analysis for a symbol
+ * (`userId = null`). Used by the daily market scan so the AI can surface
+ * "Watch" candidates across the universe without being tied to any one user:
+ *  - no AI quota (it's a system job, not a user action), and
+ *  - cached globally per (symbolId, inputsHash) so an unchanged universe is
+ *    free to re-scan.
+ * The output is identical educational "Watch" framing — never personalized
+ * advice. Returns the same AnalysisResult union as generateAnalysis.
+ */
+export async function generateGlobalAnalysis(ticker: string, deps: AnalysisDeps) {
+  const symbol = await findSymbolByTicker(ticker);
+  if (!symbol) throw errors.notFound(`Unknown or unsupported symbol: ${ticker}`);
+
+  const bundle = await assembleBundle(deps, ticker, symbol.id);
+
+  const ports: AnalysisPorts<StoredAnalysis> = {
+    async loadCached(inputsHash) {
+      // No composite unique on null userId, so match the latest global row.
+      return prisma.analysis.findFirst({
+        where: { userId: null, symbolId: symbol.id, inputsHash },
+        orderBy: { generatedAt: "desc" },
+        include: { evidence: true },
+      });
+    },
+    // System job: never gated by a per-user quota.
+    async quotaOk() {
+      return true;
+    },
+    async persist(args) {
+      return prisma.analysis.create({
+        data: analysisCreateData(null, symbol.id, args),
+        include: { evidence: true },
+      });
+    },
+  };
+
+  return runAnalysis(bundle, deps.model, ports);
 }
 
 /** Latest stored analysis for this user + symbol, or null. */

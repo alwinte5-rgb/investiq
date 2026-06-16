@@ -13,9 +13,16 @@ import type { WarningColor } from "./risk.js";
 import type { RecommendationType } from "./recommendations.js";
 import type { NewsTone } from "./chart.js";
 
-export type OpportunityType = "BUY_WATCH" | "ETF" | "REBUY" | "HIGH_RISK_HOLDING" | "REVIEW" | "AVOID";
+export type OpportunityType =
+  | "BUY_WATCH"
+  | "ETF"
+  | "REBUY"
+  | "HIGH_RISK_HOLDING"
+  | "REVIEW"
+  | "AVOID"
+  | "WATCHING";
 
-/** Render order for the opportunity sections (positive first, warnings last). */
+/** Render order for the opportunity sections (positive first, warnings, then neutral watch-list last). */
 export const OPPORTUNITY_TYPES: OpportunityType[] = [
   "BUY_WATCH",
   "ETF",
@@ -23,6 +30,7 @@ export const OPPORTUNITY_TYPES: OpportunityType[] = [
   "REVIEW",
   "HIGH_RISK_HOLDING",
   "AVOID",
+  "WATCHING",
 ];
 
 export const OPPORTUNITY_LABELS: Record<OpportunityType, string> = {
@@ -32,6 +40,7 @@ export const OPPORTUNITY_LABELS: Record<OpportunityType, string> = {
   HIGH_RISK_HOLDING: "High-Risk Holdings",
   REVIEW: "Positions to Review",
   AVOID: "Avoid",
+  WATCHING: "Watching",
 };
 
 /** True when the opportunity is a constructive (add/watch) idea vs. a warning. */
@@ -105,9 +114,11 @@ function mapType(
       // Only actionable on something you actually hold.
       return held ? "REVIEW" : null;
     case "HOLD":
-      // A "Hold" you own that has turned risky (orange/red) is still worth a
-      // look — surface it for review rather than hiding it. Calm holds stay out.
-      return held && (warningColor === "ORANGE" || warningColor === "RED") ? "REVIEW" : null;
+      // A "Hold" you own that has turned risky (orange/red) is worth a closer
+      // look → "review". Every other Hold (calm holds, and names you analyzed
+      // but don't own) goes to the neutral "Watching" list so the work you did
+      // is never invisible — Opportunities reflects every stock you've analyzed.
+      return held && (warningColor === "ORANGE" || warningColor === "RED") ? "REVIEW" : "WATCHING";
   }
 }
 
@@ -120,6 +131,10 @@ function scoreFor(type: OpportunityType, input: OpportunityInput): number {
     const strongBonus = input.recommendationType === "STRONG_BUY_WATCH" ? 8 : 0;
     const newsBonus = input.newsTone === "POSITIVE" ? 4 : input.newsTone === "NEGATIVE" ? -4 : 0;
     return clamp(input.confidenceScore * 0.7 + (100 - input.riskScore) * 0.3 + strongBonus + newsBonus);
+  }
+  if (type === "WATCHING") {
+    // Neutral watch-list: rank by conviction (confidence + low risk), no bonuses.
+    return clamp(input.confidenceScore * 0.7 + (100 - input.riskScore) * 0.3);
   }
   // Warning buckets rank by urgency: higher risk (and worse color) first.
   return clamp(input.riskScore * 0.7 + input.confidenceScore * 0.3 + boost);
@@ -148,6 +163,12 @@ function explain(type: OpportunityType, input: OpportunityInput): string {
       return `Flagged to review — the latest analysis suggests reassessing this position.${tail}`;
     case "AVOID":
       return `Avoid for now — ${input.riskScore}/100 risk on the latest analysis.${tail}`;
+    case "WATCHING":
+      return (
+        `Hold on your latest analysis — ${input.confidenceScore}/100 confidence at ${input.riskScore}/100 risk. ` +
+        `Nothing to act on; tracking for changes.` +
+        tail
+      );
   }
 }
 

@@ -48,29 +48,44 @@ function LevelLadder({ overlay }: { overlay: ChartOverlay }) {
       : []),
   ].sort((a, b) => b.value - a.value);
 
+  const mid = (hi + lo) / 2;
+
   return (
     <div className="space-y-2">
-      {/* Visual bar: thin colored lines only (labels live in the legend below). */}
-      <div className="relative h-40 overflow-hidden rounded-md border bg-neutral-50">
-        {buyLow != null && buyHigh != null && (
-          <div
-            className="absolute inset-x-0 bg-blue-500/10"
-            style={{ top: `${pos(buyHigh)}%`, height: `${Math.max(0, pos(buyLow) - pos(buyHigh))}%` }}
-          />
-        )}
-        {overlay.levels.map((l) => (
-          <div
-            key={l.kind}
-            className="absolute inset-x-0 h-px"
-            style={{ top: `${pos(l.price)}%`, backgroundColor: l.color }}
-          />
-        ))}
-        {overlay.currentPrice != null && (
-          <div
-            className="absolute inset-x-0 border-t border-dashed border-neutral-900"
-            style={{ top: `${pos(overlay.currentPrice)}%` }}
-          />
-        )}
+      {/* Caption — says plainly what the axis measures. */}
+      <p className="text-[11px] text-neutral-500">
+        Share price ($), high to low — where today&apos;s price sits against your buy zone, stop and
+        target.
+      </p>
+      {/* Chart row: a left price axis + the level bar, so the vertical scale reads as price. */}
+      <div className="flex gap-2">
+        <div className="relative h-40 w-14 shrink-0 text-right text-[10px] tabular-nums text-neutral-400">
+          <span className="absolute right-0 top-0 -translate-y-1/2">{money(hi)}</span>
+          <span className="absolute right-0 top-1/2 -translate-y-1/2">{money(mid)}</span>
+          <span className="absolute bottom-0 right-0 translate-y-1/2">{money(lo)}</span>
+        </div>
+        {/* Visual bar: thin colored lines only (each value is named in the legend below). */}
+        <div className="relative h-40 flex-1 overflow-hidden rounded-md border bg-neutral-50">
+          {buyLow != null && buyHigh != null && (
+            <div
+              className="absolute inset-x-0 bg-blue-500/10"
+              style={{ top: `${pos(buyHigh)}%`, height: `${Math.max(0, pos(buyLow) - pos(buyHigh))}%` }}
+            />
+          )}
+          {overlay.levels.map((l) => (
+            <div
+              key={l.kind}
+              className="absolute inset-x-0 h-px"
+              style={{ top: `${pos(l.price)}%`, backgroundColor: l.color }}
+            />
+          ))}
+          {overlay.currentPrice != null && (
+            <div
+              className="absolute inset-x-0 border-t border-dashed border-neutral-900"
+              style={{ top: `${pos(overlay.currentPrice)}%` }}
+            />
+          )}
+        </div>
       </div>
       {/* Legend — readable values, never overlapping. */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">

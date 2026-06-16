@@ -16,6 +16,7 @@ const SECTION_TONE: Record<OpportunityType, string> = {
   REVIEW: "border-amber-200",
   HIGH_RISK_HOLDING: "border-orange-200",
   AVOID: "border-red-200",
+  WATCHING: "border-neutral-200",
 };
 const COLOR_DOT: Record<string, string> = {
   GREEN: "#15803d",
@@ -120,10 +121,10 @@ export function OpportunitiesUI({
 
       {total === 0 ? (
         <div className="rounded-md border border-dashed p-6 text-center text-sm text-neutral-500">
-          No watch signals from your analyses yet. These are built from stocks you&apos;ve analyzed —
-          and steady, well-known names often come back <span className="font-medium">Hold</span> (no
-          signal). Analyze a few of the <span className="font-medium">Ideas to research</span> below
-          (growth, AI, small-cap…) to generate watches here.
+          Nothing analyzed yet. Every stock you analyze shows up here — buy/ETF/rebuy watches,
+          high-risk holdings, positions to review, and a neutral{" "}
+          <span className="font-medium">Watching</span> list for steady Holds. Pick any of the{" "}
+          <span className="font-medium">Ideas to research</span> below to get started.
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">

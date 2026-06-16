@@ -3,7 +3,14 @@
 import { redirect } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
-export type OpportunityType = "BUY_WATCH" | "ETF" | "REBUY" | "HIGH_RISK_HOLDING" | "REVIEW" | "AVOID";
+export type OpportunityType =
+  | "BUY_WATCH"
+  | "ETF"
+  | "REBUY"
+  | "HIGH_RISK_HOLDING"
+  | "REVIEW"
+  | "AVOID"
+  | "WATCHING";
 
 export interface Opportunity {
   ticker: string;

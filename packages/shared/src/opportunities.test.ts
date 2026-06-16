@@ -43,18 +43,26 @@ describe("categorizeOpportunity", () => {
     expect(categorizeOpportunity({ ...base, recommendationType: "TRIM_POSITION", held: false })).toBeNull();
   });
 
-  it("drops a calm HOLD, but flags a held HOLD that has turned risky for review", () => {
-    expect(categorizeOpportunity({ ...base, recommendationType: "HOLD" })).toBeNull();
+  it("routes a calm HOLD to the neutral Watching list, but a held risky HOLD to review", () => {
+    // A plain Hold (not owned) is no longer hidden — it lands in "Watching".
+    expect(categorizeOpportunity({ ...base, recommendationType: "HOLD" })!.type).toBe("WATCHING");
     expect(
-      categorizeOpportunity({ ...base, recommendationType: "HOLD", held: true, warningColor: "GREEN" }),
-    ).toBeNull();
+      categorizeOpportunity({ ...base, recommendationType: "HOLD", held: true, warningColor: "GREEN" })!.type,
+    ).toBe("WATCHING");
+    // Held AND turned risky (orange/red) → escalates to review.
     expect(
       categorizeOpportunity({ ...base, recommendationType: "HOLD", held: true, warningColor: "RED" })!.type,
     ).toBe("REVIEW");
-    // Risky but not held → still nothing to act on.
+    // Risky but not held → still just watching (no position to act on).
     expect(
-      categorizeOpportunity({ ...base, recommendationType: "HOLD", held: false, warningColor: "RED" }),
-    ).toBeNull();
+      categorizeOpportunity({ ...base, recommendationType: "HOLD", held: false, warningColor: "RED" })!.type,
+    ).toBe("WATCHING");
+  });
+
+  it("scores a Watching item by conviction (confidence + low risk), not risk-first", () => {
+    const high = categorizeOpportunity({ ...base, recommendationType: "HOLD", confidenceScore: 90, riskScore: 20 })!;
+    const low = categorizeOpportunity({ ...base, recommendationType: "HOLD", confidenceScore: 50, riskScore: 70 })!;
+    expect(high.score).toBeGreaterThan(low.score);
   });
 
   it("scores higher confidence + lower risk above the reverse for buy-type", () => {
@@ -75,7 +83,9 @@ describe("buildOpportunities", () => {
     const buy = groups.find((g) => g.type === "BUY_WATCH")!;
     expect(buy.items.map((o) => o.ticker)).toEqual(["NVDA", "MSFT"]); // ranked by score desc
     expect(groups.find((g) => g.type === "HIGH_RISK_HOLDING")?.items[0]?.ticker).toBe("RISK");
-    // HOLD produced nothing, so no empty group is present.
+    // HOLD now lands in the neutral "Watching" group rather than disappearing.
+    expect(groups.find((g) => g.type === "WATCHING")?.items[0]?.ticker).toBe("HOLDCO");
+    // No empty groups are emitted.
     expect(groups.every((g) => g.items.length > 0)).toBe(true);
   });
 });

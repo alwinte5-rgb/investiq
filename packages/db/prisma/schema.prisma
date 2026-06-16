@@ -64,6 +64,7 @@ enum OpportunityType {
   HIGH_RISK_HOLDING
   REVIEW
   AVOID
+  WATCHING
 }
 
 enum ReviewPeriod {

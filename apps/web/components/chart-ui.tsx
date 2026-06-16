@@ -39,38 +39,54 @@ function LevelLadder({ overlay }: { overlay: ChartOverlay }) {
   const buyLow = overlay.levels.find((l) => l.kind === "BUY_ZONE_LOW")?.price;
   const buyHigh = overlay.levels.find((l) => l.kind === "BUY_ZONE_HIGH")?.price;
 
+  // Legend rows (ordered high → low) so every value is listed cleanly below the
+  // bar — no overlapping labels on the chart itself.
+  const legend = [
+    ...overlay.levels.map((l) => ({ label: l.label, value: l.price, color: l.color, now: false })),
+    ...(overlay.currentPrice != null
+      ? [{ label: "Now", value: overlay.currentPrice, color: "#111827", now: true }]
+      : []),
+  ].sort((a, b) => b.value - a.value);
+
   return (
-    <div className="relative h-56 overflow-hidden rounded-md border bg-neutral-50">
-      {/* Shaded buy-zone band so it reads as a zone, not two thin lines. */}
-      {buyLow != null && buyHigh != null && (
-        <div
-          className="absolute inset-x-0 bg-blue-500/10"
-          style={{ top: `${pos(buyHigh)}%`, height: `${Math.max(0, pos(buyLow) - pos(buyHigh))}%` }}
-        />
-      )}
-      {overlay.levels.map((l) => (
-        <div key={l.kind} className="absolute inset-x-0 flex items-center" style={{ top: `${pos(l.price)}%` }}>
-          <div className="h-px flex-1" style={{ backgroundColor: l.color }} />
-          <span
-            className="ml-2 whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-medium text-white"
-            style={{ backgroundColor: l.color }}
-          >
-            {l.label} {money(l.price)}
-          </span>
-        </div>
-      ))}
-      {/* Live price marker — the anchor that makes the ladder meaningful. */}
-      {overlay.currentPrice != null && (
-        <div
-          className="absolute inset-x-0 flex items-center"
-          style={{ top: `${pos(overlay.currentPrice)}%` }}
-        >
-          <div className="flex-1 border-t border-dashed border-neutral-900" />
-          <span className="ml-2 whitespace-nowrap rounded bg-neutral-900 px-1.5 py-0.5 text-[11px] font-semibold text-white">
-            Now {money(overlay.currentPrice)}
-          </span>
-        </div>
-      )}
+    <div className="space-y-2">
+      {/* Visual bar: thin colored lines only (labels live in the legend below). */}
+      <div className="relative h-40 overflow-hidden rounded-md border bg-neutral-50">
+        {buyLow != null && buyHigh != null && (
+          <div
+            className="absolute inset-x-0 bg-blue-500/10"
+            style={{ top: `${pos(buyHigh)}%`, height: `${Math.max(0, pos(buyLow) - pos(buyHigh))}%` }}
+          />
+        )}
+        {overlay.levels.map((l) => (
+          <div
+            key={l.kind}
+            className="absolute inset-x-0 h-px"
+            style={{ top: `${pos(l.price)}%`, backgroundColor: l.color }}
+          />
+        ))}
+        {overlay.currentPrice != null && (
+          <div
+            className="absolute inset-x-0 border-t border-dashed border-neutral-900"
+            style={{ top: `${pos(overlay.currentPrice)}%` }}
+          />
+        )}
+      </div>
+      {/* Legend — readable values, never overlapping. */}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
+        {legend.map((row) => (
+          <div key={row.label} className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-2 w-2 flex-none rounded-full"
+              style={{ backgroundColor: row.color }}
+            />
+            <span className={row.now ? "font-semibold text-neutral-900" : "text-neutral-600"}>
+              {row.label}
+            </span>
+            <span className="ml-auto font-medium text-neutral-800">{money(row.value)}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 /**
- * Discovery — screened "ideas to research" from the FMP company screener. These
- * are factual screen results (real listed stocks matching transparent criteria),
- * NOT AI recommendations or "Watch" signals. Each links into Research to analyze.
+ * Discovery — "ideas to research" grouped by sector from the app's symbol
+ * universe. These are factual starting points (real listed stocks/ETFs), NOT AI
+ * recommendations or "Watch" signals. Each links into Research to analyze. No
+ * live price/market-cap is shown here (those come from the analysis itself) — so
+ * the list never displays empty "—" placeholders or stale numbers.
  */
 export interface ScreenedStock {
   ticker: string;
@@ -21,15 +23,6 @@ export interface DiscoveryGroup {
   items: ScreenedStock[];
 }
 
-const usd = (n: number | null) => (n == null ? "—" : `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
-function marketCap(n: number | null): string {
-  if (n == null) return "";
-  if (n >= 1e12) return `$${(n / 1e12).toFixed(1)}T`;
-  if (n >= 1e9) return `$${(n / 1e9).toFixed(0)}B`;
-  if (n >= 1e6) return `$${(n / 1e6).toFixed(0)}M`;
-  return `$${n}`;
-}
-
 export function DiscoverIdeas({ groups }: { groups: DiscoveryGroup[] }) {
   if (groups.length === 0) return null;
   return (
@@ -37,8 +30,8 @@ export function DiscoverIdeas({ groups }: { groups: DiscoveryGroup[] }) {
       <div>
         <h2 className="text-lg font-semibold">Ideas to research</h2>
         <p className="text-sm text-neutral-500">
-          Stocks matching simple, factual screens — starting points, not recommendations. Tap any to
-          run a full analysis.
+          Browse by sector — starting points, not recommendations. Tap any ticker to run a full
+          analysis.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
@@ -51,16 +44,15 @@ export function DiscoverIdeas({ groups }: { groups: DiscoveryGroup[] }) {
                 <li key={s.ticker}>
                   <Link
                     href={`/research?ticker=${s.ticker}`}
-                    className="flex items-center justify-between gap-2 py-1.5 hover:bg-neutral-50"
+                    className="group flex items-center justify-between gap-2 py-1.5 hover:bg-neutral-50"
                     title={`Analyze ${s.ticker}`}
                   >
-                    <span className="min-w-0">
-                      <span className="font-medium text-blue-600">{s.ticker}</span>{" "}
+                    <span className="flex min-w-0 items-baseline gap-1.5">
+                      <span className="font-medium text-blue-600">{s.ticker}</span>
                       <span className="truncate text-xs text-neutral-500">{s.name}</span>
                     </span>
-                    <span className="shrink-0 text-right text-xs text-neutral-500">
-                      <span className="text-neutral-700">{usd(s.price)}</span>
-                      {s.marketCap != null && <span className="ml-2">{marketCap(s.marketCap)}</span>}
+                    <span className="shrink-0 text-xs font-medium text-neutral-400 group-hover:text-blue-600">
+                      Analyze →
                     </span>
                   </Link>
                 </li>

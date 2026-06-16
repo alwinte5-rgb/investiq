@@ -1,16 +1,14 @@
-import { InMemoryTtlCache, fetchFmpScreener, type ScreenCriteria, type ScreenedStock } from "@investiq/integrations";
-import type { MarketService } from "./market.js";
+import { prisma } from "@investiq/db";
+import { InMemoryTtlCache, type ScreenedStock } from "@investiq/integrations";
 
 /**
- * Discovery engine — surfaces NEW ideas to research across the size/risk
- * spectrum using the FMP company screener (large/mid/small-cap, growth, ETFs).
- * These are REAL listed stocks matching transparent, factual criteria — NOT AI
- * recommendations or "Watch" signals; just starting points to analyze. Shared +
- * cached. If the screener is unavailable (plan tier), it falls back to live
- * popular quotes so the section is never empty. Never fabricates.
+ * Discovery — browse "ideas to research" grouped by sector. Sourced from the
+ * app's symbol universe (DB), so every idea is analyzable in one tap and the
+ * groups are reliably labeled (Technology, Financials, ETFs, Gaming…). No live
+ * provider calls here — fast, no rate-limit exposure, never fabricated.
  */
 
-const DISCOVERY_TTL_MS = 60 * 60 * 1000; // 1h — screens move slowly
+const DISCOVERY_TTL_MS = 30 * 60 * 1000; // 30m — the universe changes rarely
 
 export interface DiscoveryGroup {
   key: string;
@@ -24,102 +22,77 @@ export interface DiscoveryService {
   readonly enabled: boolean;
 }
 
-const SCREENS: { key: string; title: string; blurb: string; criteria: ScreenCriteria }[] = [
-  {
-    key: "ai-semis",
-    title: "AI & semiconductors",
-    blurb: "Technology names riding the AI / data-center wave — high growth, higher risk.",
-    criteria: { sector: "Technology", marketCapMoreThan: 5_000_000_000, betaMoreThan: 1, isEtf: false, limit: 8 },
-  },
-  {
-    key: "growth",
-    title: "Growth movers",
-    blurb: "$2B–$50B companies moving faster than the market (beta > 1.3) — growth potential, more risk.",
-    criteria: { marketCapMoreThan: 2_000_000_000, marketCapLowerThan: 50_000_000_000, betaMoreThan: 1.3, isEtf: false, limit: 8 },
-  },
-  {
-    key: "value-dividend",
-    title: "Value & dividends",
-    blurb: "Steadier large caps paying a dividend (beta < 1.1) — income and lower volatility.",
-    criteria: { dividendMoreThan: 1, betaLowerThan: 1.1, marketCapMoreThan: 20_000_000_000, isEtf: false, limit: 8 },
-  },
-  {
-    key: "small-cap",
-    title: "Small-cap & emerging",
-    blurb: "$300M–$2B companies — lesser-known, higher risk and higher potential reward.",
-    criteria: { marketCapMoreThan: 300_000_000, marketCapLowerThan: 2_000_000_000, priceMoreThan: 2, isEtf: false, limit: 8 },
-  },
-  {
-    key: "large-cap",
-    title: "Large-cap leaders",
-    blurb: "The biggest US companies by market value — steadier starting points.",
-    criteria: { marketCapMoreThan: 100_000_000_000, isEtf: false, limit: 8 },
-  },
-  {
-    key: "etfs",
-    title: "ETFs",
-    blurb: "Exchange-traded funds — instant diversification in a single ticker.",
-    criteria: { isEtf: true, limit: 8 },
-  },
+/** Friendly group title + ordering by sector. ETFs are grouped by asset type. */
+const SECTOR_META: { match: string; key: string; title: string; blurb: string }[] = [
+  { match: "Technology", key: "tech", title: "Technology", blurb: "Software, hardware and chips — growth and AI exposure." },
+  { match: "Communication Services", key: "comm", title: "Communication & media", blurb: "Internet, media and telecom names." },
+  { match: "Gaming & Entertainment", key: "gaming", title: "Gaming & entertainment", blurb: "Video games, streaming and entertainment." },
+  { match: "Financials", key: "finance", title: "Financials", blurb: "Banks, payments and financial services." },
+  { match: "Healthcare", key: "health", title: "Healthcare", blurb: "Pharma, biotech, insurers and devices." },
+  { match: "Consumer Discretionary", key: "consumer", title: "Consumer", blurb: "Retail, autos, restaurants and brands." },
+  { match: "Consumer Staples", key: "staples", title: "Consumer staples", blurb: "Everyday essentials — steadier demand." },
+  { match: "Energy", key: "energy", title: "Energy", blurb: "Oil, gas and energy producers." },
+  { match: "Industrials", key: "industrials", title: "Industrials", blurb: "Machinery, transport and defense." },
 ];
 
-export function createDiscoveryService(opts: {
-  fmpKey?: string;
-  fmpBaseUrl?: string;
-  market?: MarketService;
-}): DiscoveryService {
+/** Minimal symbol shape needed to group (decoupled from Prisma for testing). */
+export interface DiscoverySymbol {
+  ticker: string;
+  name: string;
+  sector: string | null;
+  assetType: string;
+}
+
+/**
+ * Pure grouping: bucket the symbol universe into the fixed, friendly sector
+ * order, then "Other" (stocks with an unrecognized sector), then ETFs. Empty
+ * buckets are dropped, so adding a `SECTOR_META` entry with no tickers can never
+ * surface a blank group. Exported for tests.
+ */
+export function groupSymbols(symbols: DiscoverySymbol[]): DiscoveryGroup[] {
+  const toItem = (s: DiscoverySymbol): ScreenedStock => ({
+    ticker: s.ticker,
+    name: s.name,
+    sector: s.sector,
+    marketCap: null,
+    price: null,
+    beta: null,
+    assetType: s.assetType === "ETF" ? "ETF" : "STOCK",
+  });
+
+  const groups: DiscoveryGroup[] = [];
+  // Sector groups in a friendly, fixed order.
+  for (const meta of SECTOR_META) {
+    const items = symbols.filter((s) => s.assetType !== "ETF" && s.sector === meta.match).map(toItem);
+    if (items.length > 0) groups.push({ key: meta.key, title: meta.title, blurb: meta.blurb, items });
+  }
+  // Any stocks whose sector didn't match a known group → "Other".
+  const known = new Set(SECTOR_META.map((m) => m.match));
+  const other = symbols.filter((s) => s.assetType !== "ETF" && !(s.sector && known.has(s.sector))).map(toItem);
+  if (other.length > 0)
+    groups.push({ key: "other", title: "Other", blurb: "More US stocks to research.", items: other });
+  // ETFs last.
+  const etfs = symbols.filter((s) => s.assetType === "ETF").map(toItem);
+  if (etfs.length > 0)
+    groups.push({ key: "etfs", title: "ETFs", blurb: "Funds — instant diversification in one ticker.", items: etfs });
+
+  return groups;
+}
+
+export function createDiscoveryService(): DiscoveryService {
   const cache = new InMemoryTtlCache();
 
-  async function popularFallback(): Promise<DiscoveryGroup[]> {
-    if (!opts.market) return [];
-    try {
-      const quotes = await opts.market.getPopular();
-      if (quotes.length === 0) return [];
-      return [
-        {
-          key: "popular",
-          title: "Popular to research",
-          blurb: "Widely-held US stocks and ETFs with live quotes.",
-          items: quotes.map((q) => ({
-            ticker: q.ticker,
-            name: q.ticker,
-            sector: null,
-            marketCap: null,
-            price: q.price,
-            beta: null,
-            assetType: "STOCK" as const,
-          })),
-        },
-      ];
-    } catch {
-      return [];
-    }
-  }
-
   async function compute(): Promise<DiscoveryGroup[]> {
-    const groups: DiscoveryGroup[] = [];
-    if (opts.fmpKey) {
-      const key = opts.fmpKey;
-      const settled = await Promise.allSettled(
-        SCREENS.map((s) =>
-          fetchFmpScreener({ apiKey: key, baseUrl: opts.fmpBaseUrl, criteria: s.criteria }),
-        ),
-      );
-      settled.forEach((r, i) => {
-        const s = SCREENS[i];
-        if (!s) return;
-        const items = r.status === "fulfilled" ? r.value : [];
-        if (items.length > 0) groups.push({ key: s.key, title: s.title, blurb: s.blurb, items });
-      });
-    }
-    // Never leave the section empty — fall back to live popular quotes.
-    if (groups.length === 0) return popularFallback();
-    return groups;
+    const symbols = await prisma.symbol.findMany({
+      where: { active: true },
+      select: { ticker: true, name: true, sector: true, assetType: true },
+      orderBy: { ticker: "asc" },
+    });
+    if (symbols.length === 0) return [];
+    return groupSymbols(symbols);
   }
 
   async function getDiscovery(): Promise<DiscoveryGroup[]> {
-    // Cache only NON-empty results, so a transient empty (provider hiccup) can't
-    // poison the section for the whole TTL — the next request just recomputes.
     const cached = cache.get<DiscoveryGroup[]>("discovery");
     if (cached && cached.length > 0) return cached;
     const groups = await compute();
@@ -127,5 +100,5 @@ export function createDiscoveryService(opts: {
     return groups;
   }
 
-  return { getDiscovery, enabled: Boolean(opts.fmpKey || opts.market) };
+  return { getDiscovery, enabled: true };
 }

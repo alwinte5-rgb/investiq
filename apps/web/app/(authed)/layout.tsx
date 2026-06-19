@@ -9,7 +9,8 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
       <div className="mb-6 flex items-center justify-between gap-3 border-b pb-3 text-sm">
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-1">
           {/* Co-Pilot nav. Reviews are folded into Home; Watchlists routes to
-              Opportunities; Settings lives in the account menu (UserButton). */}
+              Opportunities. Settings stays here (account-menu move deferred — it
+              broke SSR as a UserButton child). */}
           <Link href="/dashboard" className="hover:underline">
             Home
           </Link>
@@ -27,6 +28,9 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
           </Link>
           <Link href="/paper" className="hover:underline">
             Paper Trading
+          </Link>
+          <Link href="/settings" className="ml-auto text-neutral-500 hover:underline">
+            Settings
           </Link>
         </nav>
       </div>

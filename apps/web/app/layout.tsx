@@ -33,15 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link href="/dashboard" className="hover:underline">
                   Home
                 </Link>
-                <UserButton afterSignOutUrl="/">
-                  <UserButton.MenuItems>
-                    <UserButton.Link
-                      label="Settings"
-                      labelIcon={<span aria-hidden>⚙️</span>}
-                      href="/settings"
-                    />
-                  </UserButton.MenuItems>
-                </UserButton>
+                <UserButton afterSignOutUrl="/" />
               </SignedIn>
               <SignedOut>
                 <Link href="/sign-in" className="hover:underline">

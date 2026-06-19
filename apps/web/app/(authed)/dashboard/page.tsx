@@ -2,6 +2,8 @@ import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
 import { apiFetch } from "@/lib/api";
 import { OnboardingGuide } from "@/components/onboarding";
+import { ReviewsUI } from "@/components/reviews-ui";
+import type { GenerateReviewResult, StoredReview } from "@/app/(authed)/reviews/actions";
 import {
   AutoSync,
   ConnectButton,
@@ -45,13 +47,6 @@ interface Account {
   totalValue: string | number;
   holdings: Holding[];
 }
-interface ReviewFlag {
-  severity: "info" | "warn";
-  title: string;
-  detail: string;
-  type?: string;
-  tickers?: string[];
-}
 interface MarketIndex {
   ticker: string;
   price: number;
@@ -67,25 +62,6 @@ const INDEX_LABELS: Record<string, string> = {
   DIA: "Dow Jones",
   IWM: "Russell 2000",
 };
-interface ReviewContent {
-  headline: string;
-  summary: string;
-  healthScore: number;
-  riskScore: number;
-  diversificationScore: number;
-  cashScore: number;
-  flags: ReviewFlag[];
-  healthDelta?: number | null;
-  topMovers?: { ticker: string; changePct: number }[];
-}
-interface StoredReview {
-  content: ReviewContent;
-  generatedAt: string;
-}
-type GenerateReviewResult =
-  | { status: "created" | "exists"; review: StoredReview }
-  | { status: "insufficient" };
-
 const money = (v: number | string | null) =>
   v == null ? "—" : `$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
@@ -145,25 +121,31 @@ export default async function DashboardPage() {
   // demo). A failed fetch (null) is NOT treated as new — never greet over an error.
   const isNewUser = connections !== null && connections.length === 0;
 
-  // Today's briefing — the dashboard is a daily overview, so surface it here.
-  // Use the stored review; generate one on the fly if none exists yet.
-  let briefing: ReviewContent | null = null;
+  // Today's briefing — the dashboard (Home) is now the single home for reviews.
+  // Fetch the stored review (generate today's on the fly if none) and hand it to
+  // the full ReviewsUI below. reviewGated mirrors the reviews entitlement.
+  let reviewInitial: StoredReview | null = null;
+  let reviewGated = false;
   if (summary?.connected) {
-    const stored = await safe<StoredReview | null>("/api/v1/portfolio/reviews");
-    if (stored?.content) {
-      briefing = stored.content;
-    } else {
+    try {
+      reviewInitial = await apiFetch<StoredReview | null>("/api/v1/portfolio/reviews");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      if (/\b403\b|investor plan|forbidden/i.test(msg)) reviewGated = true;
+    }
+    if (!reviewGated && !reviewInitial) {
       try {
         const gen = await apiFetch<GenerateReviewResult>(
           "/api/v1/portfolio/reviews?period=MORNING",
           { method: "POST" },
         );
-        if (gen.status === "created" || gen.status === "exists") briefing = gen.review.content;
+        if (gen.status === "created" || gen.status === "exists") reviewInitial = gen.review;
       } catch {
-        /* briefing is best-effort */
+        /* best-effort */
       }
     }
   }
+  const reviewContent = reviewInitial?.content ?? null;
 
   // Market overview + at-a-glance counts (all best-effort).
   const [overview, oppGroups, clerkUser] = await Promise.all([
@@ -178,9 +160,9 @@ export default async function DashboardPage() {
     : 0;
   const sentiment = indices.length === 0 ? null : avgChg > 0.3 ? "Bullish" : avgChg < -0.3 ? "Bearish" : "Mixed";
   const oppCount = oppGroups?.reduce((n, g) => n + g.items.length, 0) ?? 0;
-  const riskAlerts = briefing?.flags.filter((f) => f.severity === "warn").length ?? 0;
+  const riskAlerts = reviewContent?.flags.filter((f) => f.severity === "warn").length ?? 0;
   const earningsAhead =
-    briefing?.flags
+    reviewContent?.flags
       .filter((f) => f.type === "earnings")
       .reduce((n, f) => n + (f.tickers?.length ?? 0), 0) ?? 0;
 
@@ -219,8 +201,8 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Chip label="Market sentiment" value={sentiment ?? "—"} tone={sentiment} />
         <Chip label="Opportunities" value={String(oppCount)} href="/opportunities" />
-        <Chip label="Risk alerts" value={String(riskAlerts)} href="/reviews" />
-        <Chip label="Earnings ahead" value={String(earningsAhead)} href="/reviews" />
+        <Chip label="Risk alerts" value={String(riskAlerts)} />
+        <Chip label="Earnings ahead" value={String(earningsAhead)} />
       </div>
 
       {/* Market overview */}
@@ -266,55 +248,11 @@ export default async function DashboardPage() {
         <div className="text-sm text-neutral-500">Loading…</div>
       )}
 
-      {/* Today's briefing — daily overview */}
-      {briefing && (
-        <section className="space-y-3 rounded-lg border border-blue-100 bg-blue-50/40 p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-neutral-900">Today’s briefing</h2>
-            <Link href="/reviews" className="text-xs text-blue-600 hover:underline">
-              Full review →
-            </Link>
-          </div>
-          <p className="text-sm text-neutral-700">{briefing.summary}</p>
-          <div className="grid grid-cols-4 gap-2">
-            {([
-              ["Health", briefing.healthScore],
-              ["Diversification", briefing.diversificationScore],
-              ["Risk", briefing.riskScore],
-              ["Cash", briefing.cashScore],
-            ] as const).map(([label, val]) => (
-              <div key={label} className="rounded-md border bg-white p-2 text-center">
-                <div className="text-[11px] text-neutral-500">{label}</div>
-                <div className="text-base font-semibold">{val}</div>
-              </div>
-            ))}
-          </div>
-          {briefing.flags.slice(0, 2).map((f, i) => (
-            <div
-              key={i}
-              className={`rounded-md border p-2 text-xs ${
-                f.severity === "warn"
-                  ? "border-amber-200 bg-amber-50 text-amber-800"
-                  : "border-neutral-200 bg-white text-neutral-600"
-              }`}
-            >
-              <span className="font-medium">{f.title}</span> — {f.detail}
-            </div>
-          ))}
-          {briefing.topMovers && briefing.topMovers.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-neutral-500">Today’s moves:</span>
-              {briefing.topMovers.map((m) => (
-                <span key={m.ticker} className="rounded-md border bg-white px-2 py-0.5">
-                  <span className="font-medium">{m.ticker}</span>{" "}
-                  <span className={m.changePct >= 0 ? "text-green-600" : "text-red-600"}>
-                    {m.changePct >= 0 ? "+" : ""}
-                    {m.changePct.toFixed(2)}%
-                  </span>
-                </span>
-              ))}
-            </div>
-          )}
+      {/* Today's briefing — the full review now lives on Home (Reviews page removed). */}
+      {summary?.connected && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Today’s briefing</h2>
+          <ReviewsUI initial={reviewInitial} gated={reviewGated} />
         </section>
       )}
 
@@ -439,11 +377,6 @@ export default async function DashboardPage() {
             </Link>
           ))}
         </div>
-        <p className="text-xs text-neutral-400">
-          <Link href="/watchlists" className="hover:underline">
-            Manage watchlists →
-          </Link>
-        </p>
       </section>
     </div>
   );

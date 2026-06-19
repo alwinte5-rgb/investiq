@@ -1,11 +1,11 @@
 const TIERS = [
   {
     name: "Free",
-    points: ["1 connected account", "1 watchlist", "Limited AI analyses"],
+    points: ["1 connected account", "Ideas to research", "Limited AI analyses"],
   },
   {
     name: "Investor",
-    points: ["Unlimited watchlists", "Portfolio intelligence", "Daily AI reviews", "News intelligence"],
+    points: ["AI market opportunities", "Portfolio intelligence", "Daily AI reviews", "News intelligence"],
   },
   {
     name: "Investor Plus",

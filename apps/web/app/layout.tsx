@@ -31,9 +31,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   signed-out users get Sign in / Sign up. */}
               <SignedIn>
                 <Link href="/dashboard" className="hover:underline">
-                  Dashboard
+                  Home
                 </Link>
-                <UserButton afterSignOutUrl="/" />
+                <UserButton afterSignOutUrl="/">
+                  <UserButton.MenuItems>
+                    <UserButton.Link
+                      label="Settings"
+                      labelIcon={<span aria-hidden>⚙️</span>}
+                      href="/settings"
+                    />
+                  </UserButton.MenuItems>
+                </UserButton>
               </SignedIn>
               <SignedOut>
                 <Link href="/sign-in" className="hover:underline">

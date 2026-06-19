@@ -49,6 +49,12 @@ const envSchema = z.object({
 
   // --- Optional: fundamentals/economic ---
   FMP_API_KEY: z.string().min(1).optional(),
+  // FRED (free) — macro indicators for the educational "macro context" panel.
+  FRED_API_KEY: z.string().min(1).optional(),
+  // SEC EDGAR (free, no key) requires a descriptive User-Agent with contact info
+  // on every request. Defaulted so filings work out of the box; override with a
+  // real contact for production politeness/compliance.
+  SEC_USER_AGENT: z.string().min(1).default("InvestIQ/1.0 (support@investiq.app)"),
 
   // --- Optional: brokerage (SnapTrade, Layer 1 #7) ---
   SNAPTRADE_CLIENT_ID: z.string().min(1).optional(),

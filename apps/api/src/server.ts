@@ -39,10 +39,14 @@ import { glossaryRoutes } from "./routes/glossary.js";
 import { discoveryRoutes } from "./routes/discovery.js";
 import { newsRoutes } from "./routes/news.js";
 import { cronRoutes } from "./routes/cron.js";
+import { macroRoutes } from "./routes/macro.js";
+import { filingsRoutes } from "./routes/filings.js";
 import { createMarketService } from "./services/market.js";
 import { createNewsService } from "./services/news.js";
 import { createFundamentalsService } from "./services/fundamentals.js";
 import { createDiscoveryService } from "./services/discovery.js";
+import { createMacroService } from "./services/macro.js";
+import { createFilingsService } from "./services/filings.js";
 import { createSnapTradeClient } from "@investiq/integrations";
 import { createAnthropicAnalysisModel, createAnthropicNewsClassifier } from "@investiq/ai";
 import type { BrokerageDeps } from "./services/brokerage.js";
@@ -72,6 +76,9 @@ async function main() {
   });
   const fundamentals = createFundamentalsService({ fmpKey: env.FMP_API_KEY });
   const discovery = createDiscoveryService();
+  // Educational data sources: FRED macro (free, needs key) + SEC EDGAR filings (free).
+  const macro = createMacroService({ fredKey: env.FRED_API_KEY });
+  const filings = createFilingsService({ userAgent: env.SEC_USER_AGENT });
 
   const app = Fastify({ logger: true });
 
@@ -156,6 +163,14 @@ async function main() {
   await app.register(async (instance) => glossaryRoutes(instance, authDeps));
   // Discovery — screened "ideas to research" (FMP screener); factual, not AI signals.
   await app.register(async (instance) => discoveryRoutes(instance, { auth: authDeps, discovery }));
+  // Macro context (FRED) + SEC filings (EDGAR) — free, educational, non-advisory.
+  await app.register(async (instance) => macroRoutes(instance, { auth: authDeps, macro }));
+  await app.register(async (instance) => filingsRoutes(instance, { auth: authDeps, filings }));
+  app.log.info(
+    macro.enabled
+      ? "Macro (FRED) + SEC filings routes enabled"
+      : "SEC filings route enabled; FRED macro disabled (set FRED_API_KEY to enable)",
+  );
 
   // AI analysis deps are built up-front so BOTH the demo warm-up and the
   // analysis routes can share one model instance.

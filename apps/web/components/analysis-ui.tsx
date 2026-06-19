@@ -9,6 +9,7 @@ import {
 import { NewsImpactPanel } from "@/components/news-impact-ui";
 import { RiskPanel } from "@/components/risk-ui";
 import { ChartPanel } from "@/components/chart-ui";
+import { FilingsPanel } from "@/components/filings-ui";
 import { LearnPanel } from "@/components/learn-ui";
 import { Term } from "@/components/term";
 
@@ -334,6 +335,7 @@ export function ResearchUI({ initialTicker = "" }: { initialTicker?: string }) {
       {analyzedTicker && !pending && <RiskPanel ticker={analyzedTicker} />}
       {analyzedTicker && !pending && <ChartPanel ticker={analyzedTicker} />}
       {analyzedTicker && !pending && <NewsImpactPanel ticker={analyzedTicker} />}
+      {analyzedTicker && !pending && <FilingsPanel ticker={analyzedTicker} />}
     </div>
   );
 }

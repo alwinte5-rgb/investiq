@@ -195,6 +195,37 @@ export async function getChartOverlayAction(ticker: string): Promise<ChartAction
   }
 }
 
+// ── SEC filings (primary sources) ───────────────────────────────────────────
+export interface CompanyFiling {
+  form: string;
+  filingDate: string;
+  url: string;
+}
+export interface CompanyFilings {
+  ticker: string;
+  cik: string;
+  name: string;
+  edgarUrl: string;
+  filings: CompanyFiling[];
+}
+export type FilingsActionResult =
+  | { ok: true; filings: CompanyFilings | null }
+  | { ok: false; error: string };
+
+/** Latest SEC filings (10-K/10-Q) for a ticker. `filings: null` ⇒ not an EDGAR filer. */
+export async function getFilingsAction(ticker: string): Promise<FilingsActionResult> {
+  const t = ticker.trim().toUpperCase();
+  if (!t) return { ok: false, error: "Enter a ticker" };
+  try {
+    const filings = await apiFetch<CompanyFilings | null>(`/api/v1/filings/${encodeURIComponent(t)}`);
+    return { ok: true, filings };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to load filings";
+    if (isAuthError(msg)) redirect("/sign-in");
+    return { ok: false, error: msg };
+  }
+}
+
 export async function getLatestAnalysisAction(ticker: string): Promise<AnalysisActionResult> {
   const t = ticker.trim().toUpperCase();
   if (!t) return { ok: false, error: "Enter a ticker" };

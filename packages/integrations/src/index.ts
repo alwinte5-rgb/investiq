@@ -3,6 +3,8 @@ export * from "./cache.js";
 export * from "./market-data.js";
 export * from "./news.js";
 export * from "./fundamentals.js";
+export * from "./macro.js";
+export * from "./filings.js";
 export * from "./snaptrade.js";
 export * from "./email.js";
 export * from "./push.js";

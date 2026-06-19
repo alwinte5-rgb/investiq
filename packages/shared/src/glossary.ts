@@ -287,6 +287,256 @@ export const GLOSSARY: GlossaryTerm[] = [
     keys: ["brokerage", "broker", "brokerage account"],
     short: "The account or company through which you actually buy and hold investments. InvestIQ reads from it but never trades for you.",
   },
+
+  // ── More fundamentals (these appear in InvestIQ's own analysis evidence) ────
+  {
+    term: "Revenue",
+    keys: ["revenue", "sales", "top line"],
+    short: "The total money a company brings in from sales before any costs — the 'top line' of its results.",
+  },
+  {
+    term: "Net Margin",
+    keys: ["net margin", "profit margin", "net profit margin"],
+    short: "The share of revenue a company keeps as profit after all costs — higher usually means a more efficient business.",
+  },
+  {
+    term: "Gross Margin",
+    keys: ["gross margin"],
+    short: "The share of revenue left after the direct cost of making a product — a gauge of basic pricing power.",
+  },
+  {
+    term: "Operating Margin",
+    keys: ["operating margin"],
+    short: "Profit from a company's core operations as a share of revenue, before interest and taxes.",
+  },
+  {
+    term: "ROE",
+    keys: ["roe", "return on equity"],
+    short: "Return on equity: how much profit a company generates from shareholders' money — a measure of how efficiently it uses capital.",
+  },
+  {
+    term: "ROA",
+    keys: ["roa", "return on assets"],
+    short: "Return on assets: how much profit a company squeezes from everything it owns.",
+  },
+  {
+    term: "Debt-to-Equity",
+    keys: ["debt-to-equity", "debt to equity", "d/e", "leverage"],
+    short: "How much debt a company carries versus shareholder money — higher means more leverage and more risk if business slows.",
+  },
+  {
+    term: "P/S Ratio",
+    keys: ["p/s ratio", "p/s", "ps", "price to sales"],
+    short: "Price-to-sales: share price versus revenue per share — handy for valuing companies that aren't profitable yet.",
+  },
+  {
+    term: "P/B Ratio",
+    keys: ["p/b ratio", "p/b", "pb", "price to book"],
+    short: "Price-to-book: share price versus the company's net asset value per share.",
+  },
+  {
+    term: "PEG Ratio",
+    keys: ["peg ratio", "peg"],
+    short: "The P/E divided by expected growth — it puts a stock's valuation in the context of how fast it's growing.",
+  },
+  {
+    term: "EBITDA",
+    keys: ["ebitda"],
+    short: "Earnings before interest, taxes, depreciation and amortization — a rough proxy for a company's core operating earnings.",
+  },
+  {
+    term: "Book Value",
+    keys: ["book value"],
+    short: "What a company's assets are worth minus its debts — its net worth on paper.",
+  },
+  {
+    term: "Forward vs Trailing",
+    keys: ["forward vs trailing", "forward p/e", "trailing p/e", "forward", "trailing"],
+    short: "'Trailing' uses the last 12 months of actual results; 'forward' uses analysts' estimates for the next 12 months.",
+  },
+  {
+    term: "Guidance",
+    keys: ["guidance", "forward guidance"],
+    short: "A company's own forecast for upcoming results — markets often react more to guidance than to the latest quarter.",
+  },
+  {
+    term: "Analyst Rating",
+    keys: ["analyst rating", "analyst consensus", "consensus", "consensus rating", "analyst price target"],
+    short: "Wall Street analysts' average view (e.g. Buy/Hold/Sell) and average price target — useful context, never a guarantee.",
+  },
+
+  // ── More technicals ───────────────────────────────────────────────────────
+  {
+    term: "MACD",
+    keys: ["macd", "moving average convergence divergence"],
+    short: "A momentum indicator that compares two moving averages to flag shifts in a stock's trend.",
+  },
+  {
+    term: "Trend",
+    keys: ["trend", "uptrend", "downtrend"],
+    short: "The general direction a stock's price is heading over time — up, down, or sideways.",
+  },
+  {
+    term: "Momentum",
+    keys: ["momentum"],
+    short: "The tendency of a price move to keep going in the same direction for a while.",
+  },
+  {
+    term: "Breakout",
+    keys: ["breakout"],
+    short: "When a price pushes past a support or resistance level it had been stuck at, often on rising volume.",
+  },
+  {
+    term: "Golden Cross / Death Cross",
+    keys: ["golden cross", "death cross"],
+    short: "When a short moving average crosses above (golden) or below (death) a long one — a rough, lagging trend signal.",
+  },
+
+  // ── How the market works (mechanics) ──────────────────────────────────────
+  {
+    term: "Bid-Ask Spread",
+    keys: ["bid-ask spread", "bid ask spread", "spread", "bid", "ask"],
+    short: "The small gap between the highest price buyers offer (bid) and the lowest sellers accept (ask) — effectively a cost of trading.",
+  },
+  {
+    term: "Market Order",
+    keys: ["market order"],
+    short: "An order to buy or sell right now at the best available price — fast, but the exact price isn't guaranteed.",
+  },
+  {
+    term: "Limit Order",
+    keys: ["limit order"],
+    short: "An order to buy or sell only at a price you set or better — you control the price, but it may not fill.",
+  },
+  {
+    term: "Shares Outstanding",
+    keys: ["shares outstanding", "outstanding shares"],
+    short: "The total number of a company's shares held by all investors.",
+  },
+  {
+    term: "Float",
+    keys: ["float", "free float"],
+    short: "The shares actually available to trade publicly — a small float can make a stock move more sharply.",
+  },
+  {
+    term: "Short Selling",
+    keys: ["short selling", "short sale", "shorting", "short"],
+    short: "Betting a stock will fall by selling borrowed shares to buy back cheaper later — higher-risk, and losses can exceed your stake.",
+  },
+  {
+    term: "IPO",
+    keys: ["ipo", "initial public offering"],
+    short: "Initial Public Offering: the first time a company sells shares to the public and lists on an exchange.",
+  },
+  {
+    term: "Index",
+    keys: ["index", "stock index", "market index"],
+    short: "A basket that tracks a group of stocks to represent a market or sector — like the S&P 500 for large US companies.",
+  },
+  {
+    term: "After-Hours / Pre-Market",
+    keys: ["after-hours", "after hours", "pre-market", "premarket", "extended hours"],
+    short: "Trading that happens outside normal market hours — usually thinner and more volatile than the regular session.",
+  },
+
+  // ── Long-term investing & strategy ────────────────────────────────────────
+  {
+    term: "Dollar-Cost Averaging",
+    keys: ["dollar-cost averaging", "dollar cost averaging", "dca"],
+    short: "Investing a fixed amount on a regular schedule, so you buy more when prices are low and less when high — smoothing out timing.",
+  },
+  {
+    term: "Compounding",
+    keys: ["compounding", "compound interest", "compound returns"],
+    short: "When your gains themselves start earning gains — the main engine of long-term wealth building.",
+  },
+  {
+    term: "Capital Gains",
+    keys: ["capital gains", "capital gain", "capital gains tax"],
+    short: "The profit when you sell an investment for more than you paid — often taxed, usually at a lower rate for longer holds.",
+  },
+  {
+    term: "Dividend Reinvestment",
+    keys: ["dividend reinvestment", "drip", "reinvest dividends"],
+    short: "Automatically using dividends to buy more shares instead of taking the cash, which compounds your holding over time.",
+  },
+  {
+    term: "Index Fund",
+    keys: ["index fund"],
+    short: "A fund that simply tracks a market index rather than picking stocks — low-cost and broad, a common long-term core holding.",
+  },
+  {
+    term: "Mutual Fund",
+    keys: ["mutual fund"],
+    short: "A professionally managed pool of many investors' money spread across a mix of assets; priced once a day.",
+  },
+  {
+    term: "Expense Ratio",
+    keys: ["expense ratio"],
+    short: "The yearly fee a fund or ETF charges as a percent of your money — lower means more of the return stays with you.",
+  },
+  {
+    term: "Blue Chip",
+    keys: ["blue chip", "blue-chip"],
+    short: "A large, well-established, financially solid company with a long track record.",
+  },
+  {
+    term: "Growth Stock",
+    keys: ["growth stock", "growth"],
+    short: "A company expected to grow sales and profits faster than average — usually pricier and more volatile.",
+  },
+  {
+    term: "Value Stock",
+    keys: ["value stock", "value"],
+    short: "A company trading cheaply relative to its fundamentals, which some investors buy hoping the market re-rates it higher.",
+  },
+  {
+    term: "Alpha",
+    keys: ["alpha"],
+    short: "The return an investment earns above (or below) what its risk level would predict — a measure of out- or under-performance.",
+  },
+  {
+    term: "Market Sentiment",
+    keys: ["market sentiment", "sentiment", "investor sentiment"],
+    short: "The overall mood of investors — optimism or fear — that can move prices regardless of the fundamentals.",
+  },
+
+  // ── Markets & the economy (macro) ─────────────────────────────────────────
+  {
+    term: "Bull Market",
+    keys: ["bull market"],
+    short: "A sustained stretch of rising prices and optimism — often a climb of 20% or more from recent lows.",
+  },
+  {
+    term: "Bear Market",
+    keys: ["bear market"],
+    short: "A sustained stretch of falling prices and pessimism — often a drop of 20% or more from recent highs.",
+  },
+  {
+    term: "Correction",
+    keys: ["correction", "market correction"],
+    short: "A drop of about 10% from a recent high — common, and milder than a bear market.",
+  },
+  {
+    term: "Inflation",
+    keys: ["inflation"],
+    short: "The rate at which prices rise over time, eroding purchasing power and heavily influencing interest rates and markets.",
+  },
+  {
+    term: "Interest Rates",
+    keys: ["interest rates", "interest rate", "the fed", "federal reserve", "rate hike", "rate cut"],
+    short: "The cost of borrowing money, steered largely by the Federal Reserve; higher rates tend to pressure stock valuations.",
+  },
+  {
+    term: "Recession",
+    keys: ["recession"],
+    short: "A broad, sustained decline in economic activity — which often weighs on company earnings and stock prices.",
+  },
+  {
+    term: "S&P 500",
+    keys: ["s&p 500", "sp500", "s and p 500", "spx"],
+    short: "An index of about 500 of the largest US companies, widely used as the benchmark for 'the market.'",
+  },
 ];
 
 /** Strip a term/key down to a comparable form: lowercase, alphanumerics only. */

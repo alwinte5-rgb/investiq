@@ -56,14 +56,67 @@ interface MarketOverview {
   indices: MarketIndex[];
   asOf: string;
 }
+interface OppItem {
+  ticker: string;
+  name: string;
+  type: string;
+  score: number;
+}
+interface OppGroup {
+  type: string;
+  label: string;
+  items: OppItem[];
+}
+
 const INDEX_LABELS: Record<string, string> = {
   SPY: "S&P 500",
   QQQ: "Nasdaq 100",
   DIA: "Dow Jones",
   IWM: "Russell 2000",
 };
+
+// Sparing accent system (navy/slate base): green = opportunity, amber = watch-out,
+// red = risk, blue = neutral/info, slate = quiet.
+type Tone = "green" | "amber" | "red" | "blue" | "slate";
+const TONE_TEXT: Record<Tone, string> = {
+  green: "text-emerald-600",
+  amber: "text-amber-600",
+  red: "text-red-600",
+  blue: "text-blue-600",
+  slate: "text-slate-900",
+};
+const TONE_DOT: Record<Tone, string> = {
+  green: "bg-emerald-500",
+  amber: "bg-amber-500",
+  red: "bg-red-500",
+  blue: "bg-blue-500",
+  slate: "bg-slate-400",
+};
+
+/** Map an opportunity type → a Watch-framed action verb + tone + sort priority.
+ *  NON-ADVISORY: "Watch"/"Review"/"Hold", never "Buy"/"Sell". */
+const ACTION_META: Record<string, { verb: string; tone: Tone; priority: number }> = {
+  HIGH_RISK_HOLDING: { verb: "High risk — review", tone: "red", priority: 0 },
+  REVIEW: { verb: "Review", tone: "amber", priority: 1 },
+  AVOID: { verb: "Avoid", tone: "red", priority: 2 },
+  BUY_WATCH: { verb: "Watch", tone: "green", priority: 3 },
+  ETF: { verb: "Watch (ETF)", tone: "green", priority: 3 },
+  REBUY: { verb: "Rebuy watch", tone: "green", priority: 4 },
+  WATCHING: { verb: "Hold", tone: "slate", priority: 5 },
+};
+
 const money = (v: number | string | null) =>
   v == null ? "—" : `$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
+const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
+
+function scoreTone(v: number | null): Tone {
+  if (v == null) return "slate";
+  if (v >= 80) return "green";
+  if (v >= 60) return "blue";
+  if (v >= 40) return "amber";
+  return "red";
+}
 
 async function safe<T>(path: string): Promise<T | null> {
   try {
@@ -73,24 +126,29 @@ async function safe<T>(path: string): Promise<T | null> {
   }
 }
 
-function Chip({
+function ScoreCard({
   label,
   value,
+  suffix,
   href,
   tone,
 }: {
   label: string;
   value: string;
+  suffix?: string;
   href?: string;
-  tone?: string | null;
+  tone: Tone;
 }) {
-  const toneClass =
-    tone === "Bullish" ? "text-green-600" : tone === "Bearish" ? "text-red-600" : "text-neutral-900";
-  const cls = `block rounded-lg border p-3${href ? " transition hover:border-blue-300 hover:bg-blue-50/40" : ""}`;
+  const cls = `block rounded-xl border border-slate-200 bg-white p-4${
+    href ? " transition hover:border-blue-300 hover:shadow-sm" : ""
+  }`;
   const body = (
     <>
-      <div className="text-[11px] text-neutral-500">{label}</div>
-      <div className={`text-lg font-bold ${toneClass}`}>{value}</div>
+      <div className="text-xs font-medium text-slate-500">{label}</div>
+      <div className="mt-1 flex items-baseline gap-1">
+        <span className={`text-3xl font-bold ${TONE_TEXT[tone]}`}>{value}</span>
+        {suffix && <span className="text-sm text-slate-400">{suffix}</span>}
+      </div>
     </>
   );
   return href ? (
@@ -100,6 +158,15 @@ function Chip({
   ) : (
     <div className={cls}>{body}</div>
   );
+}
+
+interface ActionRow {
+  key: string;
+  tone: Tone;
+  primary: string;
+  secondary?: string;
+  verb: string;
+  href: string;
 }
 
 export default async function DashboardPage() {
@@ -121,9 +188,8 @@ export default async function DashboardPage() {
   // demo). A failed fetch (null) is NOT treated as new — never greet over an error.
   const isNewUser = connections !== null && connections.length === 0;
 
-  // Today's briefing — the dashboard (Home) is now the single home for reviews.
-  // Fetch the stored review (generate today's on the fly if none) and hand it to
-  // the full ReviewsUI below. reviewGated mirrors the reviews entitlement.
+  // Today's briefing — Home is the single home for reviews. Fetch the stored
+  // review (generate today's on the fly if none) for the full ReviewsUI below.
   let reviewInitial: StoredReview | null = null;
   let reviewGated = false;
   if (summary?.connected) {
@@ -147,25 +213,60 @@ export default async function DashboardPage() {
   }
   const reviewContent = reviewInitial?.content ?? null;
 
-  // Market overview + at-a-glance counts (all best-effort).
+  // Market overview + opportunities (all best-effort).
   const [overview, oppGroups, clerkUser] = await Promise.all([
     safe<MarketOverview>("/api/v1/market/overview"),
-    safe<{ items: unknown[] }[]>("/api/v1/opportunities"),
+    safe<OppGroup[]>("/api/v1/opportunities"),
     currentUser().catch(() => null),
   ]);
   const firstName = clerkUser?.firstName ?? null;
   const indices = overview?.indices ?? [];
+
+  // Scores
   const avgChg = indices.length
     ? indices.reduce((s, i) => s + (i.changePct ?? 0), 0) / indices.length
     : 0;
-  const sentiment = indices.length === 0 ? null : avgChg > 0.3 ? "Bullish" : avgChg < -0.3 ? "Bearish" : "Mixed";
+  const marketScore = indices.length ? clamp(50 + avgChg * 10) : null;
+  const portfolioScore = reviewContent?.healthScore ?? null;
   const oppCount = oppGroups?.reduce((n, g) => n + g.items.length, 0) ?? 0;
   const riskAlerts = reviewContent?.flags.filter((f) => f.severity === "warn").length ?? 0;
-  const earningsAhead =
-    reviewContent?.flags
-      .filter((f) => f.type === "earnings")
-      .reduce((n, f) => n + (f.tickers?.length ?? 0), 0) ?? 0;
 
+  // Today's actions — Watch-framed, drawn from the user's own opportunities,
+  // topped up with portfolio-level warnings from the review. Highest-priority
+  // (risk/review) first, then conviction (score).
+  const actions: ActionRow[] = (oppGroups ?? [])
+    .flatMap((g) => g.items)
+    .map((it) => ({ it, meta: ACTION_META[it.type] ?? ACTION_META.WATCHING }))
+    .sort((a, b) => a.meta.priority - b.meta.priority || b.it.score - a.it.score)
+    .slice(0, 6)
+    .map(({ it, meta }) => ({
+      key: `opp:${it.ticker}`,
+      tone: meta.tone,
+      primary: it.ticker,
+      secondary: it.name,
+      verb: meta.verb,
+      href: `/research?ticker=${it.ticker}`,
+    }));
+  if (actions.length < 4) {
+    for (const f of reviewContent?.flags.filter((fl) => fl.severity === "warn") ?? []) {
+      if (actions.length >= 4) break;
+      const tkr = f.tickers?.[0];
+      actions.push({
+        key: `flag:${f.title}`,
+        tone: "amber",
+        primary: f.title,
+        secondary: f.detail,
+        verb: tkr ? "Review" : "Heads up",
+        href: tkr ? `/research?ticker=${tkr}` : "/portfolio",
+      });
+    }
+  }
+
+  const dateStr = new Date().toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const isDemo = connection?.status === "demo";
@@ -187,73 +288,120 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Hero */}
       <div>
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-2xl font-bold text-slate-900">
           {greeting}
           {firstName ? `, ${firstName}` : ""}
         </h1>
-        <p className="text-sm text-neutral-500">Your daily overview</p>
+        <p className="text-sm text-slate-500">
+          {dateStr}
+          {me ? ` · ${me.plan.replace("_", " ")} plan` : ""}
+        </p>
       </div>
 
       <OnboardingGuide isNewUser={isNewUser} />
 
-      {/* At-a-glance chips */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Chip label="Market sentiment" value={sentiment ?? "—"} tone={sentiment} />
-        <Chip label="Opportunities" value={String(oppCount)} href="/opportunities" />
-        <Chip label="Risk alerts" value={String(riskAlerts)} />
-        <Chip label="Earnings ahead" value={String(earningsAhead)} />
-      </div>
-
-      {/* Market overview */}
-      {indices.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-lg font-semibold">Market overview</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {indices.map((i) => (
-              <div key={i.ticker} className="rounded-md border p-3">
-                <div className="text-xs text-neutral-500">{INDEX_LABELS[i.ticker] ?? i.ticker}</div>
-                <div className="text-base font-semibold">{money(i.price)}</div>
-                <div
-                  className={`text-xs font-medium ${
-                    (i.changePct ?? 0) >= 0 ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {i.changePct == null
-                    ? "—"
-                    : `${i.changePct >= 0 ? "+" : ""}${i.changePct.toFixed(2)}%`}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {error ? (
+      {error && (
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           Couldn’t load your account: {error}
         </div>
-      ) : me ? (
-        <div className="rounded-md border p-4 text-sm">
-          <div className="flex justify-between border-b py-2">
-            <span className="text-neutral-500">Plan</span>
-            <span className="font-medium">{me.plan}</span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span className="text-neutral-500">Role</span>
-            <span className="font-medium">{me.role}</span>
-          </div>
-        </div>
-      ) : (
-        <div className="text-sm text-neutral-500">Loading…</div>
       )}
 
-      {/* Today's briefing — the full review now lives on Home (Reviews page removed). */}
-      {summary?.connected && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Today’s briefing</h2>
-          <ReviewsUI initial={reviewInitial} gated={reviewGated} />
-        </section>
+      {/* Score cards */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <ScoreCard
+          label="Portfolio score"
+          value={portfolioScore != null ? String(portfolioScore) : "—"}
+          suffix={portfolioScore != null ? "/100" : undefined}
+          tone={scoreTone(portfolioScore)}
+          href="/portfolio"
+        />
+        <ScoreCard
+          label="Market score"
+          value={marketScore != null ? String(marketScore) : "—"}
+          suffix={marketScore != null ? "/100" : undefined}
+          tone={scoreTone(marketScore)}
+        />
+        <ScoreCard
+          label="Opportunities"
+          value={String(oppCount)}
+          tone={oppCount > 0 ? "blue" : "slate"}
+          href="/opportunities"
+        />
+        <ScoreCard
+          label="Risk alerts"
+          value={String(riskAlerts)}
+          tone={riskAlerts > 0 ? "red" : "slate"}
+        />
+      </div>
+
+      {/* Today's actions — the page's focal point */}
+      <section className="space-y-2">
+        <h2 className="text-lg font-semibold text-slate-900">Today’s actions</h2>
+        <div className="rounded-xl border border-slate-200 bg-white p-2">
+          {actions.length > 0 ? (
+            <ul className="divide-y divide-slate-100">
+              {actions.map((a) => (
+                <li key={a.key}>
+                  <Link
+                    href={a.href}
+                    className="flex items-center justify-between gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50"
+                  >
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${TONE_DOT[a.tone]}`} />
+                      <span className="min-w-0 truncate">
+                        <span className="font-semibold text-slate-900">{a.primary}</span>
+                        {a.secondary && (
+                          <span className="ml-2 text-xs text-slate-500">{a.secondary}</span>
+                        )}
+                      </span>
+                    </span>
+                    <span className={`shrink-0 text-xs font-semibold ${TONE_TEXT[a.tone]}`}>
+                      {a.verb}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="px-3 py-6 text-center text-sm text-slate-500">
+              No actions yet.{" "}
+              <Link href="/research" className="text-blue-600 hover:underline">
+                Analyze a stock
+              </Link>{" "}
+              or{" "}
+              <Link href="/opportunities" className="text-blue-600 hover:underline">
+                browse opportunities
+              </Link>{" "}
+              and your daily actions show up here.
+            </div>
+          )}
+        </div>
+        <p className="text-[11px] text-slate-400">
+          Educational “Watch” signals from your own analyses — not buy/sell advice.
+        </p>
+      </section>
+
+      {/* Compact market snapshot */}
+      {indices.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+          <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Markets</span>
+          {indices.map((i) => (
+            <span key={i.ticker} className="flex items-baseline gap-1.5">
+              <span className="text-slate-500">{INDEX_LABELS[i.ticker] ?? i.ticker}</span>
+              <span
+                className={`font-semibold ${
+                  (i.changePct ?? 0) >= 0 ? "text-emerald-600" : "text-red-600"
+                }`}
+              >
+                {i.changePct == null
+                  ? "—"
+                  : `${i.changePct >= 0 ? "+" : ""}${i.changePct.toFixed(2)}%`}
+              </span>
+            </span>
+          ))}
+        </div>
       )}
 
       {/* Portfolio */}
@@ -356,6 +504,14 @@ export default async function DashboardPage() {
           </>
         )}
       </section>
+
+      {/* Today's briefing — full review lives on Home (Reviews page removed). */}
+      {summary?.connected && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Today’s briefing</h2>
+          <ReviewsUI initial={reviewInitial} gated={reviewGated} />
+        </section>
+      )}
 
       {/* Next steps — quick jumps into the core flows */}
       <section className="space-y-2">

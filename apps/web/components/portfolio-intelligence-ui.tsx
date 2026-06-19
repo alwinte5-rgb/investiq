@@ -24,31 +24,78 @@ export interface PortfolioView {
   holdingsCount?: number;
 }
 
-function ScoreTile({ label, value, invert }: { label: string; value: number; invert?: boolean }) {
-  // For risk, lower is better → invert the color scale.
-  const good = invert ? value <= 40 : value >= 60;
-  const mid = value > 40 && value < 60;
-  const tone = good ? "text-green-600" : mid ? "text-amber-600" : "text-red-600";
+const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
+
+function healthLabel(v: number): string {
+  return v >= 80 ? "Excellent" : v >= 65 ? "Good" : v >= 45 ? "Fair" : "Needs attention";
+}
+function healthStroke(v: number): string {
+  return v >= 80 ? "#10b981" : v >= 65 ? "#3b82f6" : v >= 45 ? "#f59e0b" : "#ef4444";
+}
+
+/** Apple-Health-style ring for the overall score. */
+function ScoreRing({ value }: { value: number }) {
+  const r = 52;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - clamp(value) / 100);
   return (
-    <div className="rounded-md border p-3 text-center">
-      <div className="text-xs text-neutral-500">{label}</div>
-      <div className={`text-2xl font-semibold ${tone}`}>{value}</div>
-      <div className="text-[10px] text-neutral-400">/ 100</div>
+    <svg width="140" height="140" viewBox="0 0 140 140" className="shrink-0">
+      <circle cx="70" cy="70" r={r} fill="none" stroke="#e2e8f0" strokeWidth="12" />
+      <circle
+        cx="70"
+        cy="70"
+        r={r}
+        fill="none"
+        stroke={healthStroke(value)}
+        strokeWidth="12"
+        strokeLinecap="round"
+        strokeDasharray={circ}
+        strokeDashoffset={offset}
+        transform="rotate(-90 70 70)"
+      />
+      <text x="70" y="68" textAnchor="middle" fontSize="34" fontWeight="700" fill="#0f172a">
+        {clamp(value)}
+      </text>
+      <text x="70" y="90" textAnchor="middle" fontSize="11" fill="#94a3b8">
+        / 100
+      </text>
+    </svg>
+  );
+}
+
+/** One labelled progress bar. `invert` (risk): low value is good. */
+function MetricBar({ label, value, invert }: { label: string; value: number; invert?: boolean }) {
+  const v = clamp(value);
+  const good = invert ? v <= 40 : v >= 60;
+  const mid = invert ? v > 40 && v <= 60 : v >= 40 && v < 60;
+  const color = good ? "bg-emerald-500" : mid ? "bg-amber-500" : "bg-red-500";
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs">
+        <span className="font-medium text-slate-600">{label}</span>
+        <span className="font-semibold text-slate-800">
+          {v}
+          <span className="text-slate-400">/100</span>
+        </span>
+      </div>
+      <div className="h-2 w-full rounded-full bg-slate-100">
+        <div className={`h-2 rounded-full ${color}`} style={{ width: `${v}%` }} />
+      </div>
     </div>
   );
 }
 
 function SectorBars({ sectors }: { sectors: SectorWeight[] }) {
-  if (sectors.length === 0) return <p className="text-xs text-neutral-500">No sector data.</p>;
+  if (sectors.length === 0) return <p className="text-xs text-slate-500">No sector data.</p>;
   return (
     <ul className="space-y-2">
       {sectors.map((s) => (
         <li key={s.sector}>
           <div className="mb-1 flex justify-between text-xs">
-            <span className="text-neutral-700">{s.sector}</span>
-            <span className="font-medium">{Math.round(s.pct)}%</span>
+            <span className="text-slate-600">{s.sector}</span>
+            <span className="font-medium text-slate-800">{Math.round(s.pct)}%</span>
           </div>
-          <div className="h-2 w-full rounded-full bg-neutral-100">
+          <div className="h-2 w-full rounded-full bg-slate-100">
             <div
               className="h-2 rounded-full bg-blue-500"
               style={{ width: `${Math.max(0, Math.min(100, s.pct))}%` }}
@@ -65,7 +112,7 @@ function Narrative({ title, items, tone }: { title: string; items: string[]; ton
   return (
     <div>
       <h4 className={`mb-1 text-sm font-semibold ${tone}`}>{title}</h4>
-      <ul className="list-disc space-y-1 pl-5 text-sm text-neutral-700">
+      <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
         {items.map((it, i) => (
           <li key={i}>{it}</li>
         ))}
@@ -76,61 +123,88 @@ function Narrative({ title, items, tone }: { title: string; items: string[]; ton
 
 function Report({ v }: { v: PortfolioView }) {
   return (
-    <div className="space-y-5 rounded-lg border p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-lg font-semibold">Portfolio health</h3>
-        <span className="text-xs text-neutral-400">
+    <div className="space-y-4">
+      {/* Health hero: ring + breakdown bars */}
+      <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
+          <div className="flex flex-col items-center">
+            <ScoreRing value={v.healthScore} />
+            <div className="mt-1 text-sm font-semibold text-slate-700">
+              {healthLabel(v.healthScore)}
+            </div>
+            <div className="text-[11px] text-slate-400">Portfolio health</div>
+          </div>
+          <div className="w-full flex-1 space-y-3">
+            <MetricBar label="Diversification" value={v.diversificationScore} />
+            <MetricBar label="Risk" value={v.riskScore} invert />
+            <MetricBar label="Cash buffer" value={v.cashScore} />
+          </div>
+        </div>
+        <p className="mt-4 border-t pt-3 text-[11px] text-slate-400">
           {new Date(v.generatedAt).toLocaleString()}
-          {v.holdingsCount != null ? ` · ${v.holdingsCount} holdings` : ""}
-        </span>
+          {v.holdingsCount != null ? ` · ${v.holdingsCount} holdings` : ""} · Deterministic scoring
+          from your holdings — educational only, not investment advice.
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <ScoreTile label="Health" value={v.healthScore} />
-        <ScoreTile label="Diversification" value={v.diversificationScore} />
-        <ScoreTile label="Risk" value={v.riskScore} invert />
-        <ScoreTile label="Cash" value={v.cashScore} />
-      </div>
-
-      <div>
-        <h4 className="mb-2 text-sm font-semibold">Sector concentration</h4>
-        <SectorBars sectors={v.sectorConcentration} />
-      </div>
-
-      {(v.overweight.length > 0 || v.underweight.length > 0) && (
-        <div className="flex flex-wrap gap-4 text-xs">
-          {v.overweight.length > 0 && (
-            <div>
-              <span className="text-neutral-500">Overweight: </span>
-              {v.overweight.map((s) => (
-                <span key={s.sector} className="mr-1 rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">
-                  {s.sector} {Math.round(s.pct)}%
-                </span>
-              ))}
-            </div>
-          )}
-          {v.underweight.length > 0 && (
-            <div>
-              <span className="text-neutral-500">Underweight: </span>
-              {v.underweight.map((s) => (
-                <span key={s.sector} className="mr-1 rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
-                  {s.sector} {Math.round(s.pct)}%
-                </span>
-              ))}
-            </div>
-          )}
+      {/* Recommendations — the "what to focus on" block */}
+      {v.improvements.length > 0 && (
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 className="mb-2 text-sm font-semibold text-slate-900">Recommendations</h3>
+          <ul className="space-y-2">
+            {v.improvements.map((it, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                <span className="mt-0.5 text-emerald-500">✓</span>
+                <span>{it}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Narrative title="Strengths" items={v.strengths} tone="text-green-700" />
-        <Narrative title="Weaknesses" items={v.weaknesses} tone="text-red-700" />
-        <Narrative title="Suggested focus" items={v.improvements} tone="text-blue-700" />
-      </div>
+      {/* Strengths + weaknesses */}
+      {(v.strengths.length > 0 || v.weaknesses.length > 0) && (
+        <div className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-2">
+          <Narrative title="Strengths" items={v.strengths} tone="text-emerald-700" />
+          <Narrative title="Watch-outs" items={v.weaknesses} tone="text-red-700" />
+        </div>
+      )}
 
-      <p className="border-t pt-3 text-[11px] text-neutral-400">
-        Deterministic scoring from your stored holdings — educational only, not investment advice.
-      </p>
+      {/* Sector mix */}
+      <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <h3 className="mb-2 text-sm font-semibold text-slate-900">Sector mix</h3>
+        <SectorBars sectors={v.sectorConcentration} />
+        {(v.overweight.length > 0 || v.underweight.length > 0) && (
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t pt-3 text-xs">
+            {v.overweight.length > 0 && (
+              <div>
+                <span className="text-slate-500">Overweight: </span>
+                {v.overweight.map((s) => (
+                  <span
+                    key={s.sector}
+                    className="mr-1 rounded-full bg-amber-50 px-2 py-0.5 text-amber-700"
+                  >
+                    {s.sector} {Math.round(s.pct)}%
+                  </span>
+                ))}
+              </div>
+            )}
+            {v.underweight.length > 0 && (
+              <div>
+                <span className="text-slate-500">Underweight: </span>
+                {v.underweight.map((s) => (
+                  <span
+                    key={s.sector}
+                    className="mr-1 rounded-full bg-blue-50 px-2 py-0.5 text-blue-700"
+                  >
+                    {s.sector} {Math.round(s.pct)}%
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -170,11 +244,11 @@ export function PortfolioIntelligenceUI({
 
   if (isGated) {
     return (
-      <div className="rounded-md border border-blue-200 bg-blue-50 p-5 text-sm text-blue-800">
-        <p className="mb-2 font-medium">Portfolio Intelligence is an Investor feature.</p>
+      <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 text-sm text-blue-800">
+        <p className="mb-2 font-medium">Portfolio health is an Investor feature.</p>
         <p className="mb-3">
-          Upgrade to get health, risk, diversification and cash scores plus sector concentration and
-          suggested focus areas for your portfolio.
+          Upgrade to get your health score, risk, diversification and cash buffer plus sector mix and
+          focus recommendations for your portfolio.
         </p>
         <Link
           href="/pricing"
@@ -189,15 +263,15 @@ export function PortfolioIntelligenceUI({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-neutral-500">
-          {view ? "Latest analysis of your connected holdings." : "No analysis yet."}
+        <p className="text-sm text-slate-500">
+          {view ? "Latest health report for your connected holdings." : "No report yet."}
         </p>
         <button
           onClick={refresh}
           disabled={pending}
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
-          {pending ? "Analyzing…" : view ? "Refresh analysis" : "Generate analysis"}
+          {pending ? "Analyzing…" : view ? "Refresh" : "Generate report"}
         </button>
       </div>
 
@@ -214,8 +288,8 @@ export function PortfolioIntelligenceUI({
         <Report v={view} />
       ) : (
         !insufficient && (
-          <div className="rounded-md border border-dashed p-6 text-center text-sm text-neutral-500">
-            Generate an analysis to see your portfolio health, risk and diversification.
+          <div className="rounded-xl border border-dashed p-6 text-center text-sm text-slate-500">
+            Generate a report to see your portfolio health, risk and diversification.
           </div>
         )
       )}

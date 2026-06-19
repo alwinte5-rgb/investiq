@@ -54,9 +54,9 @@ export default async function PortfolioPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold">Portfolio Intelligence</h1>
-        <p className="text-sm text-neutral-500">
-          Health, risk, diversification and cash scoring for your connected holdings.
+        <h1 className="text-2xl font-bold text-slate-900">Portfolio health</h1>
+        <p className="text-sm text-slate-500">
+          Your financial health report — one score, the breakdown behind it, and where to focus.
         </p>
       </div>
       <PortfolioIntelligenceUI initial={initial} gated={gated} />

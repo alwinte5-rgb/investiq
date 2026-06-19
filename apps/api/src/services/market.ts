@@ -24,8 +24,8 @@ const QUOTE_TTL_MS = 15_000; // per-stock quote (analysis/risk) — kept fresh; 
 // few times a day instead of every page load — they're context, not live tickers,
 // so a long shared cache slashes provider calls (Twelve Data 8/min, Polygon 5/min)
 // and avoids the per-minute burst that caused "No current price".
-const OVERVIEW_TTL_MS = 6 * 60 * 60 * 1000; // 6h (also used by getPopular)
-const MOVERS_TTL_MS = 6 * 60 * 60 * 1000; // 6h
+const OVERVIEW_TTL_MS = 12 * 60 * 60 * 1000; // 12h (also used by getPopular)
+const MOVERS_TTL_MS = 12 * 60 * 60 * 1000; // 12h
 const MOVERS_LIMIT = 10;
 
 export interface MarketOverview {

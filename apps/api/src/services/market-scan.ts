@@ -25,7 +25,10 @@ import { supportingNote } from "./opportunities.js";
  */
 
 const MARKET_OPPS_TTL_MS = 60 * 60 * 1000; // 1h — refreshed at the end of each scan
-const SCAN_DELAY_MS = 1500; // throttle between symbols to respect provider rate limits
+// Throttle between symbols. Free Twelve Data allows ~8 quotes/min, so ~8s/symbol
+// keeps the scan's 1-quote-per-symbol under the limit (a ~40-name scan takes ~5
+// min in the background). Lower this if you move to a paid market-data tier.
+const SCAN_DELAY_MS = 8000;
 const ACTIVE_WINDOW_MS = 24 * 60 * 60 * 1000; // "active" = a user seen in the last 24h
 
 const cache = new InMemoryTtlCache();

@@ -5,3 +5,4 @@ export * from "./hash.js";
 export * from "./model.js";
 export * from "./pipeline.js";
 export * from "./news-classify.js";
+export * from "./advisor.js";

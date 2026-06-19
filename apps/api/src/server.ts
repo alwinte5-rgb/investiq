@@ -48,7 +48,13 @@ import { createDiscoveryService } from "./services/discovery.js";
 import { createMacroService } from "./services/macro.js";
 import { createFilingsService } from "./services/filings.js";
 import { createSnapTradeClient } from "@investiq/integrations";
-import { createAnthropicAnalysisModel, createAnthropicNewsClassifier } from "@investiq/ai";
+import {
+  createAnthropicAnalysisModel,
+  createAnthropicNewsClassifier,
+  createAnthropicAdvisor,
+} from "@investiq/ai";
+import { createAdvisorService } from "./services/advisor.js";
+import { advisorRoutes } from "./routes/advisor.js";
 import type { BrokerageDeps } from "./services/brokerage.js";
 import { warmUpDemoAnalyses } from "./services/demo-warmup.js";
 import type { Plan } from "@investiq/shared";
@@ -230,6 +236,13 @@ async function main() {
     app.log.info(
       `AI analysis routes enabled (model=${env.AI_MODEL}, fundamentals=${fundamentals.enabled})`,
     );
+
+    // AI Advisor — non-advisory educational tutor over the user's own data.
+    const advisor = createAdvisorService({
+      advisor: createAnthropicAdvisor({ apiKey: anthropicKey!, model: env.AI_MODEL }),
+    });
+    await app.register(async (instance) => advisorRoutes(instance, { auth: authDeps, advisor }));
+    app.log.info("AI Advisor routes enabled");
 
     // Layer 5 — News Intelligence (needs the AI key + at least one news provider).
     if (anthropicKey && news.enabled) {

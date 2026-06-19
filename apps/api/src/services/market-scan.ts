@@ -1,4 +1,4 @@
-import { prisma } from "@investiq/db";
+import { prisma, countActiveUsersSince } from "@investiq/db";
 import {
   buildOpportunities,
   type NewsTone,
@@ -26,17 +26,28 @@ import { supportingNote } from "./opportunities.js";
 
 const MARKET_OPPS_TTL_MS = 60 * 60 * 1000; // 1h — refreshed at the end of each scan
 const SCAN_DELAY_MS = 1500; // throttle between symbols to respect provider rate limits
+const ACTIVE_WINDOW_MS = 24 * 60 * 60 * 1000; // "active" = a user seen in the last 24h
 
 const cache = new InMemoryTtlCache();
 const MARKET_OPPS_KEY = "market-opportunities";
 let scanning = false; // single-flight guard so overlapping triggers don't double-run
 
 export interface MarketScanResult {
+  /** False when the scan was gated (no active users) or already running. */
+  ran: boolean;
+  /** Why a scan didn't run, when `ran` is false. */
+  skipReason?: "no_active_users" | "already_running";
   scanned: number;
   created: number;
   cached: number;
   skipped: number; // insufficient evidence / invalid output / quota
   failed: number; // threw (e.g. provider/network)
+}
+
+export interface ScanOptions {
+  /** When true (default), only run if ≥1 user was active in the last 24h, so the
+   *  app never spends AI credits while nobody is using it. Set false to force. */
+  requireActiveUser?: boolean;
 }
 
 /** Categorize the stored GLOBAL analyses into ranked, non-personalized groups. */
@@ -98,14 +109,23 @@ export async function getMarketOpportunities(): Promise<OpportunityGroup[]> {
 export async function scanMarket(
   deps: AnalysisDeps,
   log?: (msg: string, err?: unknown) => void,
+  opts: ScanOptions = {},
 ): Promise<MarketScanResult> {
-  const empty: MarketScanResult = { scanned: 0, created: 0, cached: 0, skipped: 0, failed: 0 };
+  const empty: MarketScanResult = { ran: false, scanned: 0, created: 0, cached: 0, skipped: 0, failed: 0 };
   if (scanning) {
     log?.("[market-scan] already running — skipped");
-    return empty;
+    return { ...empty, skipReason: "already_running" };
+  }
+  // Cost gate: don't spend AI credits scanning when nobody is using the app.
+  if (opts.requireActiveUser !== false) {
+    const activeUsers = await countActiveUsersSince(new Date(Date.now() - ACTIVE_WINDOW_MS));
+    if (activeUsers === 0) {
+      log?.("[market-scan] no active users in the last 24h — skipped");
+      return { ...empty, skipReason: "no_active_users" };
+    }
   }
   scanning = true;
-  const result: MarketScanResult = { ...empty };
+  const result: MarketScanResult = { ...empty, ran: true };
   try {
     const symbols = await prisma.symbol.findMany({
       where: { active: true },

@@ -89,6 +89,9 @@ model User {
   role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // Best-effort "last authenticated request" heartbeat (throttled). Used to gate
+  // the daily market scan so it only runs when the app has recent active users.
+  lastSeenAt DateTime?
 
   subscription          Subscription?
   brokerageConnections  BrokerageConnection[]

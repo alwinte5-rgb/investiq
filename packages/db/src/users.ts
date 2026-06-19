@@ -43,4 +43,25 @@ export async function deleteUserByClerkId(clerkId: string): Promise<void> {
   await prisma.user.deleteMany({ where: { clerkId } });
 }
 
+/** Only rewrite the heartbeat at most this often, so it's not a write/request. */
+const LAST_SEEN_THROTTLE_MS = 30 * 60 * 1000; // 30m
+
+/**
+ * Best-effort "user is active" heartbeat. Conditionally bumps `lastSeenAt` only
+ * when it's stale (or unset), so an authenticated request burst costs at most
+ * one write per user per 30m. Safe to call fire-and-forget.
+ */
+export async function touchUserLastSeen(userId: string): Promise<void> {
+  const threshold = new Date(Date.now() - LAST_SEEN_THROTTLE_MS);
+  await prisma.user.updateMany({
+    where: { id: userId, OR: [{ lastSeenAt: null }, { lastSeenAt: { lt: threshold } }] },
+    data: { lastSeenAt: new Date() },
+  });
+}
+
+/** Count users seen since `since` — used to gate work on real activity. */
+export async function countActiveUsersSince(since: Date): Promise<number> {
+  return prisma.user.count({ where: { lastSeenAt: { gte: since } } });
+}
+
 export type { Plan, Role, User };

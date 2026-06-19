@@ -1,13 +1,19 @@
 import type { FastifyRequest } from "fastify";
 import type { ClerkClient } from "@clerk/backend";
 import { AppError, errors } from "@investiq/shared";
-import { findOrProvisionUser } from "@investiq/db";
+import { findOrProvisionUser, touchUserLastSeen } from "@investiq/db";
 import { authenticate, effectivePlan, type AuthContext, type ClerkVerifier } from "./auth.js";
 import { userLoader } from "./context.js";
 
 export interface AuthDeps {
   verifier: ClerkVerifier;
   clerk: ClerkClient;
+}
+
+/** Fire-and-forget activity heartbeat (throttled in the repo). Never blocks or
+ *  fails a request — a heartbeat write error must not break authentication. */
+function markActive(userId: string): void {
+  void touchUserLastSeen(userId).catch(() => {});
 }
 
 /**
@@ -22,7 +28,9 @@ export async function resolveAuthContext(
   deps: AuthDeps,
 ): Promise<AuthContext> {
   try {
-    return await authenticate(req.headers.authorization, deps.verifier, userLoader);
+    const ctx = await authenticate(req.headers.authorization, deps.verifier, userLoader);
+    markActive(ctx.userId);
+    return ctx;
   } catch (err) {
     // Only lazily provision for the specific "valid token, missing user row"
     // case. Re-throw invalid-token (401) and any unrelated error (e.g. a DB
@@ -43,6 +51,7 @@ export async function resolveAuthContext(
       name: [cu.firstName, cu.lastName].filter(Boolean).join(" ") || null,
       avatarUrl: cu.imageUrl ?? null,
     });
+    markActive(user.id);
     return { userId: user.id, clerkId: user.clerkId, plan: effectivePlan(user.plan), role: user.role };
   }
 }

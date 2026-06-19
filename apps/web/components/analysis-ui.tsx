@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import {
   generateAnalysisAction,
   type Analysis,
@@ -25,10 +25,10 @@ const REC_LABELS: Record<string, string> = {
   REBUY_WATCH: "Rebuy Watch",
 };
 const REC_TONE: Record<string, string> = {
-  STRONG_BUY_WATCH: "bg-green-100 text-green-800 border-green-200",
-  BUY_WATCH: "bg-green-50 text-green-700 border-green-200",
+  STRONG_BUY_WATCH: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  BUY_WATCH: "bg-emerald-50 text-emerald-700 border-emerald-200",
   REBUY_WATCH: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  HOLD: "bg-neutral-100 text-neutral-700 border-neutral-200",
+  HOLD: "bg-slate-100 text-slate-700 border-slate-200",
   TRIM_POSITION: "bg-amber-50 text-amber-700 border-amber-200",
   EXIT_CONSIDERATION: "bg-orange-50 text-orange-700 border-orange-200",
   HIGH_RISK_WARNING: "bg-red-50 text-red-700 border-red-200",
@@ -41,151 +41,143 @@ interface SymbolResult {
   assetType: "STOCK" | "ETF";
 }
 
-function ScoreBar({ label, value, tone }: { label: ReactNode; value: number; tone: string }) {
-  return (
-    <div>
-      <div className="mb-1 flex justify-between text-xs text-neutral-500">
-        <span>{label}</span>
-        <span className="font-medium text-neutral-700">{value}/100</span>
-      </div>
-      <div className="h-2 w-full rounded-full bg-neutral-100">
-        <div className={`h-2 rounded-full ${tone}`} style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function Section({ title, body }: { title: string; body: string | null }) {
+function SectionCard({ title, body, accent }: { title: string; body: string | null; accent?: string }) {
   if (!body) return null;
   return (
-    <div>
-      <h4 className="mb-1 text-sm font-semibold">{title}</h4>
-      <p className="whitespace-pre-line text-sm text-neutral-700">{body}</p>
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <h4 className={`mb-1 text-sm font-semibold ${accent ?? "text-slate-900"}`}>{title}</h4>
+      <p className="whitespace-pre-line text-sm text-slate-600">{body}</p>
     </div>
   );
 }
 
 /**
- * The verdict card — the synthesized "what's the takeaway" up top, so the
- * conclusion is clear in seconds before any detail. Non-advisory: it's a "Watch"
- * signal with the top supporting reasons, explicitly not a buy/sell instruction.
+ * AI Verdict — the hero. The synthesized takeaway up top, so the conclusion is
+ * clear in seconds before any detail. Non-advisory: a "Watch" signal with
+ * confidence/risk, explicitly not a buy/sell instruction.
  */
 function Verdict({ analysis }: { analysis: Analysis }) {
-  const reasons = analysis.evidence
-    .filter((e) => e.role === "SUPPORTING" && e.snapshot?.note)
-    .slice(0, 3);
   const tone =
-    REC_TONE[analysis.recommendationType] ?? "bg-neutral-100 text-neutral-700 border-neutral-200";
+    REC_TONE[analysis.recommendationType] ?? "bg-slate-100 text-slate-700 border-slate-200";
   return (
-    <div className="space-y-3 rounded-lg border bg-neutral-50 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-[11px] font-medium uppercase tracking-wide text-neutral-500">
+          <div className="text-lg font-bold text-slate-900">
+            {analysis.symbol?.ticker ?? ""}{" "}
+            <span className="text-sm font-normal text-slate-500">{analysis.symbol?.name}</span>
+          </div>
+          <div className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
             AI verdict · educational signal
           </div>
           <span
-            className={`mt-1 inline-block rounded-full border px-3 py-1 text-base font-semibold ${tone}`}
+            className={`mt-2 inline-block rounded-full border px-3 py-1 text-base font-semibold ${tone}`}
           >
             <Term k={analysis.recommendationType}>
               {REC_LABELS[analysis.recommendationType] ?? analysis.recommendationType}
             </Term>
           </span>
         </div>
-        <div className="flex gap-4 text-right">
+        <div className="flex gap-5 text-right">
           <div>
-            <div className="text-[11px] text-neutral-500">Confidence</div>
-            <div className="text-xl font-bold text-neutral-800">{analysis.confidenceScore}</div>
+            <div className="text-[11px] text-slate-500">
+              <Term k="confidence score">Confidence</Term>
+            </div>
+            <div className="text-2xl font-bold text-slate-900">{analysis.confidenceScore}</div>
           </div>
           <div>
-            <div className="text-[11px] text-neutral-500">Risk</div>
-            <div className="text-xl font-bold text-neutral-800">{analysis.riskScore}</div>
+            <div className="text-[11px] text-slate-500">
+              <Term k="risk score">Risk</Term>
+            </div>
+            <div className="text-2xl font-bold text-slate-900">{analysis.riskScore}</div>
           </div>
         </div>
       </div>
-      {reasons.length > 0 && (
-        <div>
-          <div className="text-xs font-semibold text-neutral-700">Top reasons</div>
-          <ul className="mt-1 space-y-1 text-sm text-neutral-600">
-            {reasons.map((e) => (
-              <li key={e.id} className="flex gap-2">
-                <span className="text-green-600">✓</span>
-                <span>{e.snapshot?.note}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      <p className="text-[11px] text-neutral-400">
-        A research signal to weigh against your own goals, time horizon and risk tolerance — not a
-        buy/sell instruction.
+      <p className="mt-3 text-[11px] text-slate-400">
+        {analysis.model} · {new Date(analysis.generatedAt).toLocaleString()} · A research signal to
+        weigh against your own goals, time horizon and risk tolerance — not a buy/sell instruction.
       </p>
     </div>
   );
 }
 
+/** "Why" — the top supporting reasons + the synthesized summary, right after the verdict. */
+function WhyCard({ analysis }: { analysis: Analysis }) {
+  const reasons = analysis.evidence
+    .filter((e) => e.role === "SUPPORTING" && e.snapshot?.note)
+    .slice(0, 3);
+  if (!analysis.summary && reasons.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <h4 className="mb-2 text-sm font-semibold text-slate-900">Why</h4>
+      {reasons.length > 0 && (
+        <ul className="mb-3 space-y-1.5 text-sm text-slate-700">
+          {reasons.map((e) => (
+            <li key={e.id} className="flex gap-2">
+              <span className="mt-0.5 text-emerald-600">✓</span>
+              <span>{e.snapshot?.note}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {analysis.summary && (
+        <p className="whitespace-pre-line text-sm text-slate-600">{analysis.summary}</p>
+      )}
+    </div>
+  );
+}
+
+function EvidenceCard({ analysis }: { analysis: Analysis }) {
+  if (analysis.evidence.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <h4 className="mb-2 text-sm font-semibold text-slate-900">
+        Evidence ({analysis.evidence.length})
+      </h4>
+      <ul className="space-y-1 text-xs text-slate-600">
+        {analysis.evidence.map((e) => (
+          <li key={e.id} className="flex gap-2">
+            <span
+              className={`mt-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                e.role === "SUPPORTING"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-amber-50 text-amber-700"
+              }`}
+            >
+              {e.role === "SUPPORTING" ? "Supports" : "Counters"}
+            </span>
+            <span>
+              <span className="font-medium">{e.sourceType}</span>
+              {e.snapshot?.note ? ` — ${e.snapshot.note}` : ""}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Verdict-first card stack: Verdict → Why → Bull/Bear → risks/technical → news → evidence. */
 function AnalysisCard({ analysis }: { analysis: Analysis }) {
   return (
-    <div className="space-y-4 rounded-lg border p-5">
+    <div className="space-y-4">
       <Verdict analysis={analysis} />
+      <WhyCard analysis={analysis} />
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <div className="text-lg font-semibold">
-            {analysis.symbol?.ticker ?? ""}{" "}
-            <span className="text-sm font-normal text-neutral-500">{analysis.symbol?.name}</span>
-          </div>
-          <div className="text-xs text-neutral-400">
-            {analysis.model} · {new Date(analysis.generatedAt).toLocaleString()}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <ScoreBar
-          label={<Term k="confidence score">Confidence</Term>}
-          value={analysis.confidenceScore}
-          tone="bg-blue-500"
-        />
-        <ScoreBar label={<Term k="risk score">Risk</Term>} value={analysis.riskScore} tone="bg-red-500" />
-      </div>
-
-      <Section title="Summary" body={analysis.summary} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Section title="Bull case" body={analysis.bullCase} />
-        <Section title="Bear case" body={analysis.bearCase} />
+        <SectionCard title="Bull case" body={analysis.bullCase} accent="text-emerald-700" />
+        <SectionCard title="Bear case" body={analysis.bearCase} accent="text-red-700" />
       </div>
-      <Section title="Key risks" body={analysis.keyRisks} />
-      <Section title="News impact" body={analysis.newsImpactSummary} />
-      <Section title="Technical picture" body={analysis.technicalSummary} />
 
-      {analysis.evidence.length > 0 && (
-        <div>
-          <h4 className="mb-1 text-sm font-semibold">Evidence ({analysis.evidence.length})</h4>
-          <ul className="space-y-1 text-xs text-neutral-600">
-            {analysis.evidence.map((e) => (
-              <li key={e.id} className="flex gap-2">
-                <span
-                  className={`mt-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                    e.role === "SUPPORTING"
-                      ? "bg-green-50 text-green-700"
-                      : "bg-amber-50 text-amber-700"
-                  }`}
-                >
-                  {e.role === "SUPPORTING" ? "Supports" : "Counters"}
-                </span>
-                <span>
-                  <span className="font-medium">{e.sourceType}</span>
-                  {e.snapshot?.note ? ` — ${e.snapshot.note}` : ""}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <SectionCard title="Key risks" body={analysis.keyRisks} />
+      <SectionCard title="Technical read" body={analysis.technicalSummary} />
+      <SectionCard title="News impact" body={analysis.newsImpactSummary} />
+
+      <EvidenceCard analysis={analysis} />
 
       <LearnPanel kind="recommendation" recType={analysis.recommendationType} />
 
-      <p className="border-t pt-3 text-[11px] text-neutral-400">
+      <p className="border-t pt-3 text-[11px] text-slate-400">
         Educational research only — not investment advice. Every point above is grounded in the
         evidence listed; InvestIQ never issues buy/sell directives.
       </p>
@@ -276,7 +268,7 @@ export function ResearchUI({ initialTicker = "" }: { initialTicker?: string }) {
             }}
             onKeyDown={(e) => e.key === "Enter" && run(q)}
             placeholder="Search a US stock or ETF (e.g. AAPL)…"
-            className="w-full rounded-md border px-3 py-2 text-sm"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
           />
           {open && q.trim() && results.length > 0 && (
             <div className="absolute z-10 mt-1 w-full rounded-md border bg-white shadow-sm">
@@ -284,13 +276,13 @@ export function ResearchUI({ initialTicker = "" }: { initialTicker?: string }) {
                 <button
                   key={r.ticker}
                   onClick={() => run(r.ticker)}
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-neutral-50"
+                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
                 >
                   <span>
                     <span className="font-medium">{r.ticker}</span>{" "}
-                    <span className="text-neutral-500">{r.name}</span>
+                    <span className="text-slate-500">{r.name}</span>
                   </span>
-                  <span className="rounded-full border px-2 py-0.5 text-[10px] text-neutral-500">
+                  <span className="rounded-full border px-2 py-0.5 text-[10px] text-slate-500">
                     {r.assetType}
                   </span>
                 </button>
@@ -314,7 +306,7 @@ export function ResearchUI({ initialTicker = "" }: { initialTicker?: string }) {
       )}
 
       {pending && (
-        <div className="rounded-md border border-dashed p-6 text-center text-sm text-neutral-500">
+        <div className="rounded-xl border border-dashed p-6 text-center text-sm text-slate-500">
           Generating a grounded analysis…
         </div>
       )}
@@ -332,10 +324,11 @@ export function ResearchUI({ initialTicker = "" }: { initialTicker?: string }) {
         <AnalysisCard analysis={result.analysis} />
       )}
 
+      {/* Verdict-first, then the data ("financials"/levels/sources), news last. */}
       {analyzedTicker && !pending && <RiskPanel ticker={analyzedTicker} />}
       {analyzedTicker && !pending && <ChartPanel ticker={analyzedTicker} />}
-      {analyzedTicker && !pending && <NewsImpactPanel ticker={analyzedTicker} />}
       {analyzedTicker && !pending && <FilingsPanel ticker={analyzedTicker} />}
+      {analyzedTicker && !pending && <NewsImpactPanel ticker={analyzedTicker} />}
     </div>
   );
 }

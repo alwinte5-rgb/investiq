@@ -19,9 +19,13 @@ const SECTOR_TICKERS = ["XLK", "XLE"];
  *  provider's gainers/losers snapshot isn't available (e.g. plan tier). */
 const POPULAR_TICKERS = ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "JPM", "V", "SPY", "QQQ", "AMD"];
 
-const QUOTE_TTL_MS = 15_000;
-const OVERVIEW_TTL_MS = 30_000;
-const MOVERS_TTL_MS = 60_000;
+const QUOTE_TTL_MS = 15_000; // per-stock quote (analysis/risk) — kept fresh; on-demand, not per-page-load
+// The dashboard/research LISTS (index overview, popular ideas, movers) refresh a
+// few times a day instead of every page load — they're context, not live tickers,
+// so a long shared cache slashes provider calls (Twelve Data 8/min, Polygon 5/min)
+// and avoids the per-minute burst that caused "No current price".
+const OVERVIEW_TTL_MS = 6 * 60 * 60 * 1000; // 6h (also used by getPopular)
+const MOVERS_TTL_MS = 6 * 60 * 60 * 1000; // 6h
 const MOVERS_LIMIT = 10;
 
 export interface MarketOverview {

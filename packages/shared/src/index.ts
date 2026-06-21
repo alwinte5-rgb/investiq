@@ -7,6 +7,7 @@ export * from "./reviews.js";
 export * from "./risk.js";
 export * from "./chart.js";
 export * from "./opportunities.js";
+export * from "./scoring.js";
 export * from "./paper.js";
 export * from "./learning.js";
 export * from "./glossary.js";

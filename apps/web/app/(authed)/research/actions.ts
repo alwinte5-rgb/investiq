@@ -226,6 +226,33 @@ export async function getFilingsAction(ticker: string): Promise<FilingsActionRes
   }
 }
 
+// ── Stock scorecard (deterministic Financial Strength + key fundamentals) ────
+export interface Scorecard {
+  ticker: string;
+  financialStrength: number | null;
+  marketCap: number | null;
+  pe: number | null;
+  roe: number | null;
+  netMargin: number | null;
+  debtToEquity: number | null;
+}
+export type ScorecardActionResult =
+  | { ok: true; scorecard: Scorecard }
+  | { ok: false; error: string };
+
+export async function getScorecardAction(ticker: string): Promise<ScorecardActionResult> {
+  const t = ticker.trim().toUpperCase();
+  if (!t) return { ok: false, error: "Enter a ticker" };
+  try {
+    const scorecard = await apiFetch<Scorecard>(`/api/v1/symbols/${encodeURIComponent(t)}/scorecard`);
+    return { ok: true, scorecard };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to load scorecard";
+    if (isAuthError(msg)) redirect("/sign-in");
+    return { ok: false, error: msg };
+  }
+}
+
 export async function getLatestAnalysisAction(ticker: string): Promise<AnalysisActionResult> {
   const t = ticker.trim().toUpperCase();
   if (!t) return { ok: false, error: "Enter a ticker" };

@@ -41,6 +41,7 @@ import { newsRoutes } from "./routes/news.js";
 import { cronRoutes } from "./routes/cron.js";
 import { macroRoutes } from "./routes/macro.js";
 import { filingsRoutes } from "./routes/filings.js";
+import { scorecardRoutes } from "./routes/scorecard.js";
 import { createMarketService } from "./services/market.js";
 import { createNewsService } from "./services/news.js";
 import { createFundamentalsService } from "./services/fundamentals.js";
@@ -172,6 +173,8 @@ async function main() {
   // Macro context (FRED) + SEC filings (EDGAR) — free, educational, non-advisory.
   await app.register(async (instance) => macroRoutes(instance, { auth: authDeps, macro }));
   await app.register(async (instance) => filingsRoutes(instance, { auth: authDeps, filings }));
+  // Stock scorecard — deterministic Financial Strength + key fundamentals.
+  await app.register(async (instance) => scorecardRoutes(instance, { auth: authDeps, fundamentals }));
   app.log.info(
     macro.enabled
       ? "Macro (FRED) + SEC filings routes enabled"

@@ -10,6 +10,7 @@ import { NewsImpactPanel } from "@/components/news-impact-ui";
 import { RiskPanel } from "@/components/risk-ui";
 import { ChartPanel } from "@/components/chart-ui";
 import { FilingsPanel } from "@/components/filings-ui";
+import { StockScorecard } from "@/components/stock-scorecard-ui";
 import { LearnPanel } from "@/components/learn-ui";
 import { Term } from "@/components/term";
 
@@ -325,6 +326,7 @@ export function ResearchUI({ initialTicker = "" }: { initialTicker?: string }) {
       )}
 
       {/* Verdict-first, then the data ("financials"/levels/sources), news last. */}
+      {analyzedTicker && !pending && <StockScorecard ticker={analyzedTicker} />}
       {analyzedTicker && !pending && <RiskPanel ticker={analyzedTicker} />}
       {analyzedTicker && !pending && <ChartPanel ticker={analyzedTicker} />}
       {analyzedTicker && !pending && <FilingsPanel ticker={analyzedTicker} />}

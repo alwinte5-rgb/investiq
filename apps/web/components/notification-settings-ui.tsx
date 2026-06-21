@@ -103,7 +103,7 @@ export function NotificationSettingsUI({ initial }: { initial: NotificationPrefe
             </option>
           ))}
         </select>
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="mt-1 text-xs text-slate-500">
           Used to schedule briefings and apply quiet hours.
         </p>
       </div>
@@ -174,7 +174,7 @@ export function NotificationSettingsUI({ initial }: { initial: NotificationPrefe
             </label>
           </div>
         )}
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="mt-1 text-xs text-slate-500">
           In-app notifications are always recorded; quiet hours only mute email and push.
         </p>
       </div>

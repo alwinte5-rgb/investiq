@@ -32,7 +32,7 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
           <Link href="/paper" className="hover:underline">
             Paper Trading
           </Link>
-          <Link href="/settings" className="ml-auto text-neutral-500 hover:underline">
+          <Link href="/settings" className="ml-auto text-slate-500 hover:underline">
             Settings
           </Link>
         </nav>

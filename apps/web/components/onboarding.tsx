@@ -20,7 +20,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
         {n}
       </span>
       <div className="space-y-1.5">
-        <p className="text-sm font-medium text-neutral-800">{title}</p>
+        <p className="text-sm font-medium text-slate-800">{title}</p>
         {children}
       </div>
     </li>
@@ -70,8 +70,8 @@ export function OnboardingGuide({ isNewUser }: { isNewUser: boolean }) {
     <section className="rounded-lg border border-blue-200 bg-blue-50/60 p-5">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-neutral-900">👋 Welcome to InvestIQ</h2>
-          <p className="mt-0.5 text-sm text-neutral-600">
+          <h2 className="text-lg font-semibold text-slate-900">👋 Welcome to InvestIQ</h2>
+          <p className="mt-0.5 text-sm text-slate-600">
             Research stocks and ETFs, understand the risks, and learn as you go — in plain English.
             We never tell you to buy or sell; we help you decide for yourself.
           </p>
@@ -79,7 +79,7 @@ export function OnboardingGuide({ isNewUser }: { isNewUser: boolean }) {
         <button
           type="button"
           onClick={dismiss}
-          className="flex-none text-xs text-neutral-400 hover:text-neutral-600"
+          className="flex-none text-xs text-slate-400 hover:text-slate-600"
           aria-label="Hide the getting-started guide"
         >
           Hide
@@ -88,7 +88,7 @@ export function OnboardingGuide({ isNewUser }: { isNewUser: boolean }) {
 
       <ol className="space-y-4">
         <Step n={1} title="Explore with sample data — no brokerage needed">
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-slate-600">
             See the whole app populated instantly with an example portfolio, then look around.
           </p>
           <button
@@ -103,7 +103,7 @@ export function OnboardingGuide({ isNewUser }: { isNewUser: boolean }) {
         </Step>
 
         <Step n={2} title="Research any stock">
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-slate-600">
             Type a ticker for an evidence-based breakdown: the bull case, bear case, key risks, and a
             plain-English signal — grounded in real data, never guesses.
           </p>
@@ -116,9 +116,9 @@ export function OnboardingGuide({ isNewUser }: { isNewUser: boolean }) {
         </Step>
 
         <Step n={3} title="Learn as you go">
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-slate-600">
             See a term you don&apos;t know? Any{" "}
-            <span className="border-b border-dotted border-neutral-400">underlined word</span> is
+            <span className="border-b border-dotted border-slate-400">underlined word</span> is
             tappable for a plain-English definition — no finance background required.
           </p>
         </Step>

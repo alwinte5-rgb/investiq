@@ -24,8 +24,8 @@ const money = (v: number | null | undefined) =>
 function Stat({ label, value }: { label: ReactNode; value: string }) {
   return (
     <div className="rounded-md border p-3">
-      <div className="text-xs text-neutral-500">{label}</div>
-      <div className="text-sm font-semibold text-neutral-800">{value}</div>
+      <div className="text-xs text-slate-500">{label}</div>
+      <div className="text-sm font-semibold text-slate-800">{value}</div>
     </div>
   );
 }
@@ -61,7 +61,7 @@ export function RiskPanel({ ticker }: { ticker: string }) {
         <button
           onClick={assess}
           disabled={pending}
-          className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
+          className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-50"
         >
           {pending ? "Assessing…" : risk ? "Re-assess" : "Assess risk"}
         </button>
@@ -70,7 +70,7 @@ export function RiskPanel({ ticker }: { ticker: string }) {
       {error && <p className="text-xs text-red-600">{error}</p>}
 
       {!risk ? (
-        <p className="rounded-md border border-dashed p-4 text-center text-sm text-neutral-500">
+        <p className="rounded-md border border-dashed p-4 text-center text-sm text-slate-500">
           Get buy zone, stop, target, and position sizing for {ticker}.
         </p>
       ) : risk.status === "insufficient" ? (
@@ -87,7 +87,7 @@ export function RiskPanel({ ticker }: { ticker: string }) {
             >
               {COLOR_LABEL[risk.warningColor ?? "GREEN"]}
             </span>
-            <span className="text-xs text-neutral-400">Last price {money(risk.price)}</span>
+            <span className="text-xs text-slate-400">Last price {money(risk.price)}</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -119,10 +119,10 @@ export function RiskPanel({ ticker }: { ticker: string }) {
             <ul className="space-y-1 border-t pt-2 text-xs">
               {risk.warnings.map((w, i) => (
                 <li key={i} className="flex gap-2">
-                  <span className={w.severity === "warn" ? "text-amber-600" : "text-neutral-400"}>
+                  <span className={w.severity === "warn" ? "text-amber-600" : "text-slate-400"}>
                     {w.severity === "warn" ? "⚠" : "•"}
                   </span>
-                  <span className="text-neutral-600">{w.message}</span>
+                  <span className="text-slate-600">{w.message}</span>
                 </li>
               ))}
             </ul>
@@ -130,7 +130,7 @@ export function RiskPanel({ ticker }: { ticker: string }) {
 
           <LearnPanel kind="risk" />
 
-          <p className="border-t pt-2 text-[11px] text-neutral-400">
+          <p className="border-t pt-2 text-[11px] text-slate-400">
             Educational levels derived from price + volatility — not a trade instruction. Position
             sizing assumes risking {risk.maxRiskPct ?? 1}% of your portfolio per trade.
           </p>

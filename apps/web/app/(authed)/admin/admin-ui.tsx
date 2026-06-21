@@ -21,7 +21,7 @@ export function FlagToggle({ flagKey, enabled }: { flagKey: string; enabled: boo
         })
       }
       className={`rounded-full px-3 py-1 text-xs font-medium ${
-        on ? "bg-green-100 text-green-700" : "bg-neutral-200 text-neutral-600"
+        on ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600"
       } disabled:opacity-50`}
     >
       {on ? "Enabled" : "Disabled"}

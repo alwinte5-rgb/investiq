@@ -24,7 +24,7 @@ export default async function ResearchPage({
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Research</h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-slate-500">
           Search any US stock or ETF for an evidence-grounded AI analysis — or browse ideas below.
         </p>
       </div>

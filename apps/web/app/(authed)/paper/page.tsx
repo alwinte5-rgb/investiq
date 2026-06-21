@@ -23,8 +23,8 @@ export default async function PaperPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold">Paper Trading</h1>
-        <p className="text-sm text-neutral-500">
+        <h1 className="text-2xl font-bold text-slate-900">Paper Trading</h1>
+        <p className="text-sm text-slate-500">
           A risk-free simulator with $100,000 in virtual cash. Orders fill at live quotes — no real
           money, no brokerage. For learning only.
         </p>

@@ -39,8 +39,8 @@ export default async function LearnPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Learn</h1>
-        <p className="text-sm text-neutral-500">
+        <h1 className="text-2xl font-bold text-slate-900">Learn</h1>
+        <p className="text-sm text-slate-500">
           A plain-English path through investing basics — what the signals mean, how to manage risk,
           and how to build a portfolio. Educational only, never advice. Tap a topic to expand.
         </p>
@@ -50,7 +50,7 @@ export default async function LearnPage() {
         <section className="space-y-2">
           <div>
             <h2 className="text-lg font-semibold">Macro context</h2>
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm text-slate-500">
               The big-picture forces behind the market, with live figures. Educational background —
               not a market call.
             </p>
@@ -59,18 +59,18 @@ export default async function LearnPage() {
             {macro.map((m) => (
               <div key={m.id} className="rounded-lg border p-4">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-medium text-neutral-700">{m.label}</span>
-                  <span className="text-lg font-semibold tabular-nums text-neutral-900">
+                  <span className="text-sm font-medium text-slate-700">{m.label}</span>
+                  <span className="text-lg font-semibold tabular-nums text-slate-900">
                     {m.value!.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                     {m.unit}
                   </span>
                 </div>
-                <p className="mt-1 text-xs leading-relaxed text-neutral-500">{m.blurb}</p>
-                {m.asOf && <p className="mt-1 text-[11px] text-neutral-400">As of {m.asOf}</p>}
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">{m.blurb}</p>
+                {m.asOf && <p className="mt-1 text-[11px] text-slate-400">As of {m.asOf}</p>}
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-neutral-400">Source: Federal Reserve (FRED).</p>
+          <p className="text-[11px] text-slate-400">Source: Federal Reserve (FRED).</p>
         </section>
       )}
 
@@ -79,7 +79,7 @@ export default async function LearnPage() {
           Couldn’t load lessons: {error}
         </p>
       ) : sections.length === 0 ? (
-        <p className="rounded-md border border-dashed p-6 text-center text-sm text-neutral-500">
+        <p className="rounded-md border border-dashed p-6 text-center text-sm text-slate-500">
           No lessons available right now.
         </p>
       ) : (
@@ -87,15 +87,15 @@ export default async function LearnPage() {
           <section key={s.title} className="space-y-2">
             <div>
               <h2 className="text-lg font-semibold">{s.title}</h2>
-              <p className="text-sm text-neutral-500">{s.intro}</p>
+              <p className="text-sm text-slate-500">{s.intro}</p>
             </div>
             <div className="divide-y rounded-lg border">
               {s.items.map((it) => (
                 <details key={it.slug} className="p-3">
-                  <summary className="cursor-pointer text-sm font-medium text-neutral-800">
+                  <summary className="cursor-pointer text-sm font-medium text-slate-800">
                     {it.title}
                   </summary>
-                  <p className="mt-2 text-sm leading-relaxed text-neutral-600">{it.body}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{it.body}</p>
                 </details>
               ))}
             </div>
@@ -103,9 +103,9 @@ export default async function LearnPage() {
         ))
       )}
 
-      <p className="border-t pt-3 text-xs text-neutral-400">
+      <p className="border-t pt-3 text-xs text-slate-400">
         See a term you don’t know elsewhere in InvestIQ? Any{" "}
-        <span className="border-b border-dotted border-neutral-400">underlined word</span> is tappable
+        <span className="border-b border-dotted border-slate-400">underlined word</span> is tappable
         for a definition. Ready to apply it?{" "}
         <Link href="/research" className="text-blue-600 hover:underline">
           Research a stock →

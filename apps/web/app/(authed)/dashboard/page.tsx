@@ -276,11 +276,11 @@ export default async function DashboardPage() {
   const autoSyncable = Boolean(connection) && !isDemo && !isDisabled;
 
   const connectPrompt = (
-    <div className="rounded-md border border-dashed p-6 text-center text-sm text-neutral-600">
+    <div className="rounded-md border border-dashed p-6 text-center text-sm text-slate-600">
       <p className="mb-3">Connect a brokerage to see your holdings and a health score.</p>
       <div className="flex flex-col items-center gap-2">
         <ConnectButton />
-        <span className="text-xs text-neutral-400">or explore first</span>
+        <span className="text-xs text-slate-400">or explore first</span>
         <DemoButton />
       </div>
     </div>
@@ -458,7 +458,7 @@ export default async function DashboardPage() {
                 ["Positions", String(summary.positions)],
               ].map(([label, val]) => (
                 <div key={label} className="rounded-md border p-3">
-                  <div className="text-xs text-neutral-500">{label}</div>
+                  <div className="text-xs text-slate-500">{label}</div>
                   <div className="text-lg font-semibold">{val}</div>
                 </div>
               ))}
@@ -468,10 +468,10 @@ export default async function DashboardPage() {
               <div key={a.id} className="rounded-md border p-4">
                 <div className="mb-2 flex justify-between text-sm">
                   <span className="font-medium">{a.name ?? "Account"}</span>
-                  <span className="text-neutral-500">{money(a.totalValue)}</span>
+                  <span className="text-slate-500">{money(a.totalValue)}</span>
                 </div>
                 {a.holdings.length === 0 ? (
-                  <p className="text-xs text-neutral-500">No holdings synced yet.</p>
+                  <p className="text-xs text-slate-500">No holdings synced yet.</p>
                 ) : (
                   <ul className="divide-y text-sm">
                     {a.holdings.map((h) => (
@@ -484,7 +484,7 @@ export default async function DashboardPage() {
                           >
                             {h.symbol.ticker}
                           </Link>{" "}
-                          <span className="text-neutral-500">× {Number(h.quantity)}</span>
+                          <span className="text-slate-500">× {Number(h.quantity)}</span>
                         </span>
                         <span className="flex items-center gap-3">
                           <span>{money(h.marketValue)}</span>
@@ -528,8 +528,8 @@ export default async function DashboardPage() {
               href={href}
               className="rounded-lg border p-4 transition hover:border-blue-300 hover:bg-blue-50/40"
             >
-              <div className="text-sm font-medium text-neutral-900">{title}</div>
-              <div className="mt-0.5 text-xs text-neutral-500">{desc}</div>
+              <div className="text-sm font-medium text-slate-900">{title}</div>
+              <div className="mt-0.5 text-xs text-slate-500">{desc}</div>
             </Link>
           ))}
         </div>

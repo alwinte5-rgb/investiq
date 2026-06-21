@@ -44,7 +44,7 @@ export function PortfolioRiskPanel() {
     };
   }, []);
 
-  if (loading) return <p className="text-sm text-neutral-500">Loading portfolio risk…</p>;
+  if (loading) return <p className="text-sm text-slate-500">Loading portfolio risk…</p>;
   if (error || !risk) return null; // non-critical panel — stay quiet on error
   if (risk.status === "insufficient") return null; // covered by the analysis empty state
 
@@ -65,12 +65,12 @@ export function PortfolioRiskPanel() {
               <span className="flex items-center gap-2">
                 <span className={`h-2.5 w-2.5 rounded-full ${DOT[h.warningColor]}`} />
                 <span className="font-medium">{h.ticker}</span>
-                <span className="text-neutral-400">{h.weightPct}%</span>
+                <span className="text-slate-400">{h.weightPct}%</span>
               </span>
-              <span className="text-xs text-neutral-500">{LABEL[h.warningColor]}</span>
+              <span className="text-xs text-slate-500">{LABEL[h.warningColor]}</span>
             </div>
             {h.warnings.length > 0 && (
-              <ul className="pl-4 text-xs text-neutral-600">
+              <ul className="pl-4 text-xs text-slate-600">
                 {h.warnings.map((w, i) => (
                   <li key={i}>
                     {w.severity === "warn" ? "⚠ " : "• "}
@@ -82,7 +82,7 @@ export function PortfolioRiskPanel() {
           </li>
         ))}
       </ul>
-      <p className="text-[11px] text-neutral-400">
+      <p className="text-[11px] text-slate-400">
         Per-holding risk from concentration, upcoming earnings, and recent news — educational only.
       </p>
     </div>

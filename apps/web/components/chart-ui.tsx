@@ -53,19 +53,19 @@ function LevelLadder({ overlay }: { overlay: ChartOverlay }) {
   return (
     <div className="space-y-2">
       {/* Caption — says plainly what the axis measures. */}
-      <p className="text-[11px] text-neutral-500">
+      <p className="text-[11px] text-slate-500">
         Share price ($), high to low — where today&apos;s price sits against your buy zone, stop and
         target.
       </p>
       {/* Chart row: a left price axis + the level bar, so the vertical scale reads as price. */}
       <div className="flex gap-2">
-        <div className="relative h-40 w-14 shrink-0 text-right text-[10px] tabular-nums text-neutral-400">
+        <div className="relative h-40 w-14 shrink-0 text-right text-[10px] tabular-nums text-slate-400">
           <span className="absolute right-0 top-0 -translate-y-1/2">{money(hi)}</span>
           <span className="absolute right-0 top-1/2 -translate-y-1/2">{money(mid)}</span>
           <span className="absolute bottom-0 right-0 translate-y-1/2">{money(lo)}</span>
         </div>
         {/* Visual bar: thin colored lines only (each value is named in the legend below). */}
-        <div className="relative h-40 flex-1 overflow-hidden rounded-md border bg-neutral-50">
+        <div className="relative h-40 flex-1 overflow-hidden rounded-md border bg-slate-50">
           {buyLow != null && buyHigh != null && (
             <div
               className="absolute inset-x-0 bg-blue-500/10"
@@ -81,7 +81,7 @@ function LevelLadder({ overlay }: { overlay: ChartOverlay }) {
           ))}
           {overlay.currentPrice != null && (
             <div
-              className="absolute inset-x-0 border-t border-dashed border-neutral-900"
+              className="absolute inset-x-0 border-t border-dashed border-slate-900"
               style={{ top: `${pos(overlay.currentPrice)}%` }}
             />
           )}
@@ -95,10 +95,10 @@ function LevelLadder({ overlay }: { overlay: ChartOverlay }) {
               className="inline-block h-2 w-2 flex-none rounded-full"
               style={{ backgroundColor: row.color }}
             />
-            <span className={row.now ? "font-semibold text-neutral-900" : "text-neutral-600"}>
+            <span className={row.now ? "font-semibold text-slate-900" : "text-slate-600"}>
               {row.label}
             </span>
-            <span className="ml-auto font-medium text-neutral-800">{money(row.value)}</span>
+            <span className="ml-auto font-medium text-slate-800">{money(row.value)}</span>
           </div>
         ))}
       </div>
@@ -192,7 +192,7 @@ export function ChartPanel({ ticker }: { ticker: string }) {
           <button
             onClick={load}
             disabled={pending}
-            className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
+            className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-50"
           >
             {pending ? "Loading…" : "Refresh"}
           </button>
@@ -210,11 +210,11 @@ export function ChartPanel({ ticker }: { ticker: string }) {
       {error && <p className="text-xs text-red-600">{error}</p>}
 
       {pending && !overlay ? (
-        <p className="rounded-md border border-dashed p-4 text-center text-sm text-neutral-500">
+        <p className="rounded-md border border-dashed p-4 text-center text-sm text-slate-500">
           Building chart overlay…
         </p>
       ) : !overlay || (!overlay.hasRisk && !overlay.hasAnalysis) ? (
-        <p className="rounded-md border border-dashed p-4 text-center text-sm text-neutral-500">
+        <p className="rounded-md border border-dashed p-4 text-center text-sm text-slate-500">
           Run an analysis and risk assessment to see buy/stop/target levels and the evidence behind
           them.
         </p>
@@ -224,7 +224,7 @@ export function ChartPanel({ ticker }: { ticker: string }) {
 
           {overlay.hasRisk ? (
             <div className="space-y-1">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Your levels
               </h4>
               <LevelLadder overlay={overlay} />
@@ -237,16 +237,16 @@ export function ChartPanel({ ticker }: { ticker: string }) {
 
           {overlay.events.length > 0 && (
             <div className="space-y-1">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Events
               </h4>
               <ul className="space-y-2 text-xs">
                 {overlay.events.map((e, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <span className="w-20 shrink-0 text-neutral-400">{fmtDate(e.date)}</span>
+                    <span className="w-20 shrink-0 text-slate-400">{fmtDate(e.date)}</span>
                     <div className="min-w-0">
                       {e.kind === "EARNINGS" ? (
-                        <span className="text-neutral-700">📅 {e.label}</span>
+                        <span className="text-slate-700">📅 {e.label}</span>
                       ) : (
                         <>
                           {e.url ? (
@@ -274,7 +274,7 @@ export function ChartPanel({ ticker }: { ticker: string }) {
                           )}
                           {/* The grounded "why" for THIS article (L5 classification). */}
                           {e.rationale && (
-                            <p className="mt-0.5 text-neutral-500">{e.rationale}</p>
+                            <p className="mt-0.5 text-slate-500">{e.rationale}</p>
                           )}
                         </>
                       )}
@@ -302,8 +302,8 @@ export function ChartPanel({ ticker }: { ticker: string }) {
                       <span className={w.role === "SUPPORTING" ? "text-green-600" : "text-amber-600"}>
                         {w.role === "SUPPORTING" ? "✓" : "⚠"}
                       </span>
-                      <span className="text-neutral-600">
-                        <span className="font-medium text-neutral-700">{w.sourceType}</span>
+                      <span className="text-slate-600">
+                        <span className="font-medium text-slate-700">{w.sourceType}</span>
                         {w.note ? ` — ${w.note}` : ""}
                       </span>
                     </li>
@@ -313,7 +313,7 @@ export function ChartPanel({ ticker }: { ticker: string }) {
             </div>
           )}
 
-          <p className="border-t pt-2 text-[11px] text-neutral-400">
+          <p className="border-t pt-2 text-[11px] text-slate-400">
             Levels and evidence are projected from your stored analysis and risk assessment —
             educational, not a trade instruction.
           </p>

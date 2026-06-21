@@ -44,7 +44,7 @@ export default async function OpportunitiesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Opportunities</h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-slate-500">
           AI-surfaced market watches plus ranked signals from your own analyses — educational, not
           advice.
         </p>

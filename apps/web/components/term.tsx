@@ -78,7 +78,7 @@ export function Term({ k, children }: { k?: string; children: ReactNode }) {
         tabIndex={0}
         aria-label={`${entry.term}: ${entry.short}`}
         aria-expanded={open}
-        className="cursor-help border-b border-dotted border-neutral-400 outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+        className="cursor-help border-b border-dotted border-slate-400 outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         onClick={() => setOpen((v) => !v)}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
@@ -95,11 +95,11 @@ export function Term({ k, children }: { k?: string; children: ReactNode }) {
       {open && (
         <span
           role="tooltip"
-          className="absolute bottom-full left-0 z-50 mb-1 block w-64 rounded-md border border-neutral-200 bg-white p-2.5 text-left text-xs font-normal leading-snug text-neutral-700 shadow-lg"
+          className="absolute bottom-full left-0 z-50 mb-1 block w-64 rounded-md border border-slate-200 bg-white p-2.5 text-left text-xs font-normal leading-snug text-slate-700 shadow-lg"
         >
-          <span className="mb-0.5 block font-semibold text-neutral-900">{entry.term}</span>
+          <span className="mb-0.5 block font-semibold text-slate-900">{entry.term}</span>
           <span className="block">{entry.short}</span>
-          {entry.full && <span className="mt-1 block text-neutral-500">{entry.full}</span>}
+          {entry.full && <span className="mt-1 block text-slate-500">{entry.full}</span>}
         </span>
       )}
     </span>

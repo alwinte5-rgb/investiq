@@ -9,7 +9,7 @@ import {
 
 const IMPACT_TONE: Record<string, string> = {
   POSITIVE: "bg-green-50 text-green-700 border-green-200",
-  NEUTRAL: "bg-neutral-100 text-neutral-600 border-neutral-200",
+  NEUTRAL: "bg-slate-100 text-slate-600 border-slate-200",
   NEGATIVE: "bg-red-50 text-red-700 border-red-200",
 };
 const IMPACT_LABEL: Record<string, string> = {
@@ -74,7 +74,7 @@ export function NewsImpactPanel({ ticker }: { ticker: string }) {
         <button
           onClick={refresh}
           disabled={pending}
-          className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
+          className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-50"
         >
           {pending ? "Classifying…" : "Refresh news"}
         </button>
@@ -83,9 +83,9 @@ export function NewsImpactPanel({ ticker }: { ticker: string }) {
       {error && <p className="text-xs text-red-600">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-neutral-500">Loading news…</p>
+        <p className="text-sm text-slate-500">Loading news…</p>
       ) : !articles || articles.length === 0 ? (
-        <p className="rounded-md border border-dashed p-4 text-center text-sm text-neutral-500">
+        <p className="rounded-md border border-dashed p-4 text-center text-sm text-slate-500">
           No classified news yet — tap “Refresh news” to pull and classify the latest headlines.
         </p>
       ) : (
@@ -111,11 +111,11 @@ export function NewsImpactPanel({ ticker }: { ticker: string }) {
                   </span>
                 )}
               </div>
-              <div className="mt-0.5 text-[11px] text-neutral-400">
+              <div className="mt-0.5 text-[11px] text-slate-400">
                 {a.source} · {new Date(a.publishedAt).toLocaleDateString()}
               </div>
               {a.impact?.rationale && (
-                <p className="mt-1 text-xs text-neutral-600">{a.impact.rationale}</p>
+                <p className="mt-1 text-xs text-slate-600">{a.impact.rationale}</p>
               )}
             </li>
           ))}

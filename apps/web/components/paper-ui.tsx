@@ -15,7 +15,7 @@ import {
 
 const usd = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
-const plColor = (n: number) => (n > 0 ? "text-green-600" : n < 0 ? "text-red-600" : "text-neutral-500");
+const plColor = (n: number) => (n > 0 ? "text-green-600" : n < 0 ? "text-red-600" : "text-slate-500");
 
 function newKey() {
   // Per-intent idempotency token; the server dedupes retries of the same key.
@@ -25,7 +25,7 @@ function newKey() {
 function EquitySparkline({ points }: { points: EquityPoint[] }) {
   if (points.length < 2) {
     return (
-      <p className="text-xs text-neutral-400">
+      <p className="text-xs text-slate-400">
         The equity curve appears once you have at least two days of activity.
       </p>
     );
@@ -50,7 +50,7 @@ function EquitySparkline({ points }: { points: EquityPoint[] }) {
       <svg viewBox={`0 0 ${w} ${h}`} className="h-8 w-40" preserveAspectRatio="none">
         <path d={path} fill="none" stroke={last >= first ? "#15803d" : "#b91c1c"} strokeWidth={1.5} />
       </svg>
-      <span className="text-xs text-neutral-500">
+      <span className="text-xs text-slate-500">
         {points.length} days · {usd(first)} → {usd(last)}
       </span>
     </div>
@@ -162,7 +162,7 @@ export function PaperUI({
         <h2 className="mb-3 text-sm font-semibold">Place a simulated order</h2>
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-neutral-500">Ticker</span>
+            <span className="text-xs text-slate-500">Ticker</span>
             <input
               value={ticker}
               onChange={(e) => setTicker(e.target.value.toUpperCase())}
@@ -172,7 +172,7 @@ export function PaperUI({
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-neutral-500">Side</span>
+            <span className="text-xs text-slate-500">Side</span>
             <div className="flex overflow-hidden rounded-md border">
               {(["BUY", "SELL"] as const).map((s) => (
                 <button
@@ -184,7 +184,7 @@ export function PaperUI({
                       ? s === "BUY"
                         ? "bg-green-600 text-white"
                         : "bg-red-600 text-white"
-                      : "bg-white text-neutral-600"
+                      : "bg-white text-slate-600"
                   }`}
                 >
                   {s}
@@ -193,7 +193,7 @@ export function PaperUI({
             </div>
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-neutral-500">Quantity</span>
+            <span className="text-xs text-slate-500">Quantity</span>
             <input
               value={qty}
               onChange={(e) => setQty(e.target.value.replace(/[^0-9.]/g, ""))}
@@ -205,14 +205,14 @@ export function PaperUI({
           <button
             onClick={submit}
             disabled={pending}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
           >
             {pending ? "Submitting…" : "Submit market order"}
           </button>
         </div>
 
         {quote && (
-          <p className="mt-3 text-sm text-neutral-700">
+          <p className="mt-3 text-sm text-slate-700">
             Current price <span className="font-semibold">{usd(quote.price)}</span>
             {quote.changePct != null && (
               <span className={`ml-1 ${plColor(quote.changePct)}`}>
@@ -221,10 +221,10 @@ export function PaperUI({
               </span>
             )}
             {Number(qty) > 0 && (
-              <span className="text-neutral-500">
+              <span className="text-slate-500">
                 {" · Est. "}
                 {side === "BUY" ? "cost" : "proceeds"}{" "}
-                <span className="font-medium text-neutral-700">{usd(quote.price * Number(qty))}</span>
+                <span className="font-medium text-slate-700">{usd(quote.price * Number(qty))}</span>
               </span>
             )}
           </p>
@@ -242,7 +242,7 @@ export function PaperUI({
             {notice.text}
           </p>
         )}
-        <p className="mt-2 text-[11px] text-neutral-400">
+        <p className="mt-2 text-[11px] text-slate-400">
           Market orders fill at the current quote. Simulated only — no real money or brokerage.
         </p>
       </div>
@@ -251,12 +251,12 @@ export function PaperUI({
       <section className="rounded-lg border p-4">
         <h2 className="mb-2 text-sm font-semibold">Positions</h2>
         {positions.length === 0 ? (
-          <p className="text-sm text-neutral-500">No open positions yet. Place a buy order to get started.</p>
+          <p className="text-sm text-slate-500">No open positions yet. Place a buy order to get started.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-neutral-400">
+                <tr className="text-left text-xs text-slate-400">
                   <th className="py-1 pr-3 font-medium">Ticker</th>
                   <th className="py-1 pr-3 font-medium">Qty</th>
                   <th className="py-1 pr-3 font-medium">Avg cost</th>
@@ -292,12 +292,12 @@ export function PaperUI({
       <section className="rounded-lg border p-4">
         <h2 className="mb-2 text-sm font-semibold">Order history</h2>
         {orders.length === 0 ? (
-          <p className="text-sm text-neutral-500">No orders yet.</p>
+          <p className="text-sm text-slate-500">No orders yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-neutral-400">
+                <tr className="text-left text-xs text-slate-400">
                   <th className="py-1 pr-3 font-medium">Date</th>
                   <th className="py-1 pr-3 font-medium">Side</th>
                   <th className="py-1 pr-3 font-medium">Ticker</th>
@@ -309,7 +309,7 @@ export function PaperUI({
               <tbody>
                 {orders.map((o) => (
                   <tr key={o.id} className="border-t">
-                    <td className="py-1.5 pr-3 text-neutral-500">
+                    <td className="py-1.5 pr-3 text-slate-500">
                       {new Date(o.submittedAt).toLocaleDateString()}
                     </td>
                     <td className={`py-1.5 pr-3 font-medium ${o.side === "BUY" ? "text-green-600" : "text-red-600"}`}>
@@ -325,7 +325,7 @@ export function PaperUI({
                             ? "bg-green-100 text-green-700"
                             : o.status === "rejected"
                               ? "bg-red-100 text-red-700"
-                              : "bg-neutral-100 text-neutral-600"
+                              : "bg-slate-100 text-slate-600"
                         }`}
                       >
                         {o.status}
@@ -345,8 +345,8 @@ export function PaperUI({
 function Stat({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
     <div className="rounded-lg border p-3">
-      <div className="text-xs text-neutral-500">{label}</div>
-      <div className={`mt-0.5 text-lg font-semibold ${className ?? "text-neutral-800"}`}>{value}</div>
+      <div className="text-xs text-slate-500">{label}</div>
+      <div className={`mt-0.5 text-lg font-semibold ${className ?? "text-slate-800"}`}>{value}</div>
     </div>
   );
 }

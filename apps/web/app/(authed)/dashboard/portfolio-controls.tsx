@@ -40,8 +40,8 @@ export function AutoSync({
 
   if (syncing) {
     return (
-      <div className="flex items-center justify-center gap-2 rounded-md border border-dashed p-6 text-sm text-neutral-500">
-        <span className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
+      <div className="flex items-center justify-center gap-2 rounded-md border border-dashed p-6 text-sm text-slate-500">
+        <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
         Syncing your latest holdings…
       </div>
     );
@@ -120,7 +120,7 @@ export function DisconnectButton({ connectionId }: { connectionId: string }) {
       <button
         onClick={disconnect}
         disabled={pending}
-        className="rounded-md border px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 disabled:opacity-50"
+        className="rounded-md border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
       >
         {pending ? "Removing…" : "Disconnect"}
       </button>
@@ -147,7 +147,7 @@ export function DemoButton() {
       <button
         onClick={load}
         disabled={pending}
-        className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50"
+        className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
       >
         {pending ? "Loading…" : "Try with sample data"}
       </button>
@@ -173,7 +173,7 @@ export function RemoveDemoButton({ connectionId }: { connectionId: string }) {
       <button
         onClick={remove}
         disabled={pending}
-        className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
+        className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-50"
       >
         {pending ? "Removing…" : "Remove sample data"}
       </button>
@@ -202,7 +202,7 @@ export function SyncButton({ connectionId }: { connectionId: string }) {
       <button
         onClick={sync}
         disabled={pending}
-        className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
+        className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-50"
       >
         {pending ? "Syncing…" : "Sync holdings"}
       </button>

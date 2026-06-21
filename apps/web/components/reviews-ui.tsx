@@ -44,9 +44,9 @@ function ReviewBody({ content, generatedAt }: { content: ReviewContent; generate
             </span>
           )}
         </h3>
-        <p className="mt-1 text-sm text-neutral-700">{content.summary}</p>
+        <p className="mt-1 text-sm text-slate-700">{content.summary}</p>
         {generatedAt && (
-          <p className="mt-1 text-xs text-neutral-400">{new Date(generatedAt).toLocaleString()}</p>
+          <p className="mt-1 text-xs text-slate-400">{new Date(generatedAt).toLocaleString()}</p>
         )}
       </div>
 
@@ -58,7 +58,7 @@ function ReviewBody({ content, generatedAt }: { content: ReviewContent; generate
           ["Cash", content.cashScore],
         ].map(([label, val]) => (
           <div key={label as string} className="rounded-md border p-2 text-center">
-            <div className="text-[11px] text-neutral-500">{label}</div>
+            <div className="text-[11px] text-slate-500">{label}</div>
             <div className="text-lg font-semibold">{val as number}</div>
           </div>
         ))}
@@ -97,17 +97,17 @@ function ReviewBody({ content, generatedAt }: { content: ReviewContent; generate
       {content.newsHighlights && content.newsHighlights.length > 0 && (
         <div>
           <h4 className="mb-2 text-sm font-semibold">News in your holdings</h4>
-          <ul className="space-y-1 text-xs text-neutral-600">
+          <ul className="space-y-1 text-xs text-slate-600">
             {content.newsHighlights.map((n, i) => (
               <li key={i} className="flex gap-2">
-                <span className="font-medium text-neutral-700">{n.ticker}</span>
+                <span className="font-medium text-slate-700">{n.ticker}</span>
                 <span
                   className={
                     n.impact === "POSITIVE"
                       ? "text-green-600"
                       : n.impact === "NEGATIVE"
                         ? "text-red-600"
-                        : "text-neutral-400"
+                        : "text-slate-400"
                   }
                 >
                   ·
@@ -119,7 +119,7 @@ function ReviewBody({ content, generatedAt }: { content: ReviewContent; generate
         </div>
       )}
 
-      <p className="border-t pt-3 text-[11px] text-neutral-400">
+      <p className="border-t pt-3 text-[11px] text-slate-400">
         Educational only — not investment advice.
       </p>
     </div>
@@ -190,7 +190,7 @@ export function ReviewsUI({
               key={p.key}
               onClick={() => setPeriod(p.key)}
               className={`rounded px-3 py-1.5 font-medium ${
-                period === p.key ? "bg-blue-600 text-white" : "text-neutral-600 hover:bg-neutral-50"
+                period === p.key ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"
               }`}
             >
               {p.label}
@@ -219,7 +219,7 @@ export function ReviewsUI({
         <ReviewBody content={content} generatedAt={generatedAt} />
       ) : (
         !message && (
-          <div className="rounded-md border border-dashed p-6 text-center text-sm text-neutral-500">
+          <div className="rounded-md border border-dashed p-6 text-center text-sm text-slate-500">
             No review yet — pick a period and generate one.
           </div>
         )

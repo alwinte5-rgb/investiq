@@ -60,7 +60,7 @@ export default async function AdminPage() {
             ["Investor+", overview.plans.INVESTOR + overview.plans.INVESTOR_PLUS],
           ].map(([label, val]) => (
             <div key={label} className="rounded-md border p-3">
-              <div className="text-xs text-neutral-500">{label}</div>
+              <div className="text-xs text-slate-500">{label}</div>
               <div className="text-lg font-semibold">{val}</div>
             </div>
           ))}
@@ -71,7 +71,7 @@ export default async function AdminPage() {
         <h2 className="text-lg font-semibold">Users</h2>
         <div className="overflow-x-auto rounded-md border">
           <table className="w-full text-sm">
-            <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
+            <thead className="bg-slate-50 text-left text-xs text-slate-500">
               <tr>
                 <th className="px-3 py-2">Email</th>
                 <th className="px-3 py-2">Watchlists</th>
@@ -82,7 +82,7 @@ export default async function AdminPage() {
               {users.map((u) => (
                 <tr key={u.id}>
                   <td className="px-3 py-2">{u.email}</td>
-                  <td className="px-3 py-2 text-neutral-500">{u._count.watchlists}</td>
+                  <td className="px-3 py-2 text-slate-500">{u._count.watchlists}</td>
                   <td className="px-3 py-2">
                     <UserControls id={u.id} plan={u.plan} role={u.role} />
                   </td>
@@ -90,7 +90,7 @@ export default async function AdminPage() {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-3 py-4 text-center text-neutral-500">
+                  <td colSpan={3} className="px-3 py-4 text-center text-slate-500">
                     No users.
                   </td>
                 </tr>
@@ -103,7 +103,7 @@ export default async function AdminPage() {
       <section className="space-y-2">
         <h2 className="text-lg font-semibold">Feature flags</h2>
         {flags.length === 0 ? (
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-slate-500">
             No flags yet — toggling one below creates it.
           </p>
         ) : (

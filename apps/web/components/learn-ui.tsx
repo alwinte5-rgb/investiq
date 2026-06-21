@@ -27,10 +27,10 @@ function LearnItem({ item }: { item: LearningContent }) {
         className="flex w-full items-center justify-between gap-2 py-2 text-left"
         aria-expanded={open}
       >
-        <span className="text-sm font-medium text-neutral-700">{item.title}</span>
-        <span className="text-neutral-400">{open ? "–" : "+"}</span>
+        <span className="text-sm font-medium text-slate-700">{item.title}</span>
+        <span className="text-slate-400">{open ? "–" : "+"}</span>
       </button>
-      {open && <p className="pb-2 text-sm text-neutral-600">{item.body}</p>}
+      {open && <p className="pb-2 text-sm text-slate-600">{item.body}</p>}
     </li>
   );
 }

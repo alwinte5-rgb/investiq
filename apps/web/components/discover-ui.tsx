@@ -29,7 +29,7 @@ export function DiscoverIdeas({ groups }: { groups: DiscoveryGroup[] }) {
     <div className="space-y-3">
       <div>
         <h2 className="text-lg font-semibold">Ideas to research</h2>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-slate-500">
           Browse by sector — starting points, not recommendations. Tap any ticker to run a full
           analysis.
         </p>
@@ -38,20 +38,20 @@ export function DiscoverIdeas({ groups }: { groups: DiscoveryGroup[] }) {
         {groups.map((g) => (
           <section key={g.key} className="rounded-lg border p-4">
             <h3 className="text-sm font-semibold">{g.title}</h3>
-            <p className="mb-2 text-[11px] text-neutral-500">{g.blurb}</p>
+            <p className="mb-2 text-[11px] text-slate-500">{g.blurb}</p>
             <ul className="divide-y">
               {g.items.map((s) => (
                 <li key={s.ticker}>
                   <Link
                     href={`/research?ticker=${s.ticker}`}
-                    className="group flex items-center justify-between gap-2 py-1.5 hover:bg-neutral-50"
+                    className="group flex items-center justify-between gap-2 py-1.5 hover:bg-slate-50"
                     title={`Analyze ${s.ticker}`}
                   >
                     <span className="flex min-w-0 items-baseline gap-1.5">
                       <span className="font-medium text-blue-600">{s.ticker}</span>
-                      <span className="truncate text-xs text-neutral-500">{s.name}</span>
+                      <span className="truncate text-xs text-slate-500">{s.name}</span>
                     </span>
-                    <span className="shrink-0 text-xs font-medium text-neutral-400 group-hover:text-blue-600">
+                    <span className="shrink-0 text-xs font-medium text-slate-400 group-hover:text-blue-600">
                       Analyze →
                     </span>
                   </Link>
@@ -61,7 +61,7 @@ export function DiscoverIdeas({ groups }: { groups: DiscoveryGroup[] }) {
           </section>
         ))}
       </div>
-      <p className="text-[11px] text-neutral-400">
+      <p className="text-[11px] text-slate-400">
         Screen results from public market data — educational, not investment advice.
       </p>
     </div>

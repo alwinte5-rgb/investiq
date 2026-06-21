@@ -25,7 +25,7 @@ function MoverColumn({ title, items }: { title: string; items: Mover[] }) {
     <section className="rounded-lg border p-4">
       <h3 className="mb-2 text-sm font-semibold">{title}</h3>
       {items.length === 0 ? (
-        <p className="text-xs text-neutral-500">No data right now.</p>
+        <p className="text-xs text-slate-500">No data right now.</p>
       ) : (
         <ul className="divide-y">
           {items.map((m) => {
@@ -34,12 +34,12 @@ function MoverColumn({ title, items }: { title: string; items: Mover[] }) {
               <li key={m.ticker}>
                 <Link
                   href={`/research?ticker=${m.ticker}`}
-                  className="flex items-center justify-between py-1.5 hover:bg-neutral-50"
+                  className="flex items-center justify-between py-1.5 hover:bg-slate-50"
                   title={`Analyze ${m.ticker}`}
                 >
                   <span className="font-medium text-blue-600">{m.ticker}</span>
                   <span className="flex items-center gap-3">
-                    <span className="text-neutral-700">{usd(m.price)}</span>
+                    <span className="text-slate-700">{usd(m.price)}</span>
                     <span className={`w-16 text-right text-xs font-medium ${up ? "text-green-600" : "text-red-600"}`}>
                       {pct(m.changePct)}
                     </span>
@@ -68,7 +68,7 @@ export function MoversList({
       <div className="space-y-2">
         <div>
           <h2 className="text-lg font-semibold">Today’s movers</h2>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-slate-500">
             Top US gainers and losers right now — tap any ticker to get a grounded analysis.
           </p>
         </div>
@@ -86,7 +86,7 @@ export function MoversList({
       <div className="space-y-2">
         <div>
           <h2 className="text-lg font-semibold">Popular to research</h2>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-slate-500">
             Widely-held US stocks and ETFs — tap any ticker to get a grounded analysis.
           </p>
         </div>
@@ -99,7 +99,7 @@ export function MoversList({
   }
 
   return (
-    <p className="rounded-md border border-dashed p-4 text-center text-sm text-neutral-500">
+    <p className="rounded-md border border-dashed p-4 text-center text-sm text-slate-500">
       Suggestions are unavailable right now. Use the search above to analyze any US stock or ETF.
     </p>
   );

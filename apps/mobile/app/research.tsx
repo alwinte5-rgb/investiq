@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -13,6 +14,7 @@ import { SignedIn, SignedOut, useAuth } from "@clerk/clerk-expo";
 import { Link, useLocalSearchParams } from "expo-router";
 import { apiFetch } from "../lib/api";
 import { Term } from "../components/glossary";
+import { colors } from "../lib/theme";
 
 const REC_LABELS: Record<string, string> = {
   STRONG_BUY_WATCH: "Strong Buy Watch",
@@ -109,6 +111,43 @@ interface LearningContent {
   body: string;
   tags: string[];
 }
+interface Scorecard {
+  ticker: string;
+  financialStrength: number | null;
+  marketCap: number | null;
+  pe: number | null;
+  roe: number | null;
+  netMargin: number | null;
+  debtToEquity: number | null;
+}
+interface CompanyFiling {
+  form: string;
+  filingDate: string;
+  url: string;
+}
+interface CompanyFilings {
+  ticker: string;
+  cik: string;
+  name: string;
+  edgarUrl: string;
+  filings: CompanyFiling[];
+}
+const pct = (n: number | null | undefined) => (n == null ? "—" : `${(n * 100).toFixed(1)}%`);
+function strengthColor(v: number | null): string {
+  if (v == null) return colors.slate400;
+  return v >= 80 ? colors.green : v >= 60 ? colors.blue : v >= 40 ? colors.amber : colors.red;
+}
+function strengthLabel(v: number): string {
+  return v >= 80 ? "Excellent" : v >= 60 ? "Good" : v >= 40 ? "Fair" : "Weak";
+}
+function ScStat({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.scStat}>
+      <Text style={styles.scStatLabel}>{label}</Text>
+      <Text style={styles.scStatValue}>{value}</Text>
+    </View>
+  );
+}
 interface Mover {
   ticker: string;
   price: number;
@@ -155,6 +194,9 @@ function Researcher() {
   const [openLearn, setOpenLearn] = useState<string | null>(null);
   const [movers, setMovers] = useState<MarketMovers | null>(null);
   const [popular, setPopular] = useState<Mover[]>([]);
+  const [scorecard, setScorecard] = useState<Scorecard | null>(null);
+  // undefined = not loaded yet · null = loaded, ticker isn't an EDGAR filer.
+  const [filings, setFilings] = useState<CompanyFilings | null | undefined>(undefined);
 
   // Movers + a curated popular fallback, loaded once. Best-effort — popular
   // ensures there are ALWAYS suggestions even when movers are unavailable.
@@ -211,6 +253,24 @@ function Researcher() {
     }
   }
 
+  async function loadScorecard(t: string) {
+    try {
+      const token = await getToken();
+      setScorecard(await apiFetch<Scorecard>(`/api/v1/symbols/${t}/scorecard`, token));
+    } catch {
+      /* scorecard is non-critical */
+    }
+  }
+
+  async function loadFilings(t: string) {
+    try {
+      const token = await getToken();
+      setFilings(await apiFetch<CompanyFilings | null>(`/api/v1/filings/${t}`, token));
+    } catch {
+      /* filings are non-critical */
+    }
+  }
+
   async function loadNews(t: string, refresh = false) {
     setNewsBusy(true);
     setNewsGated(false);
@@ -250,6 +310,8 @@ function Researcher() {
     setShowWhy(false);
     setLearn([]);
     setOpenLearn(null);
+    setScorecard(null);
+    setFilings(undefined);
     setAnalyzedTicker(t);
     try {
       const token = await getToken();
@@ -264,6 +326,9 @@ function Researcher() {
       void assessRisk(t).then(() => loadChart(t));
       void loadNews(t, !autoNewsDone.has(t));
       autoNewsDone.add(t);
+      // Factual scorecard + primary-source filings (both non-critical, self-hide).
+      void loadScorecard(t);
+      void loadFilings(t);
       // Inline education tied to the recommendation type (Layer 10).
       if (r.status !== "insufficient") void loadLearning(r.analysis.recommendationType);
     } catch (e) {
@@ -506,6 +571,65 @@ function Researcher() {
             </View>
           )}
 
+          {scorecard &&
+            (scorecard.financialStrength != null ||
+              scorecard.pe != null ||
+              scorecard.roe != null) && (
+              <View style={{ gap: 4 }}>
+                <Text style={styles.fieldTitle}>Financial strength</Text>
+                <View style={styles.newsItem}>
+                  <Text
+                    style={[styles.scStrength, { color: strengthColor(scorecard.financialStrength) }]}
+                  >
+                    {scorecard.financialStrength ?? "—"}
+                    {scorecard.financialStrength != null && (
+                      <Text style={styles.scStrengthSuffix}>
+                        {" "}
+                        /100 · {strengthLabel(scorecard.financialStrength)}
+                      </Text>
+                    )}
+                  </Text>
+                  <View style={styles.scGrid}>
+                    <ScStat label="P/E" value={scorecard.pe != null ? scorecard.pe.toFixed(1) : "—"} />
+                    <ScStat label="ROE" value={pct(scorecard.roe)} />
+                    <ScStat label="Net margin" value={pct(scorecard.netMargin)} />
+                    <ScStat
+                      label="Debt/Eq"
+                      value={scorecard.debtToEquity != null ? scorecard.debtToEquity.toFixed(2) : "—"}
+                    />
+                  </View>
+                  <Text style={styles.hint}>
+                    Heuristic from public fundamentals — educational, not advice.
+                  </Text>
+                </View>
+              </View>
+            )}
+
+          {filings && (
+            <View style={{ gap: 4 }}>
+              <Text style={styles.fieldTitle}>SEC filings</Text>
+              <View style={styles.newsItem}>
+                {filings.filings.length === 0 ? (
+                  <Text style={styles.hint}>No recent 10-K / 10-Q filings.</Text>
+                ) : (
+                  filings.filings.slice(0, 6).map((f, i) => (
+                    <Pressable
+                      key={i}
+                      onPress={() => Linking.openURL(f.url)}
+                      style={styles.filingRow}
+                    >
+                      <Text style={styles.filingForm}>{f.form}</Text>
+                      <Text style={styles.hint}>{fmtDate(f.filingDate)}</Text>
+                    </Pressable>
+                  ))
+                )}
+                <Pressable onPress={() => Linking.openURL(filings.edgarUrl)}>
+                  <Text style={styles.newsRefresh}>View all on SEC EDGAR →</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+
           <View style={styles.newsHeader}>
             <Text style={styles.fieldTitle}>News & impact</Text>
             {!newsGated && (
@@ -563,8 +687,8 @@ export default function ResearchScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, padding: 20, gap: 12 },
-  back: { color: "#2563eb", fontWeight: "600" },
-  h1: { fontSize: 22, fontWeight: "600" },
+  back: { color: colors.blue, fontWeight: "600" },
+  h1: { fontSize: 22, fontWeight: "700", color: colors.ink },
   row: { flexDirection: "row", gap: 8 },
   input: { flex: 1, borderWidth: 1, borderColor: "#e5e5e5", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
   btn: { backgroundColor: "#2563eb", borderRadius: 8, paddingHorizontal: 14, justifyContent: "center" },
@@ -620,4 +744,12 @@ const styles = StyleSheet.create({
   learnItem: { borderTopWidth: 1, borderTopColor: "#dbeafe", paddingTop: 6, gap: 3 },
   learnItemTitle: { fontSize: 13, fontWeight: "600", color: "#1d4ed8" },
   learnBody: { fontSize: 13, color: "#374151", lineHeight: 19 },
+  scStrength: { fontSize: 30, fontWeight: "800" },
+  scStrengthSuffix: { fontSize: 13, fontWeight: "400", color: colors.slate400 },
+  scGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 6 },
+  scStat: { minWidth: 64 },
+  scStatLabel: { fontSize: 11, color: colors.slate400 },
+  scStatValue: { fontSize: 14, fontWeight: "700", color: colors.slate700 },
+  filingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#eee" },
+  filingForm: { fontSize: 13, fontWeight: "700", color: colors.blue },
 });

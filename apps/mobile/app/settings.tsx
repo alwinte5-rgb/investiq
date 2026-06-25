@@ -217,7 +217,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, padding: 20, gap: 12 },
   back: { color: "#2563eb", fontWeight: "600" },
-  h1: { fontSize: 22, fontWeight: "600" },
+  h1: { fontSize: 22, fontWeight: "700", color: "#0f172a" },
   card: { borderWidth: 1, borderColor: "#e5e5e5", borderRadius: 10, padding: 14, gap: 6 },
   cardTitle: { fontWeight: "600", fontSize: 14, marginBottom: 2 },
   toggleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 4 },

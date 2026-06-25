@@ -349,7 +349,7 @@ export default function PaperScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, padding: 20, gap: 12 },
   back: { color: "#2563eb", fontWeight: "600" },
-  h1: { fontSize: 22, fontWeight: "600" },
+  h1: { fontSize: 22, fontWeight: "700", color: "#0f172a" },
   hint: { fontSize: 13, color: "#888" },
   statRow: { flexDirection: "row", gap: 10 },
   stat: { flex: 1, borderWidth: 1, borderColor: "#e5e5e5", borderRadius: 10, padding: 12 },

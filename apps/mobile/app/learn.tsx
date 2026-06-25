@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, padding: 20, gap: 12 },
   topRow: { flexDirection: "row", justifyContent: "space-between" },
   back: { color: "#2563eb", fontWeight: "600" },
-  h1: { fontSize: 22, fontWeight: "600" },
+  h1: { fontSize: 22, fontWeight: "700", color: "#0f172a" },
   sub: { fontSize: 13, color: "#6b7280" },
   error: { color: "#b91c1c", fontSize: 14, marginTop: 12 },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: "#111827" },

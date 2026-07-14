@@ -22,43 +22,24 @@ if (process.env.NODE_ENV !== "production") {
 import { makeClerkVerifier, makeClerkClient } from "./lib/context.js";
 import { resolveAuthContext, type AuthDeps } from "./lib/guard.js";
 import { webhookRoutes } from "./routes/webhooks.js";
-import { symbolRoutes } from "./routes/symbols.js";
-import { watchlistRoutes } from "./routes/watchlists.js";
-import { marketRoutes } from "./routes/market.js";
-import { connectionRoutes } from "./routes/connections.js";
 import { adminRoutes } from "./routes/admin.js";
-import { analysisRoutes } from "./routes/analysis.js";
-import { portfolioRoutes } from "./routes/portfolio.js";
-import { reviewRoutes } from "./routes/reviews.js";
-import { riskRoutes } from "./routes/risk.js";
-import { chartRoutes } from "./routes/chart.js";
-import { opportunityRoutes } from "./routes/opportunities.js";
-import { paperRoutes } from "./routes/paper.js";
 import { learningRoutes } from "./routes/learning.js";
 import { glossaryRoutes } from "./routes/glossary.js";
-import { discoveryRoutes } from "./routes/discovery.js";
-import { newsRoutes } from "./routes/news.js";
-import { cronRoutes } from "./routes/cron.js";
-import { macroRoutes } from "./routes/macro.js";
-import { filingsRoutes } from "./routes/filings.js";
-import { scorecardRoutes } from "./routes/scorecard.js";
-import { createMarketService } from "./services/market.js";
-import { createNewsService } from "./services/news.js";
-import { createFundamentalsService } from "./services/fundamentals.js";
-import { createDiscoveryService } from "./services/discovery.js";
-import { createMacroService } from "./services/macro.js";
-import { createFilingsService } from "./services/filings.js";
-import { createSnapTradeClient } from "@investiq/integrations";
+import { forexRoutes } from "./routes/forex.js";
 import {
-  createAnthropicAnalysisModel,
-  createAnthropicNewsClassifier,
-  createAnthropicAdvisor,
-} from "@investiq/ai";
+  createExchangeRateService,
+  createNullRateProvider,
+  createTwelveDataRateProvider,
+} from "./services/exchange-rates.js";
+import { createCalendarService, createNullCalendarProvider } from "./services/calendar.js";
+import { createAnthropicAdvisor } from "@investiq/ai";
 import { createAdvisorService } from "./services/advisor.js";
 import { advisorRoutes } from "./routes/advisor.js";
-import type { BrokerageDeps } from "./services/brokerage.js";
-import { warmUpDemoAnalyses } from "./services/demo-warmup.js";
-import type { Plan } from "@investiq/shared";
+// NOTE (forex refactor): the stock/ETF feature set is DORMANT, not deleted.
+// Its routes (symbols, market, watchlists, connections, analysis, portfolio,
+// reviews, risk, chart, opportunities, paper, discovery, news, cron scan,
+// macro, filings, scorecard) are no longer registered; the files, services,
+// and DB tables remain in the tree for archive/reference.
 
 /**
  * InvestIQ API. Boots with FAIL-FAST env validation. Every protected route
@@ -71,21 +52,18 @@ async function main() {
   const clerkVerifier = makeClerkVerifier(env.CLERK_SECRET_KEY);
   const clerk = makeClerkClient(env.CLERK_SECRET_KEY);
   const authDeps: AuthDeps = { verifier: clerkVerifier, clerk };
-  const market = createMarketService({
-    twelveDataKey: env.TWELVEDATA_API_KEY,
-    massiveKey: env.MASSIVE_API_KEY,
-    massiveBaseUrl: env.MASSIVE_BASE_URL,
-    onFailover: (err) => app.log.warn({ err }, "twelvedata failover -> massive"),
-  });
-  const news = createNewsService({
-    benzingaKey: env.BENZINGA_API_KEY,
-    marketauxKey: env.MARKETAUX_API_KEY,
-  });
-  const fundamentals = createFundamentalsService({ fmpKey: env.FMP_API_KEY });
-  const discovery = createDiscoveryService();
-  // Educational data sources: FRED macro (free, needs key) + SEC EDGAR filings (free).
-  const macro = createMacroService({ fredKey: env.FRED_API_KEY });
-  const filings = createFilingsService({ userAgent: env.SEC_USER_AGENT });
+
+  // Exchange rates: provider-agnostic. Live FX rates are Phase 4 — set
+  // FOREX_LIVE_RATES=true (with TWELVEDATA_API_KEY) to enable the adapter;
+  // otherwise calculators run on manual/entry-price rates.
+  const rateProvider =
+    process.env.FOREX_LIVE_RATES === "true" && env.TWELVEDATA_API_KEY
+      ? createTwelveDataRateProvider(env.TWELVEDATA_API_KEY)
+      : createNullRateProvider();
+  const rates = createExchangeRateService(rateProvider);
+
+  // Economic calendar: provider-agnostic; no provider wired yet (Phase 4).
+  const calendar = createCalendarService(createNullCalendarProvider());
 
   const app = Fastify({ logger: true });
 
@@ -126,9 +104,9 @@ async function main() {
     reply.header("Cache-Control", "no-store");
     return {
       data: {
-        name: "InvestIQ API",
+        name: "InvestIQ Forex API",
         status: "ok",
-        message: "This is the InvestIQ API. The web app is served separately.",
+        message: "This is the InvestIQ Forex API. The web app is served separately.",
         health: "/health",
       },
     };
@@ -149,121 +127,37 @@ async function main() {
     return { data: { userId: ctx.userId, plan: ctx.plan, role: ctx.role } };
   });
 
-  // Layer 1 feature routes.
-  await app.register(async (instance) => symbolRoutes(instance, authDeps));
-  await app.register(async (instance) => watchlistRoutes(instance, authDeps));
-  await app.register(async (instance) => marketRoutes(instance, { auth: authDeps, market, news }));
+  // Admin (users, plans, feature flags, audit).
   await app.register(async (instance) => adminRoutes(instance, authDeps));
-  await app.register(async (instance) => portfolioRoutes(instance, authDeps));
-  await app.register(async (instance) => reviewRoutes(instance, { auth: authDeps, market }));
-  // Risk Engine (Layer 6) — deterministic, needs only market + fundamentals.
-  await app.register(async (instance) => riskRoutes(instance, { auth: authDeps, risk: { market, fundamentals } }));
-  // Chart Intelligence (Layer 7) — projection of stored risk/analysis + live price anchor.
-  await app.register(async (instance) => chartRoutes(instance, { auth: authDeps, market }));
-  // Opportunity Engine (Layer 8) — Investor+ gated in-service; derives from L2–L6.
-  await app.register(async (instance) => opportunityRoutes(instance, authDeps));
-  // Paper Trading (Layer 9) — self-contained simulator; fills at live quotes.
-  await app.register(async (instance) => paperRoutes(instance, { auth: authDeps, paper: { market } }));
-  // Learning System (Layer 10) — curated non-advisory education linked to each recommendation/risk.
+
+  // Forex core: settings, pairs, saved pairs, rates, trade calc, trade plans,
+  // journal (+ analytics), economic calendar, market sessions.
+  await app.register(async (instance) => forexRoutes(instance, { auth: authDeps, rates, calendar }));
+  app.log.info(
+    rates.enabled
+      ? "Forex routes enabled (live exchange rates ON)"
+      : "Forex routes enabled (no live rate provider — manual/entry-price rates)",
+  );
+
+  // Learning (18-lesson forex curriculum) + glossary (forex term tooltips).
   await app.register(async (instance) => learningRoutes(instance, authDeps));
-  // Glossary — plain-English term library powering inline tooltips (web + mobile).
   await app.register(async (instance) => glossaryRoutes(instance, authDeps));
-  // Discovery — screened "ideas to research" (FMP screener); factual, not AI signals.
-  await app.register(async (instance) => discoveryRoutes(instance, { auth: authDeps, discovery }));
-  // Macro context (FRED) + SEC filings (EDGAR) — free, educational, non-advisory.
-  await app.register(async (instance) => macroRoutes(instance, { auth: authDeps, macro }));
-  await app.register(async (instance) => filingsRoutes(instance, { auth: authDeps, filings }));
-  // Stock scorecard — deterministic Financial Strength + key fundamentals.
-  await app.register(async (instance) => scorecardRoutes(instance, { auth: authDeps, fundamentals }));
-  app.log.info(
-    macro.enabled
-      ? "Macro (FRED) + SEC filings routes enabled"
-      : "SEC filings route enabled; FRED macro disabled (set FRED_API_KEY to enable)",
-  );
 
-  // AI analysis deps are built up-front so BOTH the demo warm-up and the
-  // analysis routes can share one model instance.
+  // AI Advisor — non-advisory forex education tutor over the user's own data.
   const anthropicKey = env.ANTHROPIC_API_KEY;
-  const model = anthropicKey
-    ? createAnthropicAnalysisModel({ apiKey: anthropicKey, model: env.AI_MODEL })
-    : null;
-  const analysisDeps = model ? { market, news, fundamentals, model } : null;
-
-  // Cron routes (scheduled jobs, e.g. the daily market opportunity scan).
-  // Secret-gated; disabled (404) unless CRON_SECRET is set. Needs AI deps to scan.
-  await app.register(async (instance) =>
-    cronRoutes(instance, { secret: env.CRON_SECRET, analysis: analysisDeps }),
-  );
-  app.log.info(
-    env.CRON_SECRET
-      ? "Cron routes enabled (scheduled market scan available)"
-      : "CRON_SECRET not set — cron routes disabled",
-  );
-
-  // After sample data is seeded, generate REAL grounded analyses for the demo
-  // holdings so the AI screens (Research/Risk/Opportunities) populate. Best-
-  // effort, fire-and-forget; only available when the AI model is configured.
-  const onDemoEnabled = analysisDeps
-    ? (userId: string, plan: Plan) => {
-        void warmUpDemoAnalyses(
-          userId,
-          plan,
-          { analysis: analysisDeps, risk: { market, fundamentals } },
-          (m, e) => app.log.warn({ err: e }, m),
-        );
-      }
-    : undefined;
-
-  // Brokerage (SnapTrade) is OPTIONAL — connect/sync need credentials, but the
-  // demo + dashboard reads must always work, so connectionRoutes always registers.
-  const brokerage: BrokerageDeps | undefined =
-    env.SNAPTRADE_CLIENT_ID && env.SNAPTRADE_CONSUMER_KEY && env.CONNECTION_ENCRYPTION_KEY
-      ? {
-          client: createSnapTradeClient(env.SNAPTRADE_CLIENT_ID, env.SNAPTRADE_CONSUMER_KEY),
-          encKey: env.CONNECTION_ENCRYPTION_KEY,
-          redirectUri: env.SNAPTRADE_REDIRECT_URI,
-        }
-      : undefined;
-  await app.register(async (instance) =>
-    connectionRoutes(instance, { auth: authDeps, brokerage, onDemoEnabled }),
-  );
-  app.log.info(
-    brokerage
-      ? "SnapTrade brokerage routes enabled"
-      : "SnapTrade not configured — connect/sync disabled (demo + dashboard still available)",
-  );
-
-  // AI analysis (Layer 2) — only enabled when an Anthropic key is set.
-  if (analysisDeps) {
-    await app.register(async (instance) => analysisRoutes(instance, { auth: authDeps, analysis: analysisDeps }));
-    app.log.info(
-      `AI analysis routes enabled (model=${env.AI_MODEL}, fundamentals=${fundamentals.enabled})`,
-    );
-
-    // AI Advisor — non-advisory educational tutor over the user's own data.
+  if (anthropicKey) {
     const advisor = createAdvisorService({
-      advisor: createAnthropicAdvisor({ apiKey: anthropicKey!, model: env.AI_MODEL }),
+      advisor: createAnthropicAdvisor({ apiKey: anthropicKey, model: env.AI_MODEL }),
     });
     await app.register(async (instance) => advisorRoutes(instance, { auth: authDeps, advisor }));
     app.log.info("AI Advisor routes enabled");
-
-    // Layer 5 — News Intelligence (needs the AI key + at least one news provider).
-    if (anthropicKey && news.enabled) {
-      const classifier = createAnthropicNewsClassifier({ apiKey: anthropicKey, model: env.AI_MODEL });
-      await app.register(async (instance) =>
-        newsRoutes(instance, { auth: authDeps, newsIntel: { news, classifier } }),
-      );
-      app.log.info("News Intelligence routes enabled");
-    } else {
-      app.log.warn("News providers not configured — News Intelligence routes disabled");
-    }
   } else {
-    app.log.warn("ANTHROPIC_API_KEY not set — AI analysis routes disabled");
+    app.log.warn("ANTHROPIC_API_KEY not set — AI Advisor routes disabled");
   }
 
   const port = resolvePort(env);
   await app.listen({ port, host: "0.0.0.0" });
-  app.log.info(`InvestIQ API listening on :${port}`);
+  app.log.info(`InvestIQ Forex API listening on :${port}`);
 }
 
 main().catch((err) => {

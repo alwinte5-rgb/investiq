@@ -78,56 +78,92 @@ enum PaperOrderSide {
   SELL
 }
 
+// ---------- Forex enums ----------
+enum TradeDirection {
+  BUY
+  SELL
+}
+
+enum TradePlanStatus {
+  DRAFT
+  PLANNED
+  ENTERED
+  CLOSED
+  CANCELLED
+}
+
+enum PairCategory {
+  MAJOR
+  MINOR
+  EXOTIC
+}
+
+enum ImpactLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum LotDisplay {
+  UNITS
+  LOTS
+}
+
 // ---------- Identity & billing ----------
 model User {
-  id        String   @id @default(cuid())
-  clerkId   String   @unique
-  email     String   @unique
-  name      String?
-  avatarUrl String?
-  plan      Plan     @default(FREE)
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String    @id @default(cuid())
+  clerkId    String    @unique
+  email      String    @unique
+  name       String?
+  avatarUrl  String?
+  plan       Plan      @default(FREE)
+  role       Role      @default(USER)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   // Best-effort "last authenticated request" heartbeat (throttled). Used to gate
   // the daily market scan so it only runs when the app has recent active users.
   lastSeenAt DateTime?
 
-  subscription          Subscription?
-  brokerageConnections  BrokerageConnection[]
-  watchlists            Watchlist[]
-  analyses              Analysis[]
-  portfolioAnalyses     PortfolioAnalysis[]
-  portfolioReviews      PortfolioReview[]
-  riskAssessments       RiskAssessment[]
-  opportunities         Opportunity[]
-  paperAccounts         PaperAccount[]
-  alertRules            AlertRule[]
-  notifications         Notification[]
-  deviceTokens          DeviceToken[]
-  usageCounters         UsageCounter[]
-  portfolioSnapshots    PortfolioSnapshot[]
+  subscription           Subscription?
+  brokerageConnections   BrokerageConnection[]
+  watchlists             Watchlist[]
+  analyses               Analysis[]
+  portfolioAnalyses      PortfolioAnalysis[]
+  portfolioReviews       PortfolioReview[]
+  riskAssessments        RiskAssessment[]
+  opportunities          Opportunity[]
+  paperAccounts          PaperAccount[]
+  alertRules             AlertRule[]
+  notifications          Notification[]
+  deviceTokens           DeviceToken[]
+  usageCounters          UsageCounter[]
+  portfolioSnapshots     PortfolioSnapshot[]
   notificationPreference NotificationPreference?
+
+  forexSettings  UserForexSettings?
+  savedPairs     SavedPair[]
+  tradePlans     TradePlan[]
+  journalEntries JournalEntry[]
 }
 
 model Subscription {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan            Plan
-  status          String   // active, past_due, canceled, trialing
-  periodStart     DateTime
-  periodEnd       DateTime
-  externalRef     String?  // billing provider id
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan        Plan
+  status      String // active, past_due, canceled, trialing
+  periodStart DateTime
+  periodEnd   DateTime
+  externalRef String? // billing provider id
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model UsageCounter {
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  metric      String   // e.g. "ai_analysis"
+  metric      String // e.g. "ai_analysis"
   periodStart DateTime
   count       Int      @default(0)
   updatedAt   DateTime @updatedAt
@@ -137,82 +173,82 @@ model UsageCounter {
 
 // ---------- Brokerage / portfolio (SnapTrade, read-only) ----------
 model BrokerageConnection {
-  id                String   @id @default(cuid())
-  userId            String
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  snaptradeUserId   String
-  snaptradeSecret   String   // ENCRYPTED at rest, server-only
-  brokerageName     String?
-  status            String   @default("active")
-  lastSyncedAt      DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snaptradeUserId String
+  snaptradeSecret String // ENCRYPTED at rest, server-only
+  brokerageName   String?
+  status          String    @default("active")
+  lastSyncedAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  accounts          Account[]
+  accounts Account[]
 
   @@index([userId])
 }
 
 model Account {
-  id            String   @id @default(cuid())
-  connectionId  String
-  connection    BrokerageConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-  externalId    String
-  name          String?
-  currency      String   @default("USD")
-  cash          Decimal  @default(0)
-  totalValue    Decimal  @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String              @id @default(cuid())
+  connectionId String
+  connection   BrokerageConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  externalId   String
+  name         String?
+  currency     String              @default("USD")
+  cash         Decimal             @default(0)
+  totalValue   Decimal             @default(0)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
-  holdings      Holding[]
-  transactions  Transaction[]
+  holdings     Holding[]
+  transactions Transaction[]
 
   @@unique([connectionId, externalId])
   @@index([connectionId])
 }
 
 model Holding {
-  id              String   @id @default(cuid())
-  accountId       String
-  account         Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  symbolId        String
-  symbol          Symbol   @relation(fields: [symbolId], references: [id])
-  quantity        Decimal
-  avgCost         Decimal?
-  marketValue     Decimal?
-  unrealizedPl    Decimal?
-  updatedAt       DateTime @updatedAt
+  id           String   @id @default(cuid())
+  accountId    String
+  account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  symbolId     String
+  symbol       Symbol   @relation(fields: [symbolId], references: [id])
+  quantity     Decimal
+  avgCost      Decimal?
+  marketValue  Decimal?
+  unrealizedPl Decimal?
+  updatedAt    DateTime @updatedAt
 
   @@unique([accountId, symbolId])
   @@index([symbolId])
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
-  accountId   String
-  account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  symbolId    String?
-  symbol      Symbol?  @relation(fields: [symbolId], references: [id])
-  type        String   // buy, sell, dividend, transfer, fee
-  quantity    Decimal?
-  price       Decimal?
-  amount      Decimal?
-  occurredAt  DateTime
-  externalId  String   @unique // idempotency
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  accountId  String
+  account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  symbolId   String?
+  symbol     Symbol?  @relation(fields: [symbolId], references: [id])
+  type       String // buy, sell, dividend, transfer, fee
+  quantity   Decimal?
+  price      Decimal?
+  amount     Decimal?
+  occurredAt DateTime
+  externalId String   @unique // idempotency
+  createdAt  DateTime @default(now())
 
   @@index([accountId, occurredAt])
 }
 
 model PortfolioSnapshot {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date        DateTime
-  totalValue  Decimal
-  allocation  Json?    // sector/asset breakdown
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date       DateTime
+  totalValue Decimal
+  allocation Json? // sector/asset breakdown
+  createdAt  DateTime @default(now())
 
   @@unique([userId, date])
   @@index([userId, date])
@@ -220,16 +256,16 @@ model PortfolioSnapshot {
 
 // ---------- Symbols & market data ----------
 model Symbol {
-  id         String    @id @default(cuid())
-  ticker     String    @unique
-  name       String
-  assetType  AssetType
-  exchange   String?
-  sector     String?
-  industry   String?
-  active     Boolean   @default(true)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  ticker    String    @unique
+  name      String
+  assetType AssetType
+  exchange  String?
+  sector    String?
+  industry  String?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   holdings        Holding[]
   transactions    Transaction[]
@@ -246,67 +282,67 @@ model Symbol {
 }
 
 model Quote {
-  id         String   @id @default(cuid())
-  symbolId   String   @unique
-  symbol     Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
-  price      Decimal
-  change     Decimal?
-  changePct  Decimal?
-  volume     BigInt?
-  asOf       DateTime
-  source     String   // polygon | twelvedata
+  id        String   @id @default(cuid())
+  symbolId  String   @unique
+  symbol    Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+  price     Decimal
+  change    Decimal?
+  changePct Decimal?
+  volume    BigInt?
+  asOf      DateTime
+  source    String // polygon | twelvedata
 }
 
 model PriceBar {
-  id        String   @id @default(cuid())
-  symbolId  String
-  symbol    Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
-  interval  String   // 1d, 1h, etc.
-  ts        DateTime
-  open      Decimal
-  high      Decimal
-  low       Decimal
-  close     Decimal
-  volume    BigInt
+  id       String   @id @default(cuid())
+  symbolId String
+  symbol   Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+  interval String // 1d, 1h, etc.
+  ts       DateTime
+  open     Decimal
+  high     Decimal
+  low      Decimal
+  close    Decimal
+  volume   BigInt
 
   @@unique([symbolId, interval, ts])
   @@index([symbolId, interval, ts])
 }
 
 model Fundamental {
-  id        String   @id @default(cuid())
-  symbolId  String
-  symbol    Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
-  period    String
-  data      Json
-  asOf      DateTime
+  id       String   @id @default(cuid())
+  symbolId String
+  symbol   Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+  period   String
+  data     Json
+  asOf     DateTime
 
   @@unique([symbolId, period])
 }
 
 model EarningsEvent {
-  id         String   @id @default(cuid())
-  symbolId   String
-  symbol     Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
-  date       DateTime
-  epsEst     Decimal?
-  epsActual  Decimal?
-  confirmed  Boolean  @default(false)
+  id        String   @id @default(cuid())
+  symbolId  String
+  symbol    Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+  date      DateTime
+  epsEst    Decimal?
+  epsActual Decimal?
+  confirmed Boolean  @default(false)
 
   @@unique([symbolId, date])
   @@index([symbolId, date])
 }
 
 model AnalystAction {
-  id         String   @id @default(cuid())
-  symbolId   String
-  symbol     Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
-  firm       String?
-  action     String   // upgrade, downgrade, initiate, pt_change
-  fromRating String?
-  toRating   String?
+  id          String   @id @default(cuid())
+  symbolId    String
+  symbol      Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+  firm        String?
+  action      String // upgrade, downgrade, initiate, pt_change
+  fromRating  String?
+  toRating    String?
   priceTarget Decimal?
-  date       DateTime
+  date        DateTime
 
   @@index([symbolId, date])
 }
@@ -323,7 +359,7 @@ model SectorPerformance {
 // ---------- News ----------
 model NewsArticle {
   id          String   @id @default(cuid())
-  source      String   // benzinga | marketaux
+  source      String // benzinga | marketaux
   url         String
   headline    String
   summary     String?
@@ -339,25 +375,25 @@ model NewsArticle {
 }
 
 model NewsSymbolLink {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   articleId String
   article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
   symbolId  String
-  symbol    Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+  symbol    Symbol      @relation(fields: [symbolId], references: [id], onDelete: Cascade)
 
   @@unique([articleId, symbolId])
   @@index([symbolId])
 }
 
 model NewsImpact {
-  id         String   @id @default(cuid())
-  articleId  String
-  article    NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  symbolId   String
-  impact     NewsImpactType
-  rationale  String
-  confidence Int
-  generatedAt DateTime @default(now())
+  id          String         @id @default(cuid())
+  articleId   String
+  article     NewsArticle    @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  symbolId    String
+  impact      NewsImpactType
+  rationale   String
+  confidence  Int
+  generatedAt DateTime       @default(now())
 
   @@unique([articleId, symbolId])
 }
@@ -371,30 +407,30 @@ model Watchlist {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  items     WatchlistItem[]
+  items WatchlistItem[]
 
   @@index([userId])
 }
 
 model WatchlistItem {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   watchlistId String
   watchlist   Watchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
   symbolId    String
-  symbol      Symbol   @relation(fields: [symbolId], references: [id])
+  symbol      Symbol    @relation(fields: [symbolId], references: [id])
   note        String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   @@unique([watchlistId, symbolId])
 }
 
 // ---------- AI analyses & evidence ----------
 model Analysis {
-  id                 String   @id @default(cuid())
-  userId             String?  // null = global per-symbol analysis
-  user               User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                 String             @id @default(cuid())
+  userId             String? // null = global per-symbol analysis
+  user               User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
   symbolId           String
-  symbol             Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+  symbol             Symbol             @relation(fields: [symbolId], references: [id], onDelete: Cascade)
   recommendationType RecommendationType
   summary            String
   bullCase           String?
@@ -406,92 +442,92 @@ model Analysis {
   riskScore          Int
   model              String
   inputsHash         String
-  generatedAt        DateTime @default(now())
+  generatedAt        DateTime           @default(now())
   validUntil         DateTime?
 
-  evidence           AnalysisEvidence[]
-  learningLinks      RecommendationLearningLink[]
+  evidence      AnalysisEvidence[]
+  learningLinks RecommendationLearningLink[]
 
   @@unique([userId, symbolId, inputsHash])
   @@index([symbolId, generatedAt])
 }
 
 model AnalysisEvidence {
-  id         String   @id @default(cuid())
+  id         String       @id @default(cuid())
   analysisId String
-  analysis   Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
-  sourceType String   // PRICE | NEWS | EARNINGS | ANALYST | FUNDAMENTAL | PORTFOLIO | SECTOR
-  reference  String?  // id or url of the source datum
-  snapshot   Json     // value at generation time
+  analysis   Analysis     @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  sourceType String // PRICE | NEWS | EARNINGS | ANALYST | FUNDAMENTAL | PORTFOLIO | SECTOR
+  reference  String? // id or url of the source datum
+  snapshot   Json // value at generation time
   role       EvidenceRole
 
   @@index([analysisId])
 }
 
 model PortfolioAnalysis {
-  id                  String   @id @default(cuid())
-  userId              String
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  healthScore         Int
-  riskScore           Int
+  id                   String   @id @default(cuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  healthScore          Int
+  riskScore            Int
   diversificationScore Int
-  cashScore           Int
-  sectorConcentration Json
-  overweight          Json
-  underweight         Json
-  strengths           Json
-  weaknesses          Json
-  improvements        Json
-  generatedAt         DateTime @default(now())
+  cashScore            Int
+  sectorConcentration  Json
+  overweight           Json
+  underweight          Json
+  strengths            Json
+  weaknesses           Json
+  improvements         Json
+  generatedAt          DateTime @default(now())
 
   @@index([userId, generatedAt])
 }
 
 model PortfolioReview {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   period      ReviewPeriod
   content     Json
-  periodKey   String   // e.g. 2026-05-29 / 2026-W22 / 2026-05
-  generatedAt DateTime @default(now())
+  periodKey   String // e.g. 2026-05-29 / 2026-W22 / 2026-05
+  generatedAt DateTime     @default(now())
 
   @@unique([userId, period, periodKey])
 }
 
 model RiskAssessment {
-  id            String   @id @default(cuid())
-  userId        String?
-  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  symbolId      String
-  symbol        Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
-  buyZoneLow    Decimal?
-  buyZoneHigh   Decimal?
-  stopLoss      Decimal?
-  profitTarget  Decimal?
-  riskReward    Decimal?
-  positionSize  Decimal?
-  maxRiskPct    Decimal?
-  warningColor  WarningColor
+  id             String       @id @default(cuid())
+  userId         String?
+  user           User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symbolId       String
+  symbol         Symbol       @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+  buyZoneLow     Decimal?
+  buyZoneHigh    Decimal?
+  stopLoss       Decimal?
+  profitTarget   Decimal?
+  riskReward     Decimal?
+  positionSize   Decimal?
+  maxRiskPct     Decimal?
+  warningColor   WarningColor
   warningReasons Json
-  generatedAt   DateTime @default(now())
+  generatedAt    DateTime     @default(now())
 
   @@index([symbolId, generatedAt])
 }
 
 model Opportunity {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  symbolId    String
-  symbol      Symbol   @relation(fields: [symbolId], references: [id])
-  type        OpportunityType
-  score       Int
-  confidence  Int
-  risk        Int
-  explanation String
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symbolId       String
+  symbol         Symbol          @relation(fields: [symbolId], references: [id])
+  type           OpportunityType
+  score          Int
+  confidence     Int
+  risk           Int
+  explanation    String
   supportingData Json
-  generatedAt DateTime @default(now())
+  generatedAt    DateTime        @default(now())
 
   @@index([userId, type, generatedAt])
 }
@@ -507,32 +543,32 @@ model PaperAccount {
   status          String   @default("active")
   createdAt       DateTime @default(now())
 
-  orders          PaperOrder[]
-  positions       PaperPosition[]
-  snapshots       PaperPerformanceSnapshot[]
+  orders    PaperOrder[]
+  positions PaperPosition[]
+  snapshots PaperPerformanceSnapshot[]
 
   @@index([userId])
 }
 
 model PaperOrder {
-  id           String   @id @default(cuid())
+  id           String         @id @default(cuid())
   accountId    String
-  account      PaperAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account      PaperAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
   symbolTicker String
   side         PaperOrderSide
   qty          Decimal
-  type         String   // market | limit
-  status       String   // new | filled | canceled | rejected
-  submittedAt  DateTime @default(now())
+  type         String // market | limit
+  status       String // new | filled | canceled | rejected
+  submittedAt  DateTime       @default(now())
   filledAt     DateTime?
   filledPrice  Decimal?
-  externalId   String?  @unique
+  externalId   String?        @unique
 
   @@index([accountId, submittedAt])
 }
 
 model PaperPosition {
-  id           String   @id @default(cuid())
+  id           String       @id @default(cuid())
   accountId    String
   account      PaperAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
   symbolTicker String
@@ -540,13 +576,13 @@ model PaperPosition {
   avgPrice     Decimal
   marketValue  Decimal?
   unrealizedPl Decimal?
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime     @updatedAt
 
   @@unique([accountId, symbolTicker])
 }
 
 model PaperPerformanceSnapshot {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   accountId String
   account   PaperAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
   date      DateTime
@@ -564,15 +600,15 @@ model LearningContent {
   tags      String[]
   createdAt DateTime @default(now())
 
-  links     RecommendationLearningLink[]
+  links RecommendationLearningLink[]
 }
 
 model RecommendationLearningLink {
-  id         String   @id @default(cuid())
+  id         String              @id @default(cuid())
   analysisId String?
-  analysis   Analysis? @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  analysis   Analysis?           @relation(fields: [analysisId], references: [id], onDelete: Cascade)
   contentId  String
-  content    LearningContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  content    LearningContent     @relation(fields: [contentId], references: [id], onDelete: Cascade)
   recType    RecommendationType?
 
   @@index([contentId])
@@ -583,7 +619,7 @@ model AlertRule {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String   // risk_threshold | earnings_proximity | news_impact | price_zone
+  type      String // risk_threshold | earnings_proximity | news_impact | price_zone
   config    Json
   enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -592,16 +628,16 @@ model AlertRule {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  channel   String   // email | push | in_app
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   String // email | push | in_app
   title     String
   body      String
   payload   Json?
-  dedupeKey String   @unique
+  dedupeKey String    @unique
   readAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId, createdAt])
 }
@@ -611,7 +647,7 @@ model DeviceToken {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String   @unique
-  platform  String   // ios | android
+  platform  String // ios | android
   createdAt DateTime @default(now())
 }
 
@@ -627,19 +663,19 @@ model NotificationPreference {
   morningBriefing Boolean  @default(true)
   weeklyReview    Boolean  @default(true)
   monthlyReview   Boolean  @default(true)
-  quietHoursStart Int?     // minutes from local midnight, inclusive
-  quietHoursEnd   Int?     // minutes from local midnight, exclusive
+  quietHoursStart Int? // minutes from local midnight, inclusive
+  quietHoursEnd   Int? // minutes from local midnight, exclusive
   updatedAt       DateTime @updatedAt
 }
 
 // ---------- Platform / admin ----------
 model FeatureFlag {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  enabled   Boolean  @default(false)
-  rolloutPct Int     @default(0)
-  targeting Json?
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  key        String   @unique
+  enabled    Boolean  @default(false)
+  rolloutPct Int      @default(0)
+  targeting  Json?
+  updatedAt  DateTime @updatedAt
 }
 
 model AuditLog {
@@ -656,24 +692,190 @@ model AuditLog {
 }
 
 model ApiCallLog {
-  id         String   @id @default(cuid())
-  vendor     String
-  endpoint   String
-  status     Int
-  latencyMs  Int
-  ok         Boolean
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  vendor    String
+  endpoint  String
+  status    Int
+  latencyMs Int
+  ok        Boolean
+  createdAt DateTime @default(now())
 
   @@index([vendor, createdAt])
 }
 
 model ApiHealthSnapshot {
-  id          String   @id @default(cuid())
-  vendor      String
-  windowStart DateTime
-  errorRate   Decimal
-  p95LatencyMs Int
+  id                 String   @id @default(cuid())
+  vendor             String
+  windowStart        DateTime
+  errorRate          Decimal
+  p95LatencyMs       Int
   rateLimitRemaining Int?
 
   @@unique([vendor, windowStart])
+}
+
+// ---------- Forex (InvestIQ Forex — education, risk, trade planning) ----------
+// Additive only: stock models above are dormant but preserved. All user-owned
+// rows carry userId for object-level authz, matching the rest of the schema.
+
+model UserForexSettings {
+  id                    String     @id @default(cuid())
+  userId                String     @unique
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountCurrency       String     @default("USD")
+  defaultAccountBalance Decimal    @default(1000)
+  defaultRiskPercentage Decimal    @default(1)
+  maximumRiskPercentage Decimal    @default(2)
+  defaultLeverage       Decimal    @default(30)
+  preferredRewardRatio  Decimal    @default(2)
+  preferredLotDisplay   LotDisplay @default(UNITS)
+  timezone              String     @default("UTC")
+  eventWarningMinutes   Int        @default(60)
+  beginnerMode          Boolean    @default(true)
+  experienceLevel       String?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+}
+
+model CurrencyPair {
+  id            String       @id @default(cuid())
+  symbol        String       @unique // canonical "EUR/USD"
+  baseCurrency  String
+  quoteCurrency String
+  displayName   String
+  pipSize       Decimal
+  pipetteSize   Decimal
+  category      PairCategory
+  active        Boolean      @default(true)
+  description   String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  savedBy        SavedPair[]
+  tradePlans     TradePlan[]
+  journalEntries JournalEntry[]
+}
+
+model SavedPair {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pairId       String
+  pair         CurrencyPair @relation(fields: [pairId], references: [id], onDelete: Cascade)
+  displayOrder Int          @default(0)
+  createdAt    DateTime     @default(now())
+
+  @@unique([userId, pairId])
+  @@index([userId])
+}
+
+model TradePlan {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pairId            String
+  pair              CurrencyPair    @relation(fields: [pairId], references: [id])
+  direction         TradeDirection
+  status            TradePlanStatus @default(DRAFT)
+  entryPrice        Decimal
+  stopLossPrice     Decimal?
+  takeProfitPrice   Decimal?
+  riskPercentage    Decimal
+  riskAmount        Decimal?
+  accountBalance    Decimal?
+  leverage          Decimal?
+  positionUnits     Int?
+  lotSize           Decimal?
+  pipValue          Decimal?
+  estimatedMargin   Decimal?
+  effectiveLeverage Decimal?
+  rewardRatio       Decimal?
+  riskStatus        String? // WITHIN_PLAN | CAUTION | OUTSIDE_PLAN | MISSING_INFO at save time
+  reasoning         String?
+  strategyTag       String?
+  session           String?
+  emotionalState    String?
+  eventWarning      String?
+  screenshotUrl     String? // storage provider not wired yet (Phase 4)
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  journalEntries JournalEntry[]
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+}
+
+model JournalEntry {
+  id               String         @id @default(cuid())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tradePlanId      String?
+  tradePlan        TradePlan?     @relation(fields: [tradePlanId], references: [id], onDelete: SetNull)
+  pairId           String
+  pair             CurrencyPair   @relation(fields: [pairId], references: [id])
+  direction        TradeDirection
+  plannedEntry     Decimal?
+  actualEntry      Decimal?
+  plannedExit      Decimal?
+  actualExit       Decimal?
+  plannedStop      Decimal?
+  actualStop       Decimal?
+  plannedTarget    Decimal?
+  actualTarget     Decimal?
+  plannedUnits     Int?
+  actualUnits      Int?
+  plannedRisk      Decimal?
+  actualRisk       Decimal?
+  profitLossAmount Decimal?
+  profitLossPips   Decimal?
+  rMultiple        Decimal?
+  session          String?
+  strategyTag      String?
+  rulesFollowed    Boolean?
+  emotionalState   String?
+  beforeImage      String? // storage provider not wired yet (Phase 4)
+  afterImage       String?
+  notes            String?
+  lessons          String?
+  openedAt         DateTime?
+  closedAt         DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([userId, closedAt])
+  @@index([userId, createdAt])
+}
+
+model EconomicEvent {
+  id            String      @id @default(cuid())
+  externalId    String?     @unique // provider id for idempotent ingest (Phase 4)
+  name          String
+  currency      String
+  category      String?
+  impact        ImpactLevel
+  eventTime     DateTime
+  previousValue String?
+  forecastValue String?
+  actualValue   String?
+  description   String?
+  source        String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([eventTime])
+  @@index([currency, eventTime])
+}
+
+model ExchangeRate {
+  id            String   @id @default(cuid())
+  baseCurrency  String
+  quoteCurrency String
+  rate          Decimal
+  provider      String
+  timestamp     DateTime
+
+  @@unique([baseCurrency, quoteCurrency, provider])
+  @@index([timestamp])
 }

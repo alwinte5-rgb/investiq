@@ -9,6 +9,11 @@ const nextConfig = {
     // builds green on a clean Linux runner (verified via GitHub Actions).
     // Disabling the filesystem cache makes every Railway build fresh.
     config.cache = false;
+    // @investiq/shared is TypeScript ESM with ".js" import specifiers; map
+    // those back to the .ts sources when webpack transpiles the package.
+    config.resolve.extensionAlias = {
+      ".js": [".ts", ".tsx", ".js"],
+    };
     return config;
   },
 };

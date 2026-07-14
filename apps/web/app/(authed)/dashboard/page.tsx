@@ -76,6 +76,17 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      {/* ── Market sessions (top of page per user preference) ── */}
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-lg font-semibold">Market sessions</h2>
+          <Link href="/sessions" className="text-xs text-blue-600 hover:underline">
+            Details →
+          </Link>
+        </div>
+        <SessionsUI compact />
+      </section>
+
       {/* ── Account summary ── */}
       <section className="space-y-2">
         <div className="flex items-baseline justify-between">
@@ -167,17 +178,6 @@ export default async function DashboardPage() {
           </Link>
         </div>
         <WatchlistCards pairs={saved?.pairs ?? []} rates={rates.rates} lastUpdated={rates.lastUpdated} />
-      </section>
-
-      {/* ── Market sessions ── */}
-      <section className="space-y-2">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold">Market sessions</h2>
-          <Link href="/sessions" className="text-xs text-blue-600 hover:underline">
-            Details →
-          </Link>
-        </div>
-        <SessionsUI compact />
       </section>
 
       {/* ── Upcoming events ── */}

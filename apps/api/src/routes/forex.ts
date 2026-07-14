@@ -12,6 +12,7 @@ import {
   savedPairCreateSchema,
   sessionsQuerySchema,
   sessionsSnapshot,
+  tradeDirectionSchema,
   formatInUserZone,
   tradeCalcRequestSchema,
   tradePlanCreateSchema,
@@ -39,14 +40,22 @@ import {
 } from "../services/journal.js";
 import type { ExchangeRateService } from "../services/exchange-rates.js";
 import type { CalendarService } from "../services/calendar.js";
+import type { ForexMarketService } from "../services/forex-market.js";
 
 const idParam = z.object({ id: cuidSchema }).strict();
 const pairParam = z.object({ symbol: pairSymbolSchema }).strict();
+const insightQuerySchema = z
+  .object({
+    direction: tradeDirectionSchema.default("BUY"),
+    entry: z.coerce.number().positive().optional(),
+  })
+  .strict();
 
 export interface ForexRouteDeps {
   auth: AuthDeps;
   rates: ExchangeRateService;
   calendar: CalendarService;
+  market: ForexMarketService;
 }
 
 /**
@@ -89,6 +98,19 @@ export async function forexRoutes(app: FastifyInstance, deps: ForexRouteDeps) {
     const { symbol } = validate(pairParam, { symbol: raw.replace(/-/g, "/") });
     reply.header("Cache-Control", "no-store");
     return { data: await getPair(symbol) };
+  });
+
+  // ── Pair insight: live rate + ATR-based suggested stop/TP (editable) ────
+  app.get("/api/v1/pairs/:symbol/insight", async (req, reply) => {
+    const ctx = await resolveAuthContext(req, auth);
+    const raw = (req.params as { symbol?: string }).symbol ?? "";
+    const { symbol } = validate(pairParam, { symbol: raw.replace(/-/g, "/") });
+    const { direction, entry } = validate(insightQuerySchema, req.query);
+    const settings = await getForexSettings(ctx.userId);
+    reply.header("Cache-Control", "no-store");
+    return {
+      data: await deps.market.getInsight(symbol, direction, entry ?? null, Number(settings.preferredRewardRatio)),
+    };
   });
 
   // ── Saved pairs (watchlist) ─────────────────────────────────────────────

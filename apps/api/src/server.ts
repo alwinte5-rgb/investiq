@@ -31,7 +31,9 @@ import {
   createNullRateProvider,
   createTwelveDataRateProvider,
 } from "./services/exchange-rates.js";
-import { createCalendarService, createNullCalendarProvider } from "./services/calendar.js";
+import { createCalendarService } from "./services/calendar.js";
+import { createForexFactoryCalendarProvider } from "./services/calendar-ff.js";
+import { createForexMarketService } from "./services/forex-market.js";
 import { createAnthropicAdvisor } from "@investiq/ai";
 import { createAdvisorService } from "./services/advisor.js";
 import { advisorRoutes } from "./routes/advisor.js";
@@ -53,17 +55,20 @@ async function main() {
   const clerk = makeClerkClient(env.CLERK_SECRET_KEY);
   const authDeps: AuthDeps = { verifier: clerkVerifier, clerk };
 
-  // Exchange rates: provider-agnostic. Live FX rates are Phase 4 — set
-  // FOREX_LIVE_RATES=true (with TWELVEDATA_API_KEY) to enable the adapter;
-  // otherwise calculators run on manual/entry-price rates.
+  // Exchange rates: provider-agnostic. Live automatically when the Twelve Data
+  // key is present (set FOREX_LIVE_RATES=false to force manual-rate mode).
   const rateProvider =
-    process.env.FOREX_LIVE_RATES === "true" && env.TWELVEDATA_API_KEY
+    env.TWELVEDATA_API_KEY && process.env.FOREX_LIVE_RATES !== "false"
       ? createTwelveDataRateProvider(env.TWELVEDATA_API_KEY)
       : createNullRateProvider();
   const rates = createExchangeRateService(rateProvider);
 
-  // Economic calendar: provider-agnostic; no provider wired yet (Phase 4).
-  const calendar = createCalendarService(createNullCalendarProvider());
+  // Forex market data (live rate + daily ATR) → "suggested stop & target".
+  const forexMarket = createForexMarketService({ twelveDataKey: env.TWELVEDATA_API_KEY });
+
+  // Economic calendar: Forex Factory weekly feed (free, keyless), synced on
+  // read with an hourly TTL guard. Provider-agnostic — swappable later.
+  const calendar = createCalendarService(createForexFactoryCalendarProvider());
 
   const app = Fastify({ logger: true });
 
@@ -132,7 +137,7 @@ async function main() {
 
   // Forex core: settings, pairs, saved pairs, rates, trade calc, trade plans,
   // journal (+ analytics), economic calendar, market sessions.
-  await app.register(async (instance) => forexRoutes(instance, { auth: authDeps, rates, calendar }));
+  await app.register(async (instance) => forexRoutes(instance, { auth: authDeps, rates, calendar, market: forexMarket }));
   app.log.info(
     rates.enabled
       ? "Forex routes enabled (live exchange rates ON)"

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { directionExplanations, explainRate, findPair } from "@investiq/shared";
 import { PairEmbeds } from "@/components/forex/pair-embeds";
+import { PairChart } from "@/components/forex/pair-chart";
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +108,11 @@ export default function PairDetailPage({ params }: { params: { symbol: string } 
             </span>
           ))}
         </div>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold text-slate-800">Live chart</h2>
+        <PairChart pairSymbol={info.symbol} height={360} />
       </section>
 
       <PairEmbeds symbol={info.symbol} />

@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { getPairInsightAction, type PairInsightDto } from "@/app/(authed)/calculator/actions";
+import { PairChart } from "./pair-chart";
 import {
   computeTradeCalc,
   pipSizeFor,
@@ -44,12 +46,15 @@ export function TradeCalculator({
   defaults,
   compact = false,
   saveHref,
+  withInsight = true,
 }: {
   defaults?: TradeCalculatorDefaults;
   /** Dashboard quick-calculator mode: fewer fields visible, link to full page. */
   compact?: boolean;
   /** Where "Save as Trade Plan" goes (authed planner); omitted on public pages. */
   saveHref?: string;
+  /** Live rate + suggested stop/TP (authed only — needs the API). */
+  withInsight?: boolean;
 }) {
   const [pair, setPair] = useState("EUR/USD");
   const [direction, setDirection] = useState<TradeDirection>("BUY");
@@ -72,6 +77,48 @@ export function TradeCalculator({
   const pipSize = pipSizeFor(pair);
   const decimals = priceDecimalsFor(pair);
   const parts = splitPair(pair);
+
+  // ── Live rate + suggested levels (authed pages) ────────────────────────────
+  const [insight, setInsight] = useState<PairInsightDto | null>(null);
+  const [suggestNote, setSuggestNote] = useState<string | null>(null);
+  const [insightPending, startInsight] = useTransition();
+
+  useEffect(() => {
+    if (!withInsight) return;
+    setInsight(null);
+    startInsight(async () => {
+      const res = await getPairInsightAction(pair, direction);
+      if (res.ok) setInsight(res.data);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pair, direction, withInsight]);
+
+  const useLiveRate = () => {
+    if (insight?.rate != null) setEntry(insight.rate.toFixed(decimals));
+  };
+
+  const applySuggestion = () => {
+    const entryNow = num(entry) ?? insight?.rate ?? null;
+    if (entryNow == null) return;
+    if (num(entry) == null && insight?.rate != null) setEntry(insight.rate.toFixed(decimals));
+    startInsight(async () => {
+      const res = await getPairInsightAction(pair, direction, entryNow);
+      if (!res.ok || !res.data.suggested) {
+        setSuggestNote("Couldn't compute a suggestion right now — set the stop manually.");
+        return;
+      }
+      const s = res.data.suggested;
+      setStopPrice(s.stopPrice.toFixed(decimals));
+      setStopPips(s.stopPips.toFixed(1));
+      setTpPrice(s.takeProfitPrice.toFixed(decimals));
+      setTpPips(s.takeProfitPips.toFixed(1));
+      setSuggestNote(
+        s.basis === "atr"
+          ? `Suggested from recent daily volatility (ATR14 ≈ ${s.atrPips} pips: stop ${s.stopPips} pips away, target at your 1:${s.rewardRatio} ratio). A starting point, not a prediction — adjust to your plan.`
+          : `Suggested from typical distances for this pair type (stop ${s.stopPips} pips, target at your 1:${s.rewardRatio} ratio). Live volatility data was unavailable — adjust to your plan.`,
+      );
+    });
+  };
 
   // Price ↔ pips synchronization: editing either side recomputes the other.
   const syncStopFromPrice = (v: string) => {
@@ -160,8 +207,26 @@ export function TradeCalculator({
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Field label={`Entry price`} hint={`Pip size ${pipSize}`}>
-            <NumberInput value={entry} onChange={setEntry} placeholder={pipSize === 0.01 ? "145.250" : "1.08500"} ariaLabel="Entry price" />
+          <Field
+            label={`Entry price`}
+            hint={
+              insight?.rate != null
+                ? `Live: ${insight.rate.toFixed(decimals)} — real ${pair} quotes look like this (pip = ${pipSize})`
+                : `Real ${pair} quotes look like ${pipSize === 0.01 ? "145.250" : "1.08500"} (pip = ${pipSize})`
+            }
+          >
+            <div className="flex gap-1">
+              <NumberInput value={entry} onChange={setEntry} placeholder={pipSize === 0.01 ? "145.250" : "1.08500"} ariaLabel="Entry price" />
+              {withInsight && insight?.rate != null && (
+                <button
+                  type="button"
+                  onClick={useLiveRate}
+                  className="whitespace-nowrap rounded-md border px-2 text-xs text-blue-700 hover:bg-blue-50"
+                >
+                  Use live
+                </button>
+              )}
+            </div>
           </Field>
           <Field label="Broker leverage" hint="e.g. 50 for 50:1">
             <NumberInput value={leverage} onChange={setLeverage} placeholder="50" ariaLabel="Broker leverage" />
@@ -172,6 +237,19 @@ export function TradeCalculator({
             </Field>
           )}
         </div>
+        {withInsight && (
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={applySuggestion}
+              disabled={insightPending}
+              className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+            >
+              {insightPending ? "Working…" : "Suggest stop & target"}
+            </button>
+            {suggestNote && <p className="text-[11px] leading-relaxed text-slate-500">{suggestNote}</p>}
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Stop-loss price">
             <NumberInput value={stopPrice} onChange={syncStopFromPrice} ariaLabel="Stop-loss price" />
@@ -312,6 +390,18 @@ export function TradeCalculator({
           can change actual results. The margin requirement is not the same as the amount you could
           lose.
         </p>
+
+        {!compact && (
+          <PairChart
+            pairSymbol={pair}
+            levels={{
+              entry: num(entry),
+              stop: num(stopPrice),
+              takeProfit: num(tpPrice),
+              current: insight?.rate ?? null,
+            }}
+          />
+        )}
 
         <div className="flex flex-wrap gap-2">
           {compact && (

@@ -46,11 +46,36 @@ async function queryEvents(where: Record<string, unknown>) {
   });
 }
 
+/** Re-sync the provider feed at most this often (weekly feed, hourly refresh of actuals). */
+const SYNC_INTERVAL_MS = 60 * 60 * 1000;
+
 export function createCalendarService(provider: EconomicCalendarProvider): CalendarService {
+  let lastSyncAt = 0;
+  let syncing: Promise<unknown> | null = null;
+
+  /** Sync-on-read with a TTL guard and single-flight — no cron dependency. */
+  async function ensureFresh() {
+    if (!provider.enabled || Date.now() - lastSyncAt < SYNC_INTERVAL_MS) return;
+    syncing ??= provider
+      .sync()
+      .then(() => {
+        lastSyncAt = Date.now();
+      })
+      .catch(() => {
+        // Provider hiccup: keep serving what's in the table; retry sooner.
+        lastSyncAt = Date.now() - SYNC_INTERVAL_MS + 5 * 60 * 1000;
+      })
+      .finally(() => {
+        syncing = null;
+      });
+    await syncing;
+  }
+
   return {
     providerEnabled: provider.enabled,
 
     async listEvents(userId, query) {
+      await ensureFresh();
       const where: Record<string, unknown> = {};
       // Default window: from now through 14 days out (calendar is forward-looking).
       const from = query.from ?? new Date();
@@ -71,6 +96,7 @@ export function createCalendarService(provider: EconomicCalendarProvider): Calen
 
     async upcomingHighImpact(currencies, withinMinutes) {
       if (currencies.length === 0) return [];
+      await ensureFresh();
       const now = new Date();
       const events = await prisma.economicEvent.findMany({
         where: {

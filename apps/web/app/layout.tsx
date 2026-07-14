@@ -9,9 +9,9 @@ import "./globals.css";
 // <SignedIn>/<SignedOut> control components resolve on the client.
 
 export const metadata: Metadata = {
-  title: "InvestIQ — AI investment research & education",
+  title: "InvestIQ Forex — Know your risk before you place the trade",
   description:
-    "AI-powered research, portfolio intelligence, and education for US stocks and ETFs. Educational only — not investment advice.",
+    "Forex education, position sizing, and trade planning. Turn pips, lots, margin, and leverage into clear dollar amounts. Educational only — not trading advice.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -21,7 +21,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <body>
           <header className="flex items-center justify-between border-b px-6 py-3">
             <Link href="/" className="font-semibold tracking-tight">
-              Invest<span className="text-blue-600">IQ</span>
+              Invest<span className="text-blue-600">IQ</span>{" "}
+              <span className="text-slate-400 font-normal">Forex</span>
             </Link>
             <nav className="flex items-center gap-4 text-sm">
               <Link href="/pricing" className="hover:underline">
@@ -49,9 +50,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </nav>
           </header>
           <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
-          <footer className="mx-auto max-w-5xl px-6 py-8 text-xs text-neutral-500">
-            InvestIQ is an educational research tool, not a financial advisor, broker-dealer, or
-            RIA. Nothing here is personalized investment advice. Investing involves risk of loss.
+          <footer className="mx-auto max-w-5xl space-y-1 px-6 py-8 text-xs text-neutral-500">
+            <p>
+              InvestIQ Forex provides educational tools and estimated calculations. It does not
+              provide personalized financial advice, trade signals, or brokerage services.
+            </p>
+            <p>
+              Forex trading involves substantial risk. Leverage can magnify both gains and losses.{" "}
+              <Link href="/disclosures" className="underline">
+                Full disclosures
+              </Link>
+            </p>
           </footer>
         </body>
       </html>

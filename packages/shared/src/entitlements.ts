@@ -18,6 +18,17 @@ export interface Entitlements {
   advancedAnalysis: boolean;
   historicalPatternEngine: boolean;
   priorityAlerts: boolean;
+  // ── Forex (paid-ready feature split; enforced only when PLAN_GATING_ENABLED) ──
+  /** Saved trade plans allowed; null = unlimited. */
+  savedTradePlanLimit: number | null;
+  /** Full journal analytics (free tier gets the manual journal only). */
+  journalAnalytics: boolean;
+  /** Access to cross + exotic pair education pages. */
+  exoticPairs: boolean;
+  /** Economic-event warnings inside the trade check. */
+  eventWarnings: boolean;
+  /** Multiple trading accounts (Phase 4). */
+  multipleTradingAccounts: boolean;
 }
 
 const FREE: Entitlements = {
@@ -32,6 +43,11 @@ const FREE: Entitlements = {
   advancedAnalysis: false,
   historicalPatternEngine: false,
   priorityAlerts: false,
+  savedTradePlanLimit: 5,
+  journalAnalytics: false,
+  exoticPairs: false,
+  eventWarnings: false,
+  multipleTradingAccounts: false,
 };
 
 const INVESTOR: Entitlements = {
@@ -43,6 +59,10 @@ const INVESTOR: Entitlements = {
   dailyReviews: true,
   newsIntelligence: true,
   opportunities: true,
+  savedTradePlanLimit: null,
+  journalAnalytics: true,
+  exoticPairs: true,
+  eventWarnings: true,
 };
 
 const INVESTOR_PLUS: Entitlements = {
@@ -53,6 +73,7 @@ const INVESTOR_PLUS: Entitlements = {
   advancedAnalysis: true,
   historicalPatternEngine: true,
   priorityAlerts: true,
+  multipleTradingAccounts: true,
 };
 
 const TABLE: Record<Plan, Entitlements> = {

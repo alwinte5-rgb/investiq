@@ -4,12 +4,12 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { askAdvisorAction } from "@/app/(authed)/advisor/actions";
 
 const SUGGESTED = [
-  "Is my portfolio too risky?",
-  "What does my portfolio health score mean?",
-  "How should I think about diversification?",
-  "What should I look at before researching a stock?",
-  "How much should I invest each month?",
-  "Explain the P/E ratio with an example.",
+  "What's the difference between margin and risk?",
+  "Explain pip value with an example.",
+  "How does leverage change what I can lose?",
+  "Why does my position size depend on my stop loss?",
+  "What does a 1:2 risk-to-reward ratio mean?",
+  "What is swap and when am I charged it?",
 ];
 
 interface Msg {

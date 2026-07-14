@@ -8,29 +8,29 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
     <GlossaryProvider>
       <div className="mb-6 flex items-center justify-between gap-3 border-b pb-3 text-sm">
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          {/* Co-Pilot nav. Reviews are folded into Home; Watchlists routes to
-              Opportunities. Settings stays here (account-menu move deferred — it
-              broke SSR as a UserButton child). */}
           <Link href="/dashboard" className="hover:underline">
-            Home
+            Dashboard
           </Link>
-          <Link href="/opportunities" className="hover:underline">
-            Opportunities
+          <Link href="/calculator" className="font-semibold text-blue-700 hover:underline">
+            Trade Calculator
           </Link>
-          <Link href="/portfolio" className="hover:underline">
-            Portfolio
+          <Link href="/pairs" className="hover:underline">
+            Currency Pairs
           </Link>
-          <Link href="/research" className="hover:underline">
-            Research
+          <Link href="/sessions" className="hover:underline">
+            Market Sessions
           </Link>
-          <Link href="/advisor" className="hover:underline">
-            AI Advisor
+          <Link href="/calendar" className="hover:underline">
+            Economic Calendar
+          </Link>
+          <Link href="/planner" className="hover:underline">
+            Trade Planner
+          </Link>
+          <Link href="/journal" className="hover:underline">
+            Journal
           </Link>
           <Link href="/learn" className="hover:underline">
             Learn
-          </Link>
-          <Link href="/paper" className="hover:underline">
-            Paper Trading
           </Link>
           <Link href="/settings" className="ml-auto text-slate-500 hover:underline">
             Settings

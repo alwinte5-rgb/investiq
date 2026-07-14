@@ -3,8 +3,8 @@ import { FORBIDDEN_DIRECTIVE_PATTERNS } from "@investiq/shared";
 import type { Advisor } from "@investiq/ai";
 
 /**
- * AI Advisor service (Layer 8+). Assembles a light, factual context from the
- * user's own data (portfolio scores + recently analyzed tickers) and asks the
+ * AI Advisor service. Assembles a light, factual context from the user's own
+ * forex data (risk settings + open trade plans + journal stats) and asks the
  * non-advisory tutor model. A forbidden-language guard replaces any answer that
  * slips into buy/sell directives — defense in depth behind the system prompt.
  */
@@ -14,8 +14,8 @@ export interface AdvisorService {
 }
 
 const NON_ADVISORY_FALLBACK =
-  "I can't give personalized buy/sell advice — InvestIQ is educational only. " +
-  "What I can do is explain the factors to weigh (valuation, growth, risk, your time horizon, and how it fits your diversification), and you can run a full grounded analysis in Research to dig into the specifics. The decision is always yours.";
+  "I can't give personalized trade advice or predict where a currency pair is going — InvestIQ Forex is educational only. " +
+  "What I can do is explain the mechanics (pips, lots, leverage, margin, stop losses, position sizing) and help you understand exactly what a trade would risk. Open the Trade Calculator to see the numbers for a specific setup. The decision is always yours.";
 
 /**
  * Guard: never return advisory directive language. If the model output is empty
@@ -26,43 +26,57 @@ export function enforceNonAdvisory(raw: string): string {
   return raw && !FORBIDDEN_DIRECTIVE_PATTERNS.some((p) => p.test(raw)) ? raw : NON_ADVISORY_FALLBACK;
 }
 
-/** Compact, factual snapshot of the user's data for the model to reference. */
+/** Compact, factual snapshot of the user's forex data for the model to reference. */
 async function buildContext(userId: string): Promise<string> {
-  const [portfolio, analyses] = await Promise.all([
-    prisma.portfolioAnalysis.findFirst({
+  const [settings, openPlans, closedCount] = await Promise.all([
+    prisma.userForexSettings.findUnique({
       where: { userId },
-      orderBy: { generatedAt: "desc" },
-      select: { healthScore: true, riskScore: true, diversificationScore: true, cashScore: true },
-    }),
-    prisma.analysis.findMany({
-      where: { userId },
-      distinct: ["symbolId"],
-      orderBy: [{ symbolId: "asc" }, { generatedAt: "desc" }],
-      take: 12,
       select: {
-        recommendationType: true,
-        confidenceScore: true,
-        riskScore: true,
-        symbol: { select: { ticker: true } },
+        accountCurrency: true,
+        defaultAccountBalance: true,
+        defaultRiskPercentage: true,
+        maximumRiskPercentage: true,
+        defaultLeverage: true,
+        preferredRewardRatio: true,
       },
     }),
+    prisma.tradePlan.findMany({
+      where: { userId, status: { in: ["DRAFT", "PLANNED", "ENTERED"] } },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      select: {
+        direction: true,
+        status: true,
+        riskPercentage: true,
+        riskAmount: true,
+        rewardRatio: true,
+        riskStatus: true,
+        pair: { select: { symbol: true } },
+      },
+    }),
+    prisma.journalEntry.count({ where: { userId, profitLossAmount: { not: null } } }),
   ]);
 
   const lines: string[] = [];
-  if (portfolio) {
+  if (settings) {
     lines.push(
-      `Portfolio scores (0–100): health ${portfolio.healthScore}, risk ${portfolio.riskScore}, ` +
-        `diversification ${portfolio.diversificationScore}, cash buffer ${portfolio.cashScore}.`,
+      `Risk settings: account ${settings.accountCurrency} ${settings.defaultAccountBalance}, ` +
+        `default risk ${settings.defaultRiskPercentage}%, max risk ${settings.maximumRiskPercentage}%, ` +
+        `broker leverage ${settings.defaultLeverage}:1, preferred reward ratio 1:${settings.preferredRewardRatio}.`,
     );
   }
-  if (analyses.length > 0) {
-    lines.push("Stocks the user has analyzed (educational 'Watch' signals, not advice):");
-    for (const a of analyses) {
+  if (openPlans.length > 0) {
+    lines.push("Open trade plans (the user's own planning data, not advice):");
+    for (const p of openPlans) {
       lines.push(
-        `- ${a.symbol.ticker}: ${a.recommendationType} (confidence ${a.confidenceScore}/100, risk ${a.riskScore}/100)`,
+        `- ${p.pair.symbol} ${p.direction} [${p.status}]: risk ${p.riskPercentage}%` +
+          (p.riskAmount ? ` (${p.riskAmount})` : "") +
+          (p.rewardRatio ? `, reward ratio 1:${p.rewardRatio}` : "") +
+          (p.riskStatus ? `, plan check: ${p.riskStatus}` : ""),
       );
     }
   }
+  if (closedCount > 0) lines.push(`Journal: ${closedCount} closed trades recorded.`);
   return lines.join("\n");
 }
 

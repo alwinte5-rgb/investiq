@@ -1,4 +1,5 @@
 import { PrismaClient, AssetType } from "@prisma/client";
+import { CURRENCY_PAIRS } from "@investiq/shared";
 
 const prisma = new PrismaClient();
 
@@ -104,6 +105,26 @@ async function main() {
         sector: s.sector ?? null,
         industry: s.industry ?? null,
       },
+    });
+  }
+
+  // Currency-pair catalog (single source of truth: @investiq/shared forex/pairs.ts).
+  console.log(`Seeding ${CURRENCY_PAIRS.length} currency pairs...`);
+  for (const p of CURRENCY_PAIRS) {
+    const data = {
+      baseCurrency: p.baseCurrency,
+      quoteCurrency: p.quoteCurrency,
+      displayName: p.displayName,
+      pipSize: p.pipSize,
+      pipetteSize: p.pipetteSize,
+      category: p.category,
+      active: p.active,
+      description: p.description,
+    };
+    await prisma.currencyPair.upsert({
+      where: { symbol: p.symbol },
+      update: data,
+      create: { symbol: p.symbol, ...data },
     });
   }
   console.log("Seed complete.");

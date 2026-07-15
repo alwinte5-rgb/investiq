@@ -36,21 +36,47 @@ function affectedPairs(currency: string): string[] {
 export function CalendarUI({
   initial,
   providerEnabled,
+  savedPairSymbols = [],
+  openPlans = [],
 }: {
   initial: CalendarEvent[];
   providerEnabled: boolean;
+  savedPairSymbols?: string[];
+  openPlans?: { pairSymbol: string; status: string }[];
 }) {
   const [currency, setCurrency] = useState("");
   const [impact, setImpact] = useState("");
+  const [savedOnly, setSavedOnly] = useState(false);
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
+
+  // Currencies touched by the user's saved pairs (for the "my pairs" filter).
+  const savedCurrencies = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of savedPairSymbols) {
+      const [b, q] = s.split("/");
+      if (b) set.add(b);
+      if (q) set.add(q);
+    }
+    return set;
+  }, [savedPairSymbols]);
 
   const events = useMemo(
     () =>
       initial.filter(
-        (e) => (!currency || e.currency === currency) && (!impact || e.impact === impact),
+        (e) =>
+          (!currency || e.currency === currency) &&
+          (!impact || e.impact === impact) &&
+          (!savedOnly || savedCurrencies.has(e.currency)),
       ),
-    [initial, currency, impact],
+    [initial, currency, impact, savedOnly, savedCurrencies],
   );
+
+  /** The user's own saved pairs / open plans touched by an event's currency. */
+  const myExposure = (eventCurrency: string) => {
+    const pairs = savedPairSymbols.filter((s) => s.split("/").includes(eventCurrency));
+    const plans = openPlans.filter((p) => p.pairSymbol.split("/").includes(eventCurrency));
+    return { pairs, plans };
+  };
 
   return (
     <div className="space-y-4">
@@ -83,6 +109,12 @@ export function CalendarUI({
             <option value="LOW">Low</option>
           </select>
         </label>
+        {savedPairSymbols.length > 0 && (
+          <label className="flex items-center gap-2 pb-2 text-sm text-slate-700">
+            <input type="checkbox" checked={savedOnly} onChange={(e) => setSavedOnly(e.target.checked)} />
+            My pairs only
+          </label>
+        )}
       </div>
 
       {events.length === 0 ? (
@@ -217,6 +249,25 @@ export function CalendarUI({
                 ))}
               </div>
             </div>
+
+            {(() => {
+              const mine = myExposure(selected.currency);
+              if (mine.pairs.length === 0 && mine.plans.length === 0) return null;
+              return (
+                <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3">
+                  <h3 className="text-xs font-semibold text-blue-900">Your exposure</h3>
+                  {mine.plans.length > 0 && (
+                    <p className="mt-1 text-xs text-blue-900">
+                      Open plans on:{" "}
+                      {mine.plans.map((p) => `${p.pairSymbol} (${p.status.toLowerCase()})`).join(", ")}
+                    </p>
+                  )}
+                  {mine.pairs.length > 0 && (
+                    <p className="mt-0.5 text-xs text-blue-800">Watchlist pairs: {mine.pairs.join(", ")}</p>
+                  )}
+                </div>
+              );
+            })()}
 
             <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
               Volatility and spreads may increase around this release. This is awareness

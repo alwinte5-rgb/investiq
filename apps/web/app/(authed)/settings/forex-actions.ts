@@ -14,6 +14,7 @@ export interface ForexSettings {
   timezone: string;
   eventWarningMinutes: number;
   beginnerMode: boolean;
+  eventBlockEnabled: boolean;
   experienceLevel: string | null;
 }
 

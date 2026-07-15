@@ -56,6 +56,7 @@ export async function calculateTrade(
     maxRiskPct,
     preferredRewardRatio,
     highImpactEventSoon: upcoming.length > 0,
+    eventBlockEnabled: Boolean(settings.eventBlockEnabled),
   });
 
   if (upcoming.length > 0) {

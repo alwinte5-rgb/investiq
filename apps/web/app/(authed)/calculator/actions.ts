@@ -13,12 +13,23 @@ export interface SuggestedLevelsDto {
   rewardRatio: number;
 }
 
+export interface UpcomingEventDto {
+  name: string;
+  currency: string;
+  impact: "HIGH" | "MEDIUM" | "LOW";
+  eventTime: string;
+  forecastValue: string | null;
+  previousValue: string | null;
+}
+
 export interface PairInsightDto {
   pairSymbol: string;
   rate: number | null;
   rateAsOf: string | null;
   atrPips: number | null;
   suggested: SuggestedLevelsDto | null;
+  /** The pair's HIGH/MEDIUM releases in the next 48h — context, never a signal. */
+  upcomingEvents: UpcomingEventDto[];
 }
 
 export type InsightResult = { ok: true; data: PairInsightDto } | { ok: false; error: string };

@@ -63,6 +63,7 @@ export const forexSettingsPatchSchema = z
     timezone: z.string().trim().min(1).max(64).optional(),
     eventWarningMinutes: z.coerce.number().int().min(0).max(24 * 60).optional(),
     beginnerMode: z.boolean().optional(),
+    eventBlockEnabled: z.boolean().optional(),
     experienceLevel: z.enum(["beginner", "intermediate", "advanced"]).nullish(),
   })
   .strict();

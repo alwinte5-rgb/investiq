@@ -732,6 +732,9 @@ model UserForexSettings {
   timezone              String     @default("UTC")
   eventWarningMinutes   Int        @default(60)
   beginnerMode          Boolean    @default(true)
+  // Hard rule: a high-impact event inside the warning window makes a trade
+  // check OUTSIDE_PLAN instead of CAUTION.
+  eventBlockEnabled     Boolean    @default(false)
   experienceLevel       String?
   createdAt             DateTime   @default(now())
   updatedAt             DateTime   @updatedAt
@@ -834,6 +837,9 @@ model JournalEntry {
   session          String?
   strategyTag      String?
   rulesFollowed    Boolean?
+  // Auto-tagged: a HIGH-impact event on either pair currency occurred while
+  // the trade was open (null when open/close times are unknown).
+  highImpactEvent  Boolean?
   emotionalState   String?
   beforeImage      String? // storage provider not wired yet (Phase 4)
   afterImage       String?

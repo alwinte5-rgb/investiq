@@ -40,6 +40,8 @@ export interface RiskStatusInput {
   preferredRewardRatio: number | null;
   /** A high-impact economic event is approaching for the pair's currencies. */
   highImpactEventSoon?: boolean;
+  /** User's hard rule: an approaching event makes the trade OUTSIDE_PLAN, not CAUTION. */
+  eventBlockEnabled?: boolean;
 }
 
 export interface RiskStatusResult {
@@ -102,7 +104,13 @@ export function evaluateRiskStatus(input: RiskStatusInput): RiskStatusResult {
     );
   }
   if (input.highImpactEventSoon) {
-    caution.push("A high-impact economic event is approaching — volatility and spreads may increase.");
+    if (input.eventBlockEnabled) {
+      outside.push(
+        "A high-impact economic event is inside your warning window, and your settings treat that as outside plan.",
+      );
+    } else {
+      caution.push("A high-impact economic event is approaching — volatility and spreads may increase.");
+    }
   }
 
   if (outside.length > 0) {

@@ -85,6 +85,14 @@ describe("risk status evaluation", () => {
     expect(evaluateRiskStatus({ ...base, highImpactEventSoon: true }).status).toBe("CAUTION");
   });
 
+  it("the event hard rule escalates an approaching event to OUTSIDE_PLAN", () => {
+    const r = evaluateRiskStatus({ ...base, highImpactEventSoon: true, eventBlockEnabled: true });
+    expect(r.status).toBe("OUTSIDE_PLAN");
+    expect(r.reasons.some((x) => x.includes("outside plan"))).toBe(true);
+    // without an event, the rule changes nothing
+    expect(evaluateRiskStatus({ ...base, eventBlockEnabled: true }).status).toBe("WITHIN_PLAN");
+  });
+
   it("OUTSIDE_PLAN when risk exceeds the max, margin exceeds balance, risk exceeds balance, no stop, or invalid size", () => {
     expect(evaluateRiskStatus({ ...base, actualRiskPct: 2.5 }).status).toBe("OUTSIDE_PLAN");
     expect(evaluateRiskStatus({ ...base, requiredMargin: 2500 }).status).toBe("OUTSIDE_PLAN");

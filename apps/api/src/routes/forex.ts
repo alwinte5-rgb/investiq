@@ -29,6 +29,7 @@ import {
   deleteTradePlan,
   listTradePlans,
   openPlannedRisk,
+  plansEventExposure,
   updateTradePlan,
 } from "../services/trade-plans.js";
 import {
@@ -108,9 +109,11 @@ export async function forexRoutes(app: FastifyInstance, deps: ForexRouteDeps) {
     const { direction, entry } = validate(insightQuerySchema, req.query);
     const settings = await getForexSettings(ctx.userId);
     reply.header("Cache-Control", "no-store");
-    return {
-      data: await deps.market.getInsight(symbol, direction, entry ?? null, Number(settings.preferredRewardRatio)),
-    };
+    const insight = await deps.market.getInsight(symbol, direction, entry ?? null, Number(settings.preferredRewardRatio));
+    // Informational event context: the pair's HIGH/MEDIUM releases in the next 48h.
+    const parts = symbol.split("/");
+    const upcomingEvents = await deps.calendar.upcomingEvents(parts, 48 * 60);
+    return { data: { ...insight, upcomingEvents } };
   });
 
   // ── Saved pairs (watchlist) ─────────────────────────────────────────────
@@ -156,7 +159,12 @@ export async function forexRoutes(app: FastifyInstance, deps: ForexRouteDeps) {
   app.get("/api/v1/trade-plans", async (req, reply) => {
     const ctx = await resolveAuthContext(req, auth);
     reply.header("Cache-Control", "no-store");
-    return { data: { plans: await listTradePlans(ctx.userId), openRisk: await openPlannedRisk(ctx.userId) } };
+    const [plans, openRisk, exposure] = await Promise.all([
+      listTradePlans(ctx.userId),
+      openPlannedRisk(ctx.userId),
+      plansEventExposure(ctx.userId, deps.calendar),
+    ]);
+    return { data: { plans, openRisk, exposure } };
   });
 
   app.post("/api/v1/trade-plans/check", async (req, reply) => {
@@ -202,7 +210,7 @@ export async function forexRoutes(app: FastifyInstance, deps: ForexRouteDeps) {
     const input = validate(journalEntryCreateSchema, req.body);
     reply.header("Cache-Control", "no-store");
     reply.code(201);
-    return { data: await createJournalEntry(ctx.userId, input) };
+    return { data: await createJournalEntry(ctx.userId, input, deps.calendar) };
   });
 
   app.patch("/api/v1/journal/:id", async (req, reply) => {
@@ -210,7 +218,7 @@ export async function forexRoutes(app: FastifyInstance, deps: ForexRouteDeps) {
     const { id } = validate(idParam, req.params);
     const patch = validate(journalEntryUpdateSchema, req.body);
     reply.header("Cache-Control", "no-store");
-    return { data: await updateJournalEntry(ctx.userId, id, patch) };
+    return { data: await updateJournalEntry(ctx.userId, id, patch, deps.calendar) };
   });
 
   app.delete("/api/v1/journal/:id", async (req, reply) => {

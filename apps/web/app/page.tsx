@@ -15,6 +15,7 @@ export default async function Landing() {
   // Signed-in users open straight into the app, not the marketing page.
   const { userId } = await auth();
   if (userId) redirect("/dashboard");
+  const guestMode = process.env.GUEST_MODE === "true";
 
   return (
     <div className="space-y-10">
@@ -29,17 +30,25 @@ export default async function Landing() {
         </p>
         <div className="flex flex-wrap gap-3">
           <Link
-            href="/calculators/position-size"
+            href={guestMode ? "/calculator" : "/calculators/position-size"}
             className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
             Calculate My Trade
           </Link>
           <Link
-            href="/sign-up"
+            href={guestMode ? "/learn" : "/sign-up"}
             className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-neutral-50"
           >
             Learn How Forex Works
           </Link>
+          {guestMode && (
+            <Link
+              href="/dashboard"
+              className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-neutral-50"
+            >
+              Open the app — no login needed
+            </Link>
+          )}
           <Link
             href="/pricing"
             className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-neutral-50"

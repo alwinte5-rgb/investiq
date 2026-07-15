@@ -67,6 +67,7 @@ export interface TradeCalcInput {
   maxRiskPct?: number | null;
   preferredRewardRatio?: number | null;
   highImpactEventSoon?: boolean;
+  eventBlockEnabled?: boolean;
 }
 
 export interface TradeCalcResult {
@@ -267,6 +268,7 @@ export function computeTradeCalc(input: TradeCalcInput): TradeCalcResult {
     rewardRatio: rr,
     preferredRewardRatio: input.preferredRewardRatio ?? null,
     highImpactEventSoon: input.highImpactEventSoon,
+    eventBlockEnabled: input.eventBlockEnabled,
   });
 
   // ── Plain-language summary (updates dynamically with the numbers) ──────────

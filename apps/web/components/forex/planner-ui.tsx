@@ -7,6 +7,7 @@ import {
   createPlanAction,
   deletePlanAction,
   updatePlanStatusAction,
+  type PlanExposure,
   type TradeCheckResult,
   type TradePlanInput,
   type TradePlanRow,
@@ -54,16 +55,19 @@ export interface PlannerPrefill {
 export function PlannerUI({
   initialPlans,
   openRisk,
+  exposure = [],
   accountCurrency,
   defaults,
   prefill,
 }: {
   initialPlans: TradePlanRow[];
   openRisk: number;
+  exposure?: PlanExposure[];
   accountCurrency: string;
   defaults: { balance: string; riskPct: string; leverage: string };
   prefill: PlannerPrefill;
 }) {
+  const exposureByPlan = new Map(exposure.map((x) => [x.planId, x.events]));
   const [plans, setPlans] = useState(initialPlans);
   const [pair, setPair] = useState(prefill.pair ?? "EUR/USD");
   const [direction, setDirection] = useState<"BUY" | "SELL">(prefill.direction ?? "BUY");
@@ -379,6 +383,16 @@ export function PlannerUI({
                   </div>
                 </div>
                 {p.eventWarning && <p className="mt-1 text-xs text-amber-700">⚠ {p.eventWarning}</p>}
+                {(exposureByPlan.get(p.id) ?? []).map((e) => (
+                  <p key={`${e.name}${e.eventTime}`} className="mt-1 text-xs text-amber-700">
+                    ⚠ Upcoming: {e.currency} {e.name} —{" "}
+                    {new Date(e.eventTime).toLocaleString(undefined, {
+                      weekday: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                ))}
                 {p.reasoning && <p className="mt-1 text-xs italic text-slate-500">“{p.reasoning}”</p>}
               </div>
             ))}

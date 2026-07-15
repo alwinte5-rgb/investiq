@@ -49,6 +49,14 @@ export interface TradePlanInput {
   notes?: string;
 }
 
+export interface PlanExposure {
+  planId: string;
+  pairSymbol: string;
+  direction: string;
+  status: string;
+  events: { name: string; currency: string; eventTime: string }[];
+}
+
 export interface TradeCheckResult {
   status: { status: "WITHIN_PLAN" | "CAUTION" | "OUTSIDE_PLAN" | "MISSING_INFO"; label: string; reasons: string[] };
   warnings: string[];
@@ -73,7 +81,7 @@ function fail(e: unknown, fallback: string): { ok: false; error: string } {
   return { ok: false, error: msg };
 }
 
-export async function listPlansAction(): Promise<Result<{ plans: TradePlanRow[]; openRisk: number }>> {
+export async function listPlansAction(): Promise<Result<{ plans: TradePlanRow[]; openRisk: number; exposure: PlanExposure[] }>> {
   try {
     return { ok: true, data: await apiFetch("/api/v1/trade-plans") };
   } catch (e) {

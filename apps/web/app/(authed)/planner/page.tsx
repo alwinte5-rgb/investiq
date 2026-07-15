@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import { PlannerUI } from "@/components/forex/planner-ui";
-import type { TradePlanRow } from "./actions";
+import type { PlanExposure, TradePlanRow } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -17,9 +17,10 @@ export default async function PlannerPage({
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
   const [plansRes, settings] = await Promise.all([
-    apiFetch<{ plans: TradePlanRow[]; openRisk: number }>("/api/v1/trade-plans").catch(() => ({
+    apiFetch<{ plans: TradePlanRow[]; openRisk: number; exposure: PlanExposure[] }>("/api/v1/trade-plans").catch(() => ({
       plans: [] as TradePlanRow[],
       openRisk: 0,
+      exposure: [] as PlanExposure[],
     })),
     apiFetch<ForexSettings>("/api/v1/me/forex-settings").catch(() => null),
   ]);
@@ -43,6 +44,7 @@ export default async function PlannerPage({
       <PlannerUI
         initialPlans={plansRes.plans}
         openRisk={plansRes.openRisk}
+        exposure={plansRes.exposure}
         accountCurrency={settings?.accountCurrency ?? "USD"}
         defaults={{
           balance: settings ? String(Number(settings.defaultAccountBalance)) : "2000",

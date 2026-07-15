@@ -209,6 +209,7 @@ export function JournalUI({
                 <SegmentTable title="By session" rows={analytics.bySession} />
                 <SegmentTable title="By strategy" rows={analytics.byStrategy} />
                 <SegmentTable title="By day of week" rows={analytics.byWeekday} />
+                <SegmentTable title="Around high-impact events" rows={analytics.byEvent ?? []} />
               </div>
               <p className="text-[11px] text-slate-400">
                 Segments with fewer than 5 trades don&apos;t show rates — small samples mislead.

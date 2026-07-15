@@ -36,6 +36,13 @@ export interface CalendarService {
   }>;
   /** High-impact events within `withinMinutes` touching either currency of a pair. */
   upcomingHighImpact(currencies: string[], withinMinutes: number): Promise<{ name: string; currency: string; eventTime: Date }[]>;
+  /** All upcoming events (any impact) for the currencies within the window — informational context. */
+  upcomingEvents(
+    currencies: string[],
+    withinMinutes: number,
+  ): Promise<{ name: string; currency: string; impact: string; eventTime: Date; forecastValue: string | null; previousValue: string | null }[]>;
+  /** Did a HIGH-impact event on these currencies fall inside [from, to]? (journal correlation) */
+  highImpactBetween(currencies: string[], from: Date, to: Date): Promise<boolean>;
 }
 
 async function queryEvents(where: Record<string, unknown>) {
@@ -108,6 +115,37 @@ export function createCalendarService(provider: EconomicCalendarProvider): Calen
         select: { name: true, currency: true, eventTime: true },
       });
       return events;
+    },
+
+    async upcomingEvents(currencies, withinMinutes) {
+      if (currencies.length === 0) return [];
+      await ensureFresh();
+      const now = new Date();
+      return prisma.economicEvent.findMany({
+        where: {
+          currency: { in: currencies },
+          impact: { in: ["HIGH", "MEDIUM"] },
+          eventTime: { gte: now, lte: new Date(now.getTime() + withinMinutes * 60_000) },
+        },
+        orderBy: { eventTime: "asc" },
+        take: 8,
+        select: {
+          name: true,
+          currency: true,
+          impact: true,
+          eventTime: true,
+          forecastValue: true,
+          previousValue: true,
+        },
+      });
+    },
+
+    async highImpactBetween(currencies, from, to) {
+      if (currencies.length === 0) return false;
+      const count = await prisma.economicEvent.count({
+        where: { impact: "HIGH", currency: { in: currencies }, eventTime: { gte: from, lte: to } },
+      });
+      return count > 0;
     },
   };
 }

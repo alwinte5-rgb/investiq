@@ -1,15 +1,38 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { directionExplanations, explainRate, findPair } from "@investiq/shared";
+import { apiFetch } from "@/lib/api";
 import { PairEmbeds } from "@/components/forex/pair-embeds";
 import { PairChart } from "@/components/forex/pair-chart";
 
 export const dynamic = "force-dynamic";
 
+interface PairEvent {
+  id: string;
+  name: string;
+  currency: string;
+  impact: "LOW" | "MEDIUM" | "HIGH";
+  eventTime: string;
+}
+
 /** Currency-pair profile: educational reference + embedded calculators. */
-export default function PairDetailPage({ params }: { params: { symbol: string } }) {
+export default async function PairDetailPage({ params }: { params: { symbol: string } }) {
   const info = findPair(params.symbol.replace(/-/g, "/"));
   if (!info) notFound();
+
+  // This pair's scheduled releases (both currencies), best-effort.
+  const upcoming = await apiFetch<{ events: PairEvent[] }>(
+    `/api/v1/calendar/events?currency=${info.baseCurrency}`,
+  )
+    .then(async (base) => {
+      const quote = await apiFetch<{ events: PairEvent[] }>(
+        `/api/v1/calendar/events?currency=${info.quoteCurrency}`,
+      ).catch(() => ({ events: [] as PairEvent[] }));
+      return [...base.events, ...quote.events]
+        .sort((a, b) => a.eventTime.localeCompare(b.eventTime))
+        .slice(0, 6);
+    })
+    .catch(() => [] as PairEvent[]);
 
   const explanations = directionExplanations(info);
   const categoryLabel =
@@ -109,6 +132,43 @@ export default function PairDetailPage({ params }: { params: { symbol: string } 
           ))}
         </div>
       </section>
+
+      {upcoming.length > 0 && (
+        <section className="space-y-2">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold text-slate-800">Upcoming events for {info.symbol}</h2>
+            <Link href="/calendar" className="text-xs text-blue-600 hover:underline">
+              Full calendar →
+            </Link>
+          </div>
+          <div className="divide-y rounded-lg border">
+            {upcoming.map((e) => (
+              <div key={e.id} className="flex items-center gap-3 p-2.5 text-sm">
+                <span className="w-12 font-medium">{e.currency}</span>
+                <span className="flex-1">{e.name}</span>
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-xs ${
+                    e.impact === "HIGH"
+                      ? "border-red-200 bg-red-50 text-red-800"
+                      : e.impact === "MEDIUM"
+                        ? "border-amber-200 bg-amber-50 text-amber-800"
+                        : "border-slate-200 text-slate-500"
+                  }`}
+                >
+                  {e.impact === "HIGH" ? "High" : e.impact === "MEDIUM" ? "Medium" : "Low"}
+                </span>
+                <span className="tabular-nums text-xs text-slate-500">
+                  {new Date(e.eventTime).toLocaleString(undefined, {
+                    weekday: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-slate-800">Live chart</h2>

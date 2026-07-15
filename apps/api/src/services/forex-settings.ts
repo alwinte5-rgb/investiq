@@ -19,6 +19,7 @@ const SETTINGS_SELECT = {
   timezone: true,
   eventWarningMinutes: true,
   beginnerMode: true,
+  eventBlockEnabled: true,
   experienceLevel: true,
   updatedAt: true,
 } as const;

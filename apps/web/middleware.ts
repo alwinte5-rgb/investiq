@@ -28,6 +28,9 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
+  // TEMPORARY guest mode: with GUEST_MODE=true nothing is protected — the API
+  // serves un-tokened requests as a shared guest user. Unset to restore auth.
+  if (process.env.GUEST_MODE === "true") return;
   if (isProtectedRoute(req)) {
     await auth.protect();
   }

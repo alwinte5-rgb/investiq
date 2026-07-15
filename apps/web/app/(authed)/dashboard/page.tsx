@@ -25,6 +25,14 @@ interface RatesResult {
   stale: boolean;
 }
 
+interface PlanExposure {
+  planId: string;
+  pairSymbol: string;
+  direction: string;
+  status: string;
+  events: { name: string; currency: string; eventTime: string }[];
+}
+
 function fmt(v: number, currency: string): string {
   try {
     return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(v);
@@ -41,9 +49,10 @@ export default async function DashboardPage() {
   const [settings, saved, plans, calendar, rates] = await Promise.all([
     apiFetch<ForexSettings>("/api/v1/me/forex-settings").catch(() => null),
     apiFetch<{ customized: boolean; pairs: WatchlistPair[] }>("/api/v1/me/saved-pairs").catch(() => null),
-    apiFetch<{ plans: unknown[]; openRisk: number }>("/api/v1/trade-plans").catch(() => ({
+    apiFetch<{ plans: unknown[]; openRisk: number; exposure: PlanExposure[] }>("/api/v1/trade-plans").catch(() => ({
       plans: [] as unknown[],
       openRisk: 0,
+      exposure: [] as PlanExposure[],
     })),
     apiFetch<{ events: CalendarEvent[]; providerEnabled: boolean }>("/api/v1/calendar/events").catch(() => ({
       events: [] as CalendarEvent[],
@@ -146,6 +155,50 @@ export default async function DashboardPage() {
           </>
         )}
       </section>
+
+      {/* ── Event exposure: open plans facing high-impact events ── */}
+      {plans.exposure.length > 0 && (
+        <section className="space-y-2">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold">Event exposure</h2>
+            <Link href="/calendar" className="text-xs text-blue-600 hover:underline">
+              Full calendar →
+            </Link>
+          </div>
+          <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/60 p-4">
+            <p className="text-xs text-amber-800">
+              These open plans face a high-impact economic event — volatility and spreads may
+              increase around each release.
+            </p>
+            {plans.exposure.map((x) => (
+              <div key={x.planId} className="rounded-md border border-amber-200 bg-white p-3 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold tabular-nums">{x.pairSymbol}</span>
+                  <span className="text-slate-500">{x.direction === "BUY" ? "Buy" : "Sell"}</span>
+                  <span className="rounded-full border px-2 py-0.5 text-xs text-slate-500">
+                    {x.status.charAt(0) + x.status.slice(1).toLowerCase()}
+                  </span>
+                  <Link href="/planner" className="ml-auto text-xs text-blue-600 hover:underline">
+                    Review plan →
+                  </Link>
+                </div>
+                <ul className="mt-1 space-y-0.5 text-xs text-slate-600">
+                  {x.events.map((e) => (
+                    <li key={`${e.name}${e.eventTime}`}>
+                      ⚠ {e.currency} {e.name} —{" "}
+                      {new Date(e.eventTime).toLocaleString(undefined, {
+                        weekday: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Quick calculator ── */}
       <section className="space-y-2">

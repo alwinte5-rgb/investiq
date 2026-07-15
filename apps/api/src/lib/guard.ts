@@ -17,6 +17,25 @@ function markActive(userId: string): void {
 }
 
 /**
+ * TEMPORARY guest mode (GUEST_MODE=true): requests without a bearer token are
+ * served as one shared, lazily provisioned guest user so the app can be used
+ * without signing in. Everyone shares the guest's settings/plans/journal, so
+ * this is strictly for demo/review periods — unset the env var to restore
+ * normal auth. Admin routes stay safe: the guest's role is USER, so
+ * requireAdmin still rejects. Requests WITH a token authenticate normally.
+ */
+async function guestContext(): Promise<AuthContext> {
+  const user = await findOrProvisionUser({
+    clerkId: "guest-mode",
+    email: "guest@investiq.local",
+    name: "Guest",
+    avatarUrl: null,
+  });
+  markActive(user.id);
+  return { userId: user.id, clerkId: user.clerkId, plan: effectivePlan(user.plan), role: "USER" };
+}
+
+/**
  * Single entry point for STEP 1 (authentication) used by every protected
  * route and by /me. Verifies the token, loads the mirrored user, and lazily
  * provisions the User row if the Clerk webhook hasn't created it yet. Throws
@@ -27,6 +46,9 @@ export async function resolveAuthContext(
   req: FastifyRequest,
   deps: AuthDeps,
 ): Promise<AuthContext> {
+  if (process.env.GUEST_MODE === "true" && !req.headers.authorization) {
+    return guestContext();
+  }
   try {
     const ctx = await authenticate(req.headers.authorization, deps.verifier, userLoader);
     markActive(ctx.userId);

@@ -81,6 +81,49 @@ export async function listTradePlans(userId: string) {
   return plans;
 }
 
+/** Feed horizon: the free weekly calendar sees at most ~5 trading days ahead. */
+const EXPOSURE_WINDOW_MINUTES = 7 * 24 * 60;
+
+export interface PlanEventExposure {
+  planId: string;
+  pairSymbol: string;
+  direction: string;
+  status: string;
+  events: { name: string; currency: string; eventTime: string }[];
+}
+
+/**
+ * Ongoing event watchdog: cross-reference the user's ACTIVE plans against
+ * upcoming HIGH-impact events on either of each pair's currencies. The save-
+ * time trade check is a snapshot; this keeps watching after the plan exists.
+ */
+export async function plansEventExposure(
+  userId: string,
+  calendar: { upcomingHighImpact(currencies: string[], withinMinutes: number): Promise<{ name: string; currency: string; eventTime: Date }[]> },
+): Promise<PlanEventExposure[]> {
+  const plans = await prisma.tradePlan.findMany({
+    where: { userId, status: { in: [...ACTIVE_STATUSES] } },
+    include: { pair: { select: { symbol: true, baseCurrency: true, quoteCurrency: true } } },
+  });
+  if (plans.length === 0) return [];
+
+  const currencies = [...new Set(plans.flatMap((p) => [p.pair.baseCurrency, p.pair.quoteCurrency]))];
+  const events = await calendar.upcomingHighImpact(currencies, EXPOSURE_WINDOW_MINUTES);
+  if (events.length === 0) return [];
+
+  return plans
+    .map((p) => ({
+      planId: p.id,
+      pairSymbol: p.pair.symbol,
+      direction: p.direction,
+      status: p.status,
+      events: events
+        .filter((e) => e.currency === p.pair.baseCurrency || e.currency === p.pair.quoteCurrency)
+        .map((e) => ({ name: e.name, currency: e.currency, eventTime: e.eventTime.toISOString() })),
+    }))
+    .filter((x) => x.events.length > 0);
+}
+
 /** Sum of riskAmount across open (draft/planned/entered) plans — dashboard risk allowance. */
 export async function openPlannedRisk(userId: string) {
   const open = await prisma.tradePlan.findMany({

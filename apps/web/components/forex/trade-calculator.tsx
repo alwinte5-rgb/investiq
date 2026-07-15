@@ -391,6 +391,41 @@ export function TradeCalculator({
           lose.
         </p>
 
+        {withInsight && insight != null && insight.upcomingEvents.length > 0 && (
+          <div className="rounded-lg border border-amber-100 bg-amber-50/50 p-3">
+            <h3 className="text-xs font-semibold text-slate-700">
+              Scheduled events for {pair} — next 48 hours
+            </h3>
+            <ul className="mt-1 space-y-1">
+              {insight.upcomingEvents.map((e) => (
+                <li key={`${e.name}${e.eventTime}`} className="flex items-center gap-2 text-xs text-slate-600">
+                  <span
+                    className={`rounded-full border px-1.5 py-0.5 text-[10px] ${
+                      e.impact === "HIGH"
+                        ? "border-red-200 bg-red-50 text-red-800"
+                        : "border-amber-200 bg-amber-50 text-amber-800"
+                    }`}
+                  >
+                    {e.impact === "HIGH" ? "High" : "Medium"}
+                  </span>
+                  <span className="font-medium">{e.currency}</span>
+                  <span className="flex-1">{e.name}</span>
+                  <span className="tabular-nums text-slate-400">
+                    {new Date(e.eventTime).toLocaleString(undefined, {
+                      weekday: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 text-[10px] text-slate-400">
+              Volatility and spreads may increase around releases. Context only — not a directional signal.
+            </p>
+          </div>
+        )}
+
         {!compact && (
           <PairChart
             pairSymbol={pair}

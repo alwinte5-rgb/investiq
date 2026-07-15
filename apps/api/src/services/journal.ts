@@ -1,6 +1,7 @@
 import { prisma } from "@investiq/db";
-import { errors, type JournalEntryCreate, type JournalEntryUpdate } from "@investiq/shared";
+import { errors, splitPair, type JournalEntryCreate, type JournalEntryUpdate } from "@investiq/shared";
 import { assertOwnedBy } from "../lib/permissions.js";
+import type { CalendarService } from "./calendar.js";
 
 /**
  * Trading journal — CRUD + process-first analytics. Insights are gated by
@@ -24,6 +25,26 @@ function deriveRMultiple(input: { profitLossAmount?: number | null; plannedRisk?
   return Math.round((input.profitLossAmount / risk) * 100) / 100;
 }
 
+/**
+ * Auto-tag: did a HIGH-impact event on either pair currency fall while the
+ * trade was open? Null when open/close times are unknown. An entry closed the
+ * same moment it opened still gets a small window so a same-minute release counts.
+ */
+async function deriveHighImpactEvent(
+  pairSymbol: string,
+  openedAt: Date | null | undefined,
+  closedAt: Date | null | undefined,
+  calendar: CalendarService | undefined,
+): Promise<boolean | null> {
+  if (!calendar || !openedAt) return null;
+  const parts = splitPair(pairSymbol);
+  if (!parts) return null;
+  const from = openedAt;
+  const to = closedAt ?? new Date(); // still open: exposure up to now
+  if (to.getTime() < from.getTime()) return null;
+  return calendar.highImpactBetween([parts.base, parts.quote], from, to);
+}
+
 export async function listJournalEntries(userId: string) {
   return prisma.journalEntry.findMany({
     where: { userId },
@@ -33,7 +54,7 @@ export async function listJournalEntries(userId: string) {
   });
 }
 
-export async function createJournalEntry(userId: string, input: JournalEntryCreate) {
+export async function createJournalEntry(userId: string, input: JournalEntryCreate, calendar?: CalendarService) {
   const { pairSymbol, tradePlanId, ...rest } = input;
   const pairId = await resolvePairId(pairSymbol);
   if (tradePlanId) {
@@ -47,16 +68,26 @@ export async function createJournalEntry(userId: string, input: JournalEntryCrea
       tradePlanId: tradePlanId ?? null,
       ...rest,
       rMultiple: deriveRMultiple(input),
+      highImpactEvent: await deriveHighImpactEvent(pairSymbol, input.openedAt, input.closedAt, calendar),
     },
   });
 }
 
-export async function updateJournalEntry(userId: string, id: string, patch: JournalEntryUpdate) {
-  const existing = await prisma.journalEntry.findUnique({ where: { id } });
+export async function updateJournalEntry(userId: string, id: string, patch: JournalEntryUpdate, calendar?: CalendarService) {
+  const existing = await prisma.journalEntry.findUnique({ where: { id }, include: { pair: true } });
   assertOwnedBy(userId, existing);
   const { pairSymbol, tradePlanId, ...rest } = patch;
   const data: Record<string, unknown> = { ...rest };
   if (pairSymbol) data.pairId = await resolvePairId(pairSymbol);
+  // Re-derive the event tag when the timeline or pair changed.
+  if (pairSymbol !== undefined || patch.openedAt !== undefined || patch.closedAt !== undefined) {
+    data.highImpactEvent = await deriveHighImpactEvent(
+      pairSymbol ?? existing!.pair.symbol,
+      patch.openedAt ?? existing!.openedAt,
+      patch.closedAt ?? existing!.closedAt,
+      calendar,
+    );
+  }
   if (tradePlanId !== undefined) {
     if (tradePlanId) {
       const plan = await prisma.tradePlan.findUnique({ where: { id: tradePlanId } });
@@ -126,6 +157,7 @@ interface ClosedEntry {
   rulesFollowed: boolean | null;
   actualRisk: number | null;
   plannedRisk: number | null;
+  highImpactEvent: boolean | null;
 }
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -146,6 +178,7 @@ export async function journalAnalytics(userId: string) {
     rulesFollowed: row.rulesFollowed,
     actualRisk: row.actualRisk != null ? Number(row.actualRisk) : null,
     plannedRisk: row.plannedRisk != null ? Number(row.plannedRisk) : null,
+    highImpactEvent: row.highImpactEvent,
   }));
 
   const total = closed.length;
@@ -162,12 +195,28 @@ export async function journalAnalytics(userId: string) {
   const bySession = segment(closed, (e) => e.session);
   const byStrategy = segment(closed, (e) => e.strategy);
   const byWeekday = segment(closed, (e) => e.weekday);
+  const byEvent = segment(closed, (e) =>
+    e.highImpactEvent == null ? null : e.highImpactEvent ? "Held through high-impact event" : "No high-impact event",
+  );
 
   const withSample = byPair.filter((s) => s.trades >= MIN_SAMPLE_SEGMENT);
   const sessionsWithSample = bySession.filter((s) => s.trades >= MIN_SAMPLE_SEGMENT);
 
   // Process-first insights, only when the sample supports them.
   const insights: string[] = [];
+  if (meetsSample) {
+    const during = closed.filter((e) => e.highImpactEvent === true);
+    const outside = closed.filter((e) => e.highImpactEvent === false);
+    if (during.length >= MIN_SAMPLE_SEGMENT && outside.length >= MIN_SAMPLE_SEGMENT) {
+      const dAvg = avg(during.map((e) => e.pl));
+      const oAvg = avg(outside.map((e) => e.pl));
+      if (dAvg != null && oAvg != null && dAvg < oAvg) {
+        insights.push(
+          `Trades held through a high-impact economic event averaged ${dAvg} versus ${oAvg} when no event occurred — event awareness may be worth building into your plan.`,
+        );
+      }
+    }
+  }
   if (meetsSample && ruleTracked.length >= MIN_SAMPLE_SEGMENT) {
     const followed = ruleTracked.filter((e) => e.rulesFollowed === true);
     const broke = ruleTracked.filter((e) => e.rulesFollowed === false);
@@ -210,6 +259,7 @@ export async function journalAnalytics(userId: string) {
     bySession,
     byStrategy,
     byWeekday,
+    byEvent,
     insights,
   };
 }

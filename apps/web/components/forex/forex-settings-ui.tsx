@@ -19,6 +19,7 @@ export function ForexSettingsUI({ initial }: { initial: ForexSettings }) {
   const [timezone, setTimezone] = useState(initial.timezone);
   const [warnMinutes, setWarnMinutes] = useState(String(initial.eventWarningMinutes));
   const [beginnerMode, setBeginnerMode] = useState(initial.beginnerMode);
+  const [eventBlock, setEventBlock] = useState(initial.eventBlockEnabled);
   const [experience, setExperience] = useState(initial.experienceLevel ?? "");
 
   const [status, setStatus] = useState<{ kind: "ok" | "error"; msg: string } | null>(null);
@@ -40,6 +41,7 @@ export function ForexSettingsUI({ initial }: { initial: ForexSettings }) {
         timezone,
         eventWarningMinutes: num(warnMinutes) ?? undefined,
         beginnerMode,
+        eventBlockEnabled: eventBlock,
         experienceLevel: experience || null,
       });
       setStatus(
@@ -123,6 +125,11 @@ export function ForexSettingsUI({ initial }: { initial: ForexSettings }) {
           onChange={(e) => setBeginnerMode(e.target.checked)}
         />
         Beginner explanation mode — show extra plain-language explanations throughout the app
+      </label>
+      <label className="flex items-center gap-2 text-sm text-slate-700">
+        <input type="checkbox" checked={eventBlock} onChange={(e) => setEventBlock(e.target.checked)} />
+        Event hard rule — mark a trade check <strong>Outside Plan</strong> (instead of Caution) when a
+        high-impact event is inside your warning window
       </label>
 
       {status && (

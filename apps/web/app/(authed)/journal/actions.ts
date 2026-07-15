@@ -89,6 +89,7 @@ export interface JournalAnalytics {
   bySession: SegmentStats[];
   byStrategy: SegmentStats[];
   byWeekday: SegmentStats[];
+  byEvent: SegmentStats[];
   insights: string[];
 }
 

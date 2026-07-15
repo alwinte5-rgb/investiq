@@ -44,6 +44,8 @@ const quietCalendar: CalendarService = {
   providerEnabled: false,
   listEvents: async () => ({ events: [], providerEnabled: false }),
   upcomingHighImpact: async () => [],
+  upcomingEvents: async () => [],
+  highImpactBetween: async () => false,
 };
 
 const REFERENCE = {

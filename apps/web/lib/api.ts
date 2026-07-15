@@ -7,8 +7,15 @@ const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:4000";
  * personalized data is never cached. Returns the parsed { data } or throws.
  */
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const { getToken } = await auth();
-  const token = await getToken();
+  // Guest mode runs without clerkMiddleware, where auth() throws. Un-tokened
+  // requests are fine: the API serves them as the shared guest user.
+  let token: string | null = null;
+  try {
+    const { getToken } = await auth();
+    token = await getToken();
+  } catch {
+    token = null;
+  }
 
   // Only send a JSON content-type when there's actually a body. Bodyless POSTs
   // (connect, generate, refresh) with Content-Type: application/json make the

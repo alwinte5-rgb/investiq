@@ -15,9 +15,13 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ClerkProvider>
-      <html lang="en">
+  // TEMPORARY guest mode: skip Clerk entirely (provider + auth-aware header).
+  // ClerkJS on a dev instance decorates/redirects navigation, which blocks
+  // crawlers and agents. Unset GUEST_MODE and rebuild to restore login.
+  const guestMode = process.env.GUEST_MODE === "true";
+
+  const page = (
+    <html lang="en">
         <body>
           <header className="flex items-center justify-between border-b px-6 py-3">
             <Link href="/" className="font-semibold tracking-tight">
@@ -28,25 +32,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/pricing" className="hover:underline">
                 Pricing
               </Link>
-              {/* Auth-aware: signed-in users get Dashboard + their account menu;
-                  signed-out users get Sign in / Sign up. */}
-              <SignedIn>
-                <Link href="/dashboard" className="hover:underline">
-                  Home
-                </Link>
-                <UserButton afterSignOutUrl="/" />
-              </SignedIn>
-              <SignedOut>
-                <Link href="/sign-in" className="hover:underline">
-                  Sign in
-                </Link>
-                <Link
-                  href="/sign-up"
-                  className="rounded-md bg-blue-600 px-3 py-1.5 font-medium text-white hover:bg-blue-700"
-                >
-                  Sign up
-                </Link>
-              </SignedOut>
+              {guestMode ? (
+                <>
+                  <Link href="/dashboard" className="hover:underline">
+                    Open app
+                  </Link>
+                  <span className="rounded-full border px-2 py-0.5 text-xs text-slate-500">
+                    Guest preview — no login required
+                  </span>
+                </>
+              ) : (
+                <>
+                  {/* Auth-aware: signed-in users get Dashboard + their account menu;
+                      signed-out users get Sign in / Sign up. */}
+                  <SignedIn>
+                    <Link href="/dashboard" className="hover:underline">
+                      Home
+                    </Link>
+                    <UserButton afterSignOutUrl="/" />
+                  </SignedIn>
+                  <SignedOut>
+                    <Link href="/sign-in" className="hover:underline">
+                      Sign in
+                    </Link>
+                    <Link
+                      href="/sign-up"
+                      className="rounded-md bg-blue-600 px-3 py-1.5 font-medium text-white hover:bg-blue-700"
+                    >
+                      Sign up
+                    </Link>
+                  </SignedOut>
+                </>
+              )}
             </nav>
           </header>
           <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
@@ -63,7 +80,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </p>
           </footer>
         </body>
-      </html>
-    </ClerkProvider>
+    </html>
   );
+
+  return guestMode ? page : <ClerkProvider>{page}</ClerkProvider>;
 }

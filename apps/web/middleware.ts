@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 // Protected app routes. UI protection is convenience; the API re-checks
@@ -27,14 +28,23 @@ const isProtectedRoute = createRouteMatcher([
   "/watchlists(.*)",
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
-  // TEMPORARY guest mode: with GUEST_MODE=true nothing is protected — the API
-  // serves un-tokened requests as a shared guest user. Unset to restore auth.
-  if (process.env.GUEST_MODE === "true") return;
-  if (isProtectedRoute(req)) {
-    await auth.protect();
-  }
-});
+// TEMPORARY guest mode: bypass Clerk middleware ENTIRELY. Running
+// clerkMiddleware at all triggers Clerk's dev-instance browser handshake
+// (__clerk_hs_reason=dev-browser-missing) on matched routes, which redirects
+// crawlers/agents even when auth.protect() is skipped. The API serves
+// un-tokened requests as a shared guest user. Unset GUEST_MODE and rebuild to
+// restore login.
+const guestMode = process.env.GUEST_MODE === "true";
+
+export default guestMode
+  ? function middleware() {
+      return NextResponse.next();
+    }
+  : clerkMiddleware(async (auth, req) => {
+      if (isProtectedRoute(req)) {
+        await auth.protect();
+      }
+    });
 
 export const config = {
   matcher: [

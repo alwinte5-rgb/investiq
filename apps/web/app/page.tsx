@@ -13,7 +13,10 @@ const TOOLS = [
 
 export default async function Landing() {
   // Signed-in users open straight into the app, not the marketing page.
-  const { userId } = await auth();
+  // (auth() throws in guest mode, where clerkMiddleware doesn't run.)
+  const userId = await auth()
+    .then((a) => a.userId)
+    .catch(() => null);
   if (userId) redirect("/dashboard");
   const guestMode = process.env.GUEST_MODE === "true";
 

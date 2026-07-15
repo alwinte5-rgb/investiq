@@ -25,6 +25,11 @@ ARG NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 ENV NEXT_PUBLIC_CLERK_SIGN_IN_URL=$NEXT_PUBLIC_CLERK_SIGN_IN_URL
 ARG NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 ENV NEXT_PUBLIC_CLERK_SIGN_UP_URL=$NEXT_PUBLIC_CLERK_SIGN_UP_URL
+# TEMPORARY guest mode: middleware env is resolved at build time, so the flag
+# must be present here (not just at runtime). Unset the Railway variable and
+# rebuild to restore login.
+ARG GUEST_MODE
+ENV GUEST_MODE=$GUEST_MODE
 
 RUN npm run -w @investiq/web build
 

@@ -54,6 +54,10 @@ export function createTwelveDataRateProvider(apiKey: string): ExchangeRateProvid
         "twelvedata",
         url,
       );
+      // Twelve Data reports throttling/errors inside a 200 body.
+      if ((body as { status?: string }).status === "error") {
+        throw new UpstreamError("twelvedata", `provider error ${(body as { code?: number }).code ?? ""}`);
+      }
       const rates: RateTable = {};
       const entries = pairs.length === 1 ? [body as { symbol?: string; rate?: number }] : Object.values(body ?? {});
       for (const entry of entries.flat()) {
@@ -78,8 +82,12 @@ export interface ExchangeRateService {
   getRates(pairs: string[]): Promise<RatesResult>;
 }
 
+/** After a provider failure, don't retry for this long (protects the per-minute quota). */
+const FAILURE_BACKOFF_MS = 30_000;
+
 export function createExchangeRateService(provider: ExchangeRateProvider): ExchangeRateService {
   const cache = new InMemoryTtlCache();
+  const inflight = new Map<string, Promise<{ rates: RateTable; asOf: Date }>>();
 
   return {
     enabled: provider.enabled,
@@ -89,19 +97,32 @@ export function createExchangeRateService(provider: ExchangeRateProvider): Excha
         return { rates: {}, lastUpdated: null, stale: true, provider: provider.name };
       }
       const key = canonical.join(",");
+      const empty: RatesResult = { rates: {}, lastUpdated: null, stale: true, provider: provider.name };
+      if (cache.get<boolean>(`fail:${key}`)) return empty; // recent failure — back off
       try {
-        const { rates, asOf } = await cache.wrap<{ rates: RateTable; asOf: Date }>(key, CACHE_TTL_MS, () =>
-          provider.getRates(canonical),
-        );
+        const hit = cache.get<{ rates: RateTable; asOf: Date }>(key);
+        let result = hit;
+        if (!result) {
+          // Single-flight: concurrent dashboard loads share one upstream call.
+          let p = inflight.get(key);
+          if (!p) {
+            p = provider.getRates(canonical).finally(() => inflight.delete(key));
+            inflight.set(key, p);
+          }
+          result = await p;
+          cache.set(key, result, CACHE_TTL_MS);
+        }
         return {
-          rates,
-          lastUpdated: asOf.toISOString(),
-          stale: Date.now() - asOf.getTime() > FRESHNESS_MS,
+          rates: result.rates,
+          lastUpdated: result.asOf.toISOString(),
+          stale: Date.now() - result.asOf.getTime() > FRESHNESS_MS,
           provider: provider.name,
         };
       } catch {
-        // Degrade gracefully: no fabricated rates; clients fall back to manual entry.
-        return { rates: {}, lastUpdated: null, stale: true, provider: provider.name };
+        // Degrade gracefully: no fabricated rates; clients fall back to manual
+        // entry. Brief negative cache so failures don't burn more quota.
+        cache.set(`fail:${key}`, true, FAILURE_BACKOFF_MS);
+        return empty;
       }
     },
   };

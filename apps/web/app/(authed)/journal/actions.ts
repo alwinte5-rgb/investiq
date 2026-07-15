@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 /** Serialized JournalEntry row (Prisma Decimals arrive as strings via JSON). */
 export interface JournalRow {
   id: string;
+  tradePlanId: string | null;
   direction: "BUY" | "SELL";
   plannedEntry: string | null;
   actualEntry: string | null;
@@ -37,6 +38,8 @@ export interface JournalRow {
 export interface JournalInput {
   pairSymbol: string;
   direction: "BUY" | "SELL";
+  /** Links the entry to a trade plan ("Journal This Trade"); server rejects duplicates. */
+  tradePlanId?: string;
   plannedEntry?: number | null;
   actualEntry?: number | null;
   plannedExit?: number | null;

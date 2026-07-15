@@ -13,7 +13,7 @@ export function Field({
   hint,
   children,
 }: {
-  label: string;
+  label: React.ReactNode;
   hint?: string;
   children: React.ReactNode;
 }) {
@@ -151,7 +151,7 @@ export function ResultRow({
   sub,
   emphasize,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: string;
   sub?: string;
   emphasize?: boolean;

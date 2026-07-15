@@ -16,14 +16,19 @@ export default async function PlannerPage({
 }: {
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
-  const [plansRes, settings] = await Promise.all([
+  const [plansRes, settings, journalEntries] = await Promise.all([
     apiFetch<{ plans: TradePlanRow[]; openRisk: number; exposure: PlanExposure[] }>("/api/v1/trade-plans").catch(() => ({
       plans: [] as TradePlanRow[],
       openRisk: 0,
       exposure: [] as PlanExposure[],
     })),
     apiFetch<ForexSettings>("/api/v1/me/forex-settings").catch(() => null),
+    // Which plans already have a journal entry (powers "Journaled ✓" vs the button).
+    apiFetch<{ tradePlanId: string | null }[]>("/api/v1/journal").catch(() => []),
   ]);
+  const journaledPlanIds = journalEntries
+    .map((e) => e.tradePlanId)
+    .filter((id): id is string => id != null);
 
   // Prefill from the Trade Calculator's "Save as Trade Plan" handoff.
   const s = (k: string) => {
@@ -45,6 +50,7 @@ export default async function PlannerPage({
         initialPlans={plansRes.plans}
         openRisk={plansRes.openRisk}
         exposure={plansRes.exposure}
+        journaledPlanIds={journaledPlanIds}
         accountCurrency={settings?.accountCurrency ?? "USD"}
         defaults={{
           balance: settings ? String(Number(settings.defaultAccountBalance)) : "2000",

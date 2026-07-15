@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { TradeCalculator, type TradeCalculatorDefaults } from "./trade-calculator";
+import {
+  TradeCalculator,
+  type TradeCalculatorDefaults,
+  type TradeCalculatorInitial,
+} from "./trade-calculator";
 import { PipCalculator } from "./pip-calculator";
 import { PositionSizeCalculator } from "./position-size-calculator";
 import { MarginCalculator } from "./margin-calculator";
@@ -20,7 +24,13 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 /** The calculator page family: the full trade calculator plus focused tools. */
-export function CalculatorTabs({ defaults }: { defaults?: TradeCalculatorDefaults }) {
+export function CalculatorTabs({
+  defaults,
+  initial,
+}: {
+  defaults?: TradeCalculatorDefaults;
+  initial?: TradeCalculatorInitial;
+}) {
   const [tab, setTab] = useState<TabId>("trade");
 
   return (
@@ -43,7 +53,7 @@ export function CalculatorTabs({ defaults }: { defaults?: TradeCalculatorDefault
         ))}
       </div>
 
-      {tab === "trade" && <TradeCalculator defaults={defaults} saveHref="/planner" />}
+      {tab === "trade" && <TradeCalculator defaults={defaults} initial={initial} saveHref="/planner" />}
       {tab === "pip" && <PipCalculator />}
       {tab === "position" && <PositionSizeCalculator />}
       {tab === "margin" && <MarginCalculator />}

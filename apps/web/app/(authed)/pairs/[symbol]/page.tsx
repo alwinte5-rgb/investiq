@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { directionExplanations, explainRate, findPair } from "@investiq/shared";
+import { atrMoneyForUnits, directionExplanations, explainRate, findPair } from "@investiq/shared";
 import { apiFetch } from "@/lib/api";
 import { PairEmbeds } from "@/components/forex/pair-embeds";
 import { PairChart } from "@/components/forex/pair-chart";
@@ -15,10 +15,39 @@ interface PairEvent {
   eventTime: string;
 }
 
+interface PairInsight {
+  rate: number | null;
+  rateAsOf: string | null;
+  atrPips: number | null;
+}
+
+interface ForexSettings {
+  accountCurrency: string;
+}
+
 /** Currency-pair profile: educational reference + embedded calculators. */
 export default async function PairDetailPage({ params }: { params: { symbol: string } }) {
   const info = findPair(params.symbol.replace(/-/g, "/"));
   if (!info) notFound();
+
+  // Typical daily range from the ATR the suggestion engine already computes.
+  const [insight, settings] = await Promise.all([
+    apiFetch<PairInsight>(`/api/v1/pairs/${info.symbol.replace("/", "-")}/insight?direction=BUY`).catch(
+      () => null,
+    ),
+    apiFetch<ForexSettings>("/api/v1/me/forex-settings").catch(() => null),
+  ]);
+  const accountCurrency = settings?.accountCurrency ?? "USD";
+  const atrMoney =
+    insight?.atrPips != null
+      ? atrMoneyForUnits({
+          pairSymbol: info.symbol,
+          atrPips: insight.atrPips,
+          units: 1000,
+          accountCurrency,
+          rates: insight.rate != null ? { [info.symbol]: insight.rate } : {},
+        })
+      : null;
 
   // This pair's scheduled releases (both currencies), best-effort.
   const upcoming = await apiFetch<{ events: PairEvent[] }>(
@@ -73,9 +102,48 @@ export default async function PairDetailPage({ params }: { params: { symbol: str
       <section className="space-y-2 rounded-lg border bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
         <p>{info.description}</p>
         <p className="text-slate-500">
-          Example: {explainRate(info, info.pipSize === 0.01 ? 145.25 : 1.085)}
+          Example: {explainRate(info, insight?.rate ?? (info.pipSize === 0.01 ? 145.25 : 1.085))}
         </p>
       </section>
+
+      {insight?.atrPips != null && (
+        <section className="rounded-lg border p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-sm font-semibold text-slate-800">Typical daily range</h2>
+            {insight.rateAsOf && (
+              <span className="text-[11px] text-slate-400">
+                Updated {new Date(insight.rateAsOf).toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+          <div className="mt-2 flex flex-wrap items-baseline gap-6">
+            <div>
+              <div className="text-2xl font-bold tabular-nums text-slate-900">
+                ≈ {Math.round(insight.atrPips)} pips
+              </div>
+              <div className="text-[11px] text-slate-400">14-day average true range, daily candles</div>
+            </div>
+            {atrMoney && (
+              <div>
+                <div className="text-2xl font-bold tabular-nums text-slate-900">
+                  ≈{" "}
+                  {new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: atrMoney.currency,
+                    maximumFractionDigits: 2,
+                  }).format(atrMoney.amount)}
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  movement at 1,000 units{atrMoney.converted ? "" : ` (in ${atrMoney.currency})`}
+                </div>
+              </div>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            This is a recent average range, not a prediction of today&apos;s movement.
+          </p>
+        </section>
+      )}
 
       <section className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border p-4">
@@ -108,6 +176,10 @@ export default async function PairDetailPage({ params }: { params: { symbol: str
             ))}
           </ul>
           <p className="mt-1 text-[11px] text-slate-400">Economies: {info.economies.join(", ")}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Central-bank decisions can affect interest rates, currency demand, and volatility in
+            this pair.
+          </p>
         </div>
         <div className="rounded-lg border p-4">
           <h2 className="text-sm font-semibold text-slate-800">Events traders watch</h2>

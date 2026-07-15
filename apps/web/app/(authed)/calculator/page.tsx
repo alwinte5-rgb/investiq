@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import { CalculatorTabs } from "@/components/forex/calculator-tabs";
-import type { TradeCalculatorDefaults } from "@/components/forex/trade-calculator";
+import type { TradeCalculatorDefaults, TradeCalculatorInitial } from "@/components/forex/trade-calculator";
 
 export const dynamic = "force-dynamic"; // personalized — never statically cached
 
@@ -11,9 +11,14 @@ interface ForexSettings {
   maximumRiskPercentage: number;
   defaultLeverage: number;
   preferredRewardRatio: number;
+  beginnerMode: boolean;
 }
 
-export default async function CalculatorPage() {
+export default async function CalculatorPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   // Best-effort: the calculator works with built-in defaults if settings fail.
   const settings = await apiFetch<ForexSettings>("/api/v1/me/forex-settings").catch(() => null);
   const defaults: TradeCalculatorDefaults | undefined = settings
@@ -24,6 +29,24 @@ export default async function CalculatorPage() {
         maxRiskPct: Number(settings.maximumRiskPercentage),
         leverage: Number(settings.defaultLeverage),
         preferredRewardRatio: Number(settings.preferredRewardRatio),
+        beginnerMode: Boolean(settings.beginnerMode),
+      }
+    : undefined;
+
+  // Prefill from the dashboard quick calculator (query-param handoff).
+  const s = (k: string) => {
+    const v = searchParams?.[k];
+    return typeof v === "string" && v !== "" ? v : undefined;
+  };
+  const initial: TradeCalculatorInitial | undefined = s("pair")
+    ? {
+        pair: s("pair"),
+        direction: s("direction") === "SELL" ? "SELL" : "BUY",
+        entry: s("entry"),
+        stopPips: s("stopPips"),
+        riskPct: s("risk"),
+        balance: s("balance"),
+        leverage: s("leverage"),
       }
     : undefined;
 
@@ -36,7 +59,7 @@ export default async function CalculatorPage() {
           checks compare each setup against your own risk settings.
         </p>
       </div>
-      <CalculatorTabs defaults={defaults} />
+      <CalculatorTabs defaults={defaults} initial={initial} />
     </div>
   );
 }

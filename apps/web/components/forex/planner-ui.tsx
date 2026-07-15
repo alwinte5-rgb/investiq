@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { MARKET_SESSIONS } from "@investiq/shared/forex";
 import {
   checkPlanAction,
@@ -56,6 +57,7 @@ export function PlannerUI({
   initialPlans,
   openRisk,
   exposure = [],
+  journaledPlanIds = [],
   accountCurrency,
   defaults,
   prefill,
@@ -63,11 +65,14 @@ export function PlannerUI({
   initialPlans: TradePlanRow[];
   openRisk: number;
   exposure?: PlanExposure[];
+  /** Plans that already have a journal entry ("Journal This Trade" state). */
+  journaledPlanIds?: string[];
   accountCurrency: string;
   defaults: { balance: string; riskPct: string; leverage: string };
   prefill: PlannerPrefill;
 }) {
   const exposureByPlan = new Map(exposure.map((x) => [x.planId, x.events]));
+  const journaled = new Set(journaledPlanIds);
   const [plans, setPlans] = useState(initialPlans);
   const [pair, setPair] = useState(prefill.pair ?? "EUR/USD");
   const [direction, setDirection] = useState<"BUY" | "SELL">(prefill.direction ?? "BUY");
@@ -343,6 +348,19 @@ export function PlannerUI({
                     </span>
                   )}
                   <span className="ml-auto flex items-center gap-1.5">
+                    {(p.status === "CLOSED" || p.status === "ENTERED") &&
+                      (journaled.has(p.id) ? (
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-800">
+                          Journaled ✓
+                        </span>
+                      ) : (
+                        <Link
+                          href={`/journal?fromPlan=${p.id}`}
+                          className="rounded-md bg-blue-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-700"
+                        >
+                          Journal This Trade
+                        </Link>
+                      ))}
                     <select
                       value={p.status}
                       aria-label={`Change status of ${p.pair.symbol} plan`}

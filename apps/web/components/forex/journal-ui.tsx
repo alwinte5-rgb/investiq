@@ -14,11 +14,28 @@ import {
 import { DirectionToggle, Field, NumberInput, PairSelect, Select, money, num } from "./calc-ui";
 
 /**
- * Journal — planned-vs-actual entry form, entry list, and process-first
- * analytics with minimum-sample-size messaging. All stats come from the API.
+ * Journal — ACTUALS-FIRST entry form (what actually happened is the default
+ * workflow; planned values and context live behind expanders), entry list, and
+ * process-first analytics with minimum-sample-size messaging. All stats come
+ * from the API.
  */
 
 const EMOTIONS = ["Calm", "Confident", "Anxious", "FOMO", "Frustrated", "Rushed", "Neutral"];
+
+/** Prefill handed over from a closed trade plan ("Journal This Trade"). */
+export interface JournalPrefill {
+  tradePlanId: string;
+  pairSymbol: string;
+  direction: "BUY" | "SELL";
+  plannedEntry?: string;
+  plannedStop?: string;
+  plannedTarget?: string;
+  plannedUnits?: string;
+  plannedRisk?: string;
+  strategyTag?: string;
+  session?: string;
+  notes?: string;
+}
 
 function numOrNull(v: string): number | null {
   const n = Number(v);
@@ -69,28 +86,45 @@ function SegmentTable({ title, rows }: { title: string; rows: SegmentStats[] }) 
   );
 }
 
+/** datetime-local input value from an ISO string / now. */
+function toLocalInput(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function JournalUI({
   initialEntries,
   initialAnalytics,
   accountCurrency,
+  prefill,
 }: {
   initialEntries: JournalRow[];
   initialAnalytics: JournalAnalytics | null;
   accountCurrency: string;
+  prefill?: JournalPrefill;
 }) {
   const [entries, setEntries] = useState(initialEntries);
   const [analytics, setAnalytics] = useState(initialAnalytics);
-  const [showForm, setShowForm] = useState(initialEntries.length === 0);
+  const [showForm, setShowForm] = useState(initialEntries.length === 0 || prefill != null);
 
-  const [pair, setPair] = useState("EUR/USD");
-  const [direction, setDirection] = useState<"BUY" | "SELL">("BUY");
-  const [form, setForm] = useState<Record<string, string>>({});
+  const [pair, setPair] = useState(prefill?.pairSymbol ?? "EUR/USD");
+  const [direction, setDirection] = useState<"BUY" | "SELL">(prefill?.direction ?? "BUY");
+  const [form, setForm] = useState<Record<string, string>>(() => ({
+    plannedEntry: prefill?.plannedEntry ?? "",
+    plannedStop: prefill?.plannedStop ?? "",
+    plannedTarget: prefill?.plannedTarget ?? "",
+    plannedUnits: prefill?.plannedUnits ?? "",
+    plannedRisk: prefill?.plannedRisk ?? "",
+  }));
+  const [openedAt, setOpenedAt] = useState("");
+  const [closedAt, setClosedAt] = useState(() => toLocalInput(new Date()));
   const [rulesFollowed, setRulesFollowed] = useState<string>("");
-  const [session, setSession] = useState("");
-  const [strategyTag, setStrategyTag] = useState("");
+  const [session, setSession] = useState(prefill?.session ?? "");
+  const [strategyTag, setStrategyTag] = useState(prefill?.strategyTag ?? "");
   const [emotionalState, setEmotionalState] = useState("");
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState(prefill?.notes ?? "");
   const [lessons, setLessons] = useState("");
+  const [showPlanned, setShowPlanned] = useState(prefill != null);
 
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -102,27 +136,31 @@ export function JournalUI({
     const input: JournalInput = {
       pairSymbol: pair,
       direction,
-      plannedEntry: num(f("plannedEntry")),
+      tradePlanId: prefill?.tradePlanId,
+      // Actuals — the primary workflow.
       actualEntry: num(f("actualEntry")),
-      plannedExit: num(f("plannedExit")),
       actualExit: num(f("actualExit")),
-      plannedStop: num(f("plannedStop")),
       actualStop: num(f("actualStop")),
-      plannedTarget: num(f("plannedTarget")),
-      actualTarget: num(f("actualTarget")),
-      plannedUnits: num(f("plannedUnits")),
       actualUnits: num(f("actualUnits")),
-      plannedRisk: num(f("plannedRisk")),
       actualRisk: num(f("actualRisk")),
       profitLossAmount: numOrNull(f("profitLossAmount")),
       profitLossPips: numOrNull(f("profitLossPips")),
+      openedAt: openedAt ? new Date(openedAt).toISOString() : null,
+      closedAt: closedAt ? new Date(closedAt).toISOString() : null,
+      // Planned — from the expander (or the plan prefill).
+      plannedEntry: num(f("plannedEntry")),
+      plannedExit: num(f("plannedExit")),
+      plannedStop: num(f("plannedStop")),
+      plannedTarget: num(f("plannedTarget")),
+      plannedUnits: num(f("plannedUnits")),
+      plannedRisk: num(f("plannedRisk")),
+      // Context.
       session: session || undefined,
       strategyTag: strategyTag || undefined,
       rulesFollowed: rulesFollowed === "" ? null : rulesFollowed === "yes",
       emotionalState: emotionalState || undefined,
       notes: notes || undefined,
       lessons: lessons || undefined,
-      closedAt: numOrNull(f("profitLossAmount")) != null ? new Date().toISOString() : null,
     };
     setError(null);
     startTransition(async () => {
@@ -151,12 +189,15 @@ export function JournalUI({
     });
   };
 
-  const pricePairs: [string, string][] = [
-    ["Entry", "Entry"],
-    ["Exit", "Exit"],
-    ["Stop", "Stop"],
-    ["Target", "Target"],
-  ];
+  const dateInput = (value: string, onChange: (v: string) => void, aria: string) => (
+    <input
+      type="datetime-local"
+      value={value}
+      aria-label={aria}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full rounded-md border px-3 py-2 text-sm"
+    />
+  );
 
   return (
     <div className="space-y-8">
@@ -219,7 +260,7 @@ export function JournalUI({
         </section>
       )}
 
-      {/* ── New entry ── */}
+      {/* ── New entry (actuals-first) ── */}
       <section className="space-y-3 rounded-lg border p-4">
         <button
           type="button"
@@ -228,6 +269,12 @@ export function JournalUI({
         >
           {showForm ? "▾" : "▸"} Record a trade
         </button>
+        {prefill && (
+          <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
+            Journaling your {prefill.pairSymbol} {prefill.direction === "BUY" ? "buy" : "sell"} plan — planned
+            values are prefilled below. Enter what actually happened.
+          </p>
+        )}
         {showForm && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -237,45 +284,21 @@ export function JournalUI({
               <Field label="Direction">
                 <DirectionToggle value={direction} onChange={setDirection} />
               </Field>
-              <Field label="Rules followed?">
-                <Select
-                  value={rulesFollowed}
-                  onChange={setRulesFollowed}
-                  ariaLabel="Rules followed"
-                  options={[
-                    { value: "", label: "—" },
-                    { value: "yes", label: "Yes" },
-                    { value: "no", label: "No" },
-                  ]}
-                />
-              </Field>
             </div>
 
+            {/* What actually happened — the default workflow. */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {pricePairs.map(([label]) => (
-                <div key={label} className="space-y-2">
-                  <Field label={`Planned ${label.toLowerCase()}`}>
-                    <NumberInput value={f(`planned${label}`)} onChange={setF(`planned${label}`)} ariaLabel={`Planned ${label}`} />
-                  </Field>
-                  <Field label={`Actual ${label.toLowerCase()}`}>
-                    <NumberInput value={f(`actual${label}`)} onChange={setF(`actual${label}`)} ariaLabel={`Actual ${label}`} />
-                  </Field>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Field label="Planned units">
-                <NumberInput value={f("plannedUnits")} onChange={setF("plannedUnits")} ariaLabel="Planned units" />
+              <Field label="Actual entry">
+                <NumberInput value={f("actualEntry")} onChange={setF("actualEntry")} ariaLabel="Actual entry" />
               </Field>
-              <Field label="Actual units">
+              <Field label="Actual exit">
+                <NumberInput value={f("actualExit")} onChange={setF("actualExit")} ariaLabel="Actual exit" />
+              </Field>
+              <Field label="Actual stop">
+                <NumberInput value={f("actualStop")} onChange={setF("actualStop")} ariaLabel="Actual stop" />
+              </Field>
+              <Field label="Position size (units)">
                 <NumberInput value={f("actualUnits")} onChange={setF("actualUnits")} ariaLabel="Actual units" />
-              </Field>
-              <Field label={`Planned risk (${accountCurrency})`}>
-                <NumberInput value={f("plannedRisk")} onChange={setF("plannedRisk")} ariaLabel="Planned risk" />
-              </Field>
-              <Field label={`Actual risk (${accountCurrency})`}>
-                <NumberInput value={f("actualRisk")} onChange={setF("actualRisk")} ariaLabel="Actual risk" />
               </Field>
               <Field label={`P/L (${accountCurrency})`} hint="Negative for a loss">
                 <input
@@ -299,30 +322,8 @@ export function JournalUI({
                   className="w-full rounded-md border px-3 py-2 text-sm tabular-nums"
                 />
               </Field>
-              <Field label="Session">
-                <Select
-                  value={session}
-                  onChange={setSession}
-                  ariaLabel="Session"
-                  options={[{ value: "", label: "—" }, ...MARKET_SESSIONS.map((s) => ({ value: s.name, label: s.name }))]}
-                />
-              </Field>
-              <Field label="Strategy tag">
-                <input
-                  value={strategyTag}
-                  onChange={(e) => setStrategyTag(e.target.value)}
-                  maxLength={60}
-                  className="w-full rounded-md border px-3 py-2 text-sm"
-                />
-              </Field>
-              <Field label="Emotional state">
-                <Select
-                  value={emotionalState}
-                  onChange={setEmotionalState}
-                  ariaLabel="Emotional state"
-                  options={[{ value: "", label: "—" }, ...EMOTIONS.map((e) => ({ value: e, label: e }))]}
-                />
-              </Field>
+              <Field label="Opened">{dateInput(openedAt, setOpenedAt, "Date opened")}</Field>
+              <Field label="Closed">{dateInput(closedAt, setClosedAt, "Date closed")}</Field>
             </div>
 
             <Field label="Notes">
@@ -343,6 +344,84 @@ export function JournalUI({
                 className="w-full rounded-md border px-3 py-2 text-sm"
               />
             </Field>
+
+            {/* Planned values — expander (prefilled when journaling a plan). */}
+            <details
+              open={showPlanned}
+              onToggle={(e) => setShowPlanned((e.target as HTMLDetailsElement).open)}
+              className="rounded-md border p-3"
+            >
+              <summary className="cursor-pointer text-sm font-medium text-slate-700">Add planned values</summary>
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <Field label="Planned entry">
+                  <NumberInput value={f("plannedEntry")} onChange={setF("plannedEntry")} ariaLabel="Planned entry" />
+                </Field>
+                <Field label="Planned exit">
+                  <NumberInput value={f("plannedExit")} onChange={setF("plannedExit")} ariaLabel="Planned exit" />
+                </Field>
+                <Field label="Planned stop">
+                  <NumberInput value={f("plannedStop")} onChange={setF("plannedStop")} ariaLabel="Planned stop" />
+                </Field>
+                <Field label="Planned target">
+                  <NumberInput value={f("plannedTarget")} onChange={setF("plannedTarget")} ariaLabel="Planned target" />
+                </Field>
+                <Field label="Planned units">
+                  <NumberInput value={f("plannedUnits")} onChange={setF("plannedUnits")} ariaLabel="Planned units" />
+                </Field>
+                <Field label={`Planned risk (${accountCurrency})`}>
+                  <NumberInput value={f("plannedRisk")} onChange={setF("plannedRisk")} ariaLabel="Planned risk" />
+                </Field>
+                <Field label={`Actual risk (${accountCurrency})`} hint="For the R-multiple">
+                  <NumberInput value={f("actualRisk")} onChange={setF("actualRisk")} ariaLabel="Actual risk" />
+                </Field>
+              </div>
+            </details>
+
+            {/* Context — expander. */}
+            <details className="rounded-md border p-3">
+              <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                Add context (session, strategy, discipline)
+              </summary>
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <Field label="Session">
+                  <Select
+                    value={session}
+                    onChange={setSession}
+                    ariaLabel="Session"
+                    options={[{ value: "", label: "—" }, ...MARKET_SESSIONS.map((s) => ({ value: s.name, label: s.name }))]}
+                  />
+                </Field>
+                <Field label="Strategy tag">
+                  <input
+                    value={strategyTag}
+                    onChange={(e) => setStrategyTag(e.target.value)}
+                    maxLength={60}
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                  />
+                </Field>
+                <Field label="Rules followed?">
+                  <Select
+                    value={rulesFollowed}
+                    onChange={setRulesFollowed}
+                    ariaLabel="Rules followed"
+                    options={[
+                      { value: "", label: "—" },
+                      { value: "yes", label: "Yes" },
+                      { value: "no", label: "No" },
+                    ]}
+                  />
+                </Field>
+                <Field label="Emotional state">
+                  <Select
+                    value={emotionalState}
+                    onChange={setEmotionalState}
+                    ariaLabel="Emotional state"
+                    options={[{ value: "", label: "—" }, ...EMOTIONS.map((e) => ({ value: e, label: e }))]}
+                  />
+                </Field>
+              </div>
+            </details>
+
             <p className="text-[11px] text-slate-400">Before/after screenshots are coming soon.</p>
 
             {error && (
@@ -388,6 +467,11 @@ export function JournalUI({
                         {e.rMultiple != null && ` · ${Number(e.rMultiple)}R`}
                       </span>
                     )}
+                    {e.tradePlanId && (
+                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-800">
+                        From plan
+                      </span>
+                    )}
                     {e.rulesFollowed != null && (
                       <span className="text-xs text-slate-400">
                         {e.rulesFollowed ? "Followed plan" : "Broke plan"}
@@ -406,7 +490,10 @@ export function JournalUI({
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600 sm:grid-cols-4">
                     <div>
-                      Entry: <span className="tabular-nums">{e.actualEntry ? Number(e.actualEntry) : e.plannedEntry ? `${Number(e.plannedEntry)} (planned)` : "—"}</span>
+                      Entry:{" "}
+                      <span className="tabular-nums">
+                        {e.actualEntry ? Number(e.actualEntry) : e.plannedEntry ? `${Number(e.plannedEntry)} (planned)` : "—"}
+                      </span>
                     </div>
                     <div>
                       Exit: <span className="tabular-nums">{e.actualExit ? Number(e.actualExit) : "—"}</span>

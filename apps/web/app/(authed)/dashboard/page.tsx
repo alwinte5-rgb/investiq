@@ -2,7 +2,7 @@ import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
 import { apiFetch } from "@/lib/api";
 import { SessionsUI } from "@/components/forex/sessions-ui";
-import { TradeCalculator } from "@/components/forex/trade-calculator";
+import { QuickCalculator } from "@/components/forex/quick-calculator";
 import { WatchlistCards, type WatchlistPair } from "@/components/forex/watchlist-cards";
 import type { CalendarEvent } from "@/components/forex/calendar-ui";
 import { DEFAULT_WATCHLIST_SYMBOLS } from "@investiq/shared";
@@ -200,26 +200,16 @@ export default async function DashboardPage() {
         </section>
       )}
 
-      {/* ── Quick calculator ── */}
+      {/* ── Quick calculator (compact pre-trade check; full form is one click away) ── */}
       <section className="space-y-2">
         <h2 className="text-lg font-semibold">Quick calculator</h2>
-        <div className="rounded-lg border p-4">
-          <TradeCalculator
-            compact
-            defaults={
-              settings
-                ? {
-                    accountBalance: balance ?? undefined,
-                    accountCurrency: currency,
-                    defaultRiskPct: defaultRisk ?? undefined,
-                    maxRiskPct: maxRisk ?? undefined,
-                    leverage: Number(settings.defaultLeverage),
-                    preferredRewardRatio: Number(settings.preferredRewardRatio),
-                  }
-                : undefined
-            }
-          />
-        </div>
+        <QuickCalculator
+          balance={balance ?? 1000}
+          currency={currency}
+          defaultRiskPct={defaultRisk ?? 1}
+          leverage={settings ? Number(settings.defaultLeverage) : 50}
+          rates={rates.rates}
+        />
       </section>
 
       {/* ── Watchlist ── */}

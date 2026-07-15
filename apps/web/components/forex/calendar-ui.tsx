@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CURRENCY_PAIRS } from "@investiq/shared/forex";
+import { CURRENCY_PAIRS, groupByLocalDay } from "@investiq/shared/forex";
 
 /** Matches the API's EconomicEvent read model (Decimal→string via JSON). */
 export interface CalendarEvent {
@@ -45,7 +45,8 @@ export function CalendarUI({
   openPlans?: { pairSymbol: string; status: string }[];
 }) {
   const [currency, setCurrency] = useState("");
-  const [impact, setImpact] = useState("");
+  // Default: High + Medium visible, Low hidden (noise). "" = show everything.
+  const [impact, setImpact] = useState("HIGH_MEDIUM");
   const [savedOnly, setSavedOnly] = useState(false);
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
 
@@ -65,11 +66,18 @@ export function CalendarUI({
       initial.filter(
         (e) =>
           (!currency || e.currency === currency) &&
-          (!impact || e.impact === impact) &&
+          (impact === ""
+            ? true
+            : impact === "HIGH_MEDIUM"
+              ? e.impact === "HIGH" || e.impact === "MEDIUM"
+              : e.impact === impact) &&
           (!savedOnly || savedCurrencies.has(e.currency)),
       ),
     [initial, currency, impact, savedOnly, savedCurrencies],
   );
+
+  // Group by the viewer's LOCAL day; empty days simply don't appear.
+  const dayGroups = useMemo(() => groupByLocalDay(events, (e) => e.eventTime), [events]);
 
   /** The user's own saved pairs / open plans touched by an event's currency. */
   const myExposure = (eventCurrency: string) => {
@@ -103,10 +111,11 @@ export function CalendarUI({
             onChange={(e) => setImpact(e.target.value)}
             className="rounded-md border bg-white px-3 py-2 text-sm"
           >
-            <option value="">All</option>
-            <option value="HIGH">High</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="LOW">Low</option>
+            <option value="HIGH_MEDIUM">High + Medium</option>
+            <option value="HIGH">High only</option>
+            <option value="MEDIUM">Medium only</option>
+            <option value="LOW">Low only</option>
+            <option value="">All (include low)</option>
           </select>
         </label>
         {savedPairSymbols.length > 0 && (
@@ -133,48 +142,55 @@ export function CalendarUI({
           )}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-slate-50 text-left text-xs text-slate-500">
-                <th className="px-3 py-2 font-medium">Time</th>
-                <th className="px-3 py-2 font-medium">Currency</th>
-                <th className="px-3 py-2 font-medium">Event</th>
-                <th className="px-3 py-2 font-medium">Impact</th>
-                <th className="px-3 py-2 font-medium">Previous</th>
-                <th className="px-3 py-2 font-medium">Forecast</th>
-                <th className="px-3 py-2 font-medium">Actual</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((e) => (
-                <tr
-                  key={e.id}
-                  onClick={() => setSelected(e)}
-                  className="cursor-pointer border-b last:border-0 hover:bg-blue-50/40"
-                >
-                  <td className="whitespace-nowrap px-3 py-2 tabular-nums text-slate-600">
-                    {new Date(e.eventTime).toLocaleString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </td>
-                  <td className="px-3 py-2 font-medium">{e.currency}</td>
-                  <td className="px-3 py-2">{e.name}</td>
-                  <td className="px-3 py-2">
-                    <span className={`rounded-full border px-2 py-0.5 text-xs ${IMPACT_STYLES[e.impact]}`}>
-                      {e.impact === "HIGH" ? "High" : e.impact === "MEDIUM" ? "Medium" : "Low"}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 tabular-nums text-slate-500">{e.previousValue ?? "—"}</td>
-                  <td className="px-3 py-2 tabular-nums text-slate-500">{e.forecastValue ?? "—"}</td>
-                  <td className="px-3 py-2 tabular-nums font-medium">{e.actualValue ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-4">
+          {dayGroups.map((group) => (
+            <div key={group.key}>
+              <h3 className="sticky top-0 z-10 border-b bg-white py-1.5 text-sm font-semibold text-slate-800">
+                {group.label}
+              </h3>
+              <div className="overflow-x-auto rounded-b-lg border border-t-0">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-slate-50 text-left text-xs text-slate-500">
+                      <th className="px-3 py-2 font-medium">Time</th>
+                      <th className="px-3 py-2 font-medium">Currency</th>
+                      <th className="px-3 py-2 font-medium">Event</th>
+                      <th className="px-3 py-2 font-medium">Impact</th>
+                      <th className="px-3 py-2 font-medium">Previous</th>
+                      <th className="px-3 py-2 font-medium">Forecast</th>
+                      <th className="px-3 py-2 font-medium">Actual</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.items.map((e) => (
+                      <tr
+                        key={e.id}
+                        onClick={() => setSelected(e)}
+                        className="cursor-pointer border-b last:border-0 hover:bg-blue-50/40"
+                      >
+                        <td className="whitespace-nowrap px-3 py-2 tabular-nums text-slate-600">
+                          {new Date(e.eventTime).toLocaleTimeString(undefined, {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                        <td className="px-3 py-2 font-medium">{e.currency}</td>
+                        <td className="px-3 py-2">{e.name}</td>
+                        <td className="px-3 py-2">
+                          <span className={`rounded-full border px-2 py-0.5 text-xs ${IMPACT_STYLES[e.impact]}`}>
+                            {e.impact === "HIGH" ? "High" : e.impact === "MEDIUM" ? "Medium" : "Low"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 tabular-nums text-slate-500">{e.previousValue ?? "—"}</td>
+                        <td className="px-3 py-2 tabular-nums text-slate-500">{e.forecastValue ?? "—"}</td>
+                        <td className="px-3 py-2 tabular-nums font-medium">{e.actualValue ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

@@ -60,6 +60,9 @@ export async function createJournalEntry(userId: string, input: JournalEntryCrea
   if (tradePlanId) {
     const plan = await prisma.tradePlan.findUnique({ where: { id: tradePlanId } });
     assertOwnedBy(userId, plan); // linking someone else's plan is forbidden
+    // One journal entry per plan — "Journal This Trade" must not duplicate.
+    const already = await prisma.journalEntry.findFirst({ where: { tradePlanId }, select: { id: true } });
+    if (already) throw errors.validation("This trade plan has already been journaled.");
   }
   return prisma.journalEntry.create({
     data: {

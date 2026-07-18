@@ -32,6 +32,9 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
           <Link href="/learn" className="hover:underline">
             Learn
           </Link>
+          <Link href="/quant" className="hover:underline">
+            Quant Lab
+          </Link>
           <Link href="/settings" className="ml-auto text-slate-500 hover:underline">
             Settings
           </Link>

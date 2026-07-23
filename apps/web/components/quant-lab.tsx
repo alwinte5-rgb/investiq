@@ -1,9 +1,4 @@
-import { execFile } from "node:child_process";
-import os from "node:os";
-import path from "node:path";
-import { promisify } from "node:util";
-
-const execFileAsync = promisify(execFile);
+import { apiFetch } from "../lib/api";
 
 // ---- data loading (server-only) ----
 
@@ -35,16 +30,16 @@ export type QuantStatus = {
 } | null;
 
 export async function loadQuantStatus(): Promise<QuantStatus> {
-  const labDir = process.env.QUANT_LAB_DIR ?? path.join(os.homedir(), "quant-lab");
   try {
-    const { stdout } = await execFileAsync(
-      path.join(labDir, ".venv", "bin", "python"),
-      [path.join(labDir, "reports", "status.py"), "--json"],
-      { timeout: 20_000 }
+    // ~/quant-lab's own cron pushes its status here every ~15 min via a
+    // secret-authed route (routes/quant-lab.ts) — this just reads the
+    // latest snapshot. No local filesystem access needed at all anymore.
+    const snapshot = await apiFetch<{ data: QuantStatus; updatedAt: string } | null>(
+      "/api/v1/quant-lab/snapshot",
     );
-    return JSON.parse(stdout);
+    return snapshot?.data ?? null;
   } catch {
-    // Lab not present on this machine (e.g. deployed env) — render gracefully.
+    // No snapshot pushed yet, or the API call failed — render gracefully.
     return null;
   }
 }
@@ -71,9 +66,8 @@ export function QuantLabDashboard({ status }: { status: QuantStatus }) {
       <div className="mx-auto max-w-2xl py-12 text-center">
         <h1 className="text-2xl font-semibold">Quant Lab</h1>
         <p className="mt-3 text-sm text-slate-600">
-          The local quant-lab pipeline isn&apos;t reachable from this environment.
-          It lives at <code>~/quant-lab</code> on the development machine — run the
-          web app there to see live pipeline status.
+          No status has been pushed yet from the quant-lab pipeline. It pushes a
+          fresh snapshot every ~15 minutes once running — check back shortly.
         </p>
       </div>
     );

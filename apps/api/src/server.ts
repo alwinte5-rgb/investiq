@@ -37,6 +37,7 @@ import { createForexMarketService } from "./services/forex-market.js";
 import { createAnthropicAdvisor } from "@investiq/ai";
 import { createAdvisorService } from "./services/advisor.js";
 import { advisorRoutes } from "./routes/advisor.js";
+import { quantLabRoutes } from "./routes/quant-lab.js";
 // NOTE (forex refactor): the stock/ETF feature set is DORMANT, not deleted.
 // Its routes (symbols, market, watchlists, connections, analysis, portfolio,
 // reviews, risk, chart, opportunities, paper, discovery, news, cron scan,
@@ -147,6 +148,13 @@ async function main() {
   // Learning (18-lesson forex curriculum) + glossary (forex term tooltips).
   await app.register(async (instance) => learningRoutes(instance, authDeps));
   await app.register(async (instance) => glossaryRoutes(instance, authDeps));
+
+  // Quant Lab bridge: ingest (secret-authed, from ~/quant-lab's own cron) +
+  // read (Clerk-authed, the /quant tab). Ingest stays a no-op 404 until
+  // QUANT_LAB_PUSH_SECRET is configured.
+  await app.register(async (instance) =>
+    quantLabRoutes(instance, { auth: authDeps, pushSecret: env.QUANT_LAB_PUSH_SECRET }),
+  );
 
   // AI Advisor — non-advisory forex education tutor over the user's own data.
   const anthropicKey = env.ANTHROPIC_API_KEY;

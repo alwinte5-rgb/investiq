@@ -81,6 +81,12 @@ const envSchema = z.object({
 
   // --- Optional: push ---
   EXPO_ACCESS_TOKEN: z.string().min(1).optional(),
+
+  // --- Optional: Quant Lab bridge ---
+  // Shared secret a scheduled push from ~/quant-lab's own cron must present
+  // (Bearer <QUANT_LAB_PUSH_SECRET>). Same disabled-by-default-when-unset
+  // pattern as CRON_SECRET — the ingest route 404s until this is configured.
+  QUANT_LAB_PUSH_SECRET: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof envSchema>;

@@ -885,3 +885,14 @@ model ExchangeRate {
   @@unique([baseCurrency, quoteCurrency, provider])
   @@index([timestamp])
 }
+
+// ---------- Quant Lab bridge ----------
+// One row, always id="singleton" — this mirrors ONE external system's
+// (~/quant-lab, a personal research pipeline on one machine) latest status
+// snapshot, not per-user data. Pushed by quant-lab's own cron via a
+// shared-secret route (see routes/quant-lab.ts), read by the /quant tab.
+model QuantLabSnapshot {
+  id        String   @id
+  data      Json
+  updatedAt DateTime @updatedAt
+}

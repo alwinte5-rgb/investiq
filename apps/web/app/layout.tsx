@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ClerkProvider, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { ThemeToggle } from "@/components/theme-toggle";
 import "./globals.css";
 
 // Single ClerkProvider at the root so the header can reflect auth state. The
@@ -22,13 +23,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   const page = (
     <html lang="en">
+        <head>
+          {/* Set the theme on <html> BEFORE first paint to avoid a flash of
+              the wrong theme. Defaults to dark (owner preference); honors a
+              saved choice from the toggle. */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html:
+                "(function(){try{var t=localStorage.getItem('theme');if(t!=='light'){document.documentElement.classList.add('dark');}}catch(e){document.documentElement.classList.add('dark');}})();",
+            }}
+          />
+        </head>
         <body>
-          <header className="flex items-center justify-between border-b px-6 py-3">
+          <header className="flex items-center justify-between border-b px-6 py-3 dark:border-neutral-800">
             <Link href="/" className="font-semibold tracking-tight">
               Invest<span className="text-blue-600">IQ</span>{" "}
               <span className="text-slate-400 font-normal">Forex</span>
             </Link>
             <nav className="flex items-center gap-4 text-sm">
+              <ThemeToggle />
               <Link href="/pricing" className="hover:underline">
                 Pricing
               </Link>

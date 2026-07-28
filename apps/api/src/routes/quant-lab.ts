@@ -37,6 +37,12 @@ const snapshotSchema = z
     gauntlet_verdicts: z.array(z.record(z.unknown())),
     recent_retests: z.array(z.record(z.unknown())),
     incubator: z.array(z.record(z.unknown())),
+    // Parity with the local dashboard — all optional so an older quant-lab
+    // push (missing these) still validates. Nested shapes stay loose.
+    bots: z.array(z.record(z.unknown())).optional(),
+    mining: z.record(z.unknown()).optional(),
+    improvements: z.record(z.unknown()).optional(),
+    data_health: z.record(z.unknown()).optional(),
   })
   .strict();
 

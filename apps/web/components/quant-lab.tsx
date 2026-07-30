@@ -53,10 +53,12 @@ type Trade = {
   pnl: number | null;
 };
 type Position = {
+  symbol?: string | null;
   side: "long" | "short";
   entry: number | null;
   stop: number | null;
   opened: string | null;
+  units?: number | null;
 };
 type Incubating = {
   strategy: string;
@@ -67,7 +69,11 @@ type Incubating = {
   closed_trades?: number;
   in_position: boolean;
   running?: boolean;
+  // A bot can now hold several positions at once (a basket / pyramided bot);
+  // `position` is kept as a legacy first-element mirror for older snapshots.
+  positions?: Position[];
   position?: Position | null;
+  per_symbol?: Record<string, { wins: number; losses: number }>;
   recent_trades?: Trade[];
 };
 
@@ -222,27 +228,41 @@ export function QuantLabDashboard({ status }: { status: QuantStatus }) {
                   </span>
                 </div>
 
-                {/* Current open position */}
-                <div className="mt-2 text-sm">
-                  {bot.position ? (
-                    <span className="inline-flex items-center gap-2">
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-xs font-medium ${
-                          bot.position.side === "long"
-                            ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300"
-                            : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                        }`}
-                      >
-                        {bot.position.side.toUpperCase()}
+                {/* Current open position(s) — a bot may hold several at once */}
+                <div className="mt-2 space-y-1 text-sm">
+                  {(() => {
+                    const openList =
+                      bot.positions && bot.positions.length > 0
+                        ? bot.positions
+                        : bot.position
+                          ? [bot.position]
+                          : [];
+                    if (openList.length === 0) {
+                      return (
+                        <span className="text-slate-400 dark:text-neutral-500">
+                          flat — waiting for a signal
+                        </span>
+                      );
+                    }
+                    return openList.map((p, i) => (
+                      <span key={i} className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-xs font-medium ${
+                            p.side === "long"
+                              ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300"
+                              : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                          }`}
+                        >
+                          {p.symbol ? `${p.symbol} ` : ""}
+                          {p.side.toUpperCase()}
+                        </span>
+                        <span className="tabular-nums text-slate-600 dark:text-neutral-300">
+                          entry {p.entry ?? "—"} · stop {p.stop?.toFixed?.(2) ?? p.stop ?? "—"} ·
+                          opened {fmtTime(p.opened)}
+                        </span>
                       </span>
-                      <span className="tabular-nums text-slate-600 dark:text-neutral-300">
-                        entry {bot.position.entry ?? "—"} · stop {bot.position.stop?.toFixed?.(2) ?? bot.position.stop ?? "—"} ·
-                        opened {fmtTime(bot.position.opened)}
-                      </span>
-                    </span>
-                  ) : (
-                    <span className="text-slate-400 dark:text-neutral-500">flat — waiting for a signal</span>
-                  )}
+                    ));
+                  })()}
                 </div>
 
                 {/* Recent trades */}

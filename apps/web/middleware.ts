@@ -19,13 +19,16 @@ const isProtectedRoute = createRouteMatcher([
   "/learn(.*)",
   "/admin(.*)",
   "/settings(.*)",
-  // Legacy stock-era routes (now redirect stubs) stay protected.
-  "/portfolio(.*)",
+  // New trading-command pages (Phase D of the personal-dashboard rebuild).
+  "/bots(.*)",
+  "/options(.*)",
+  "/futures(.*)",
+  "/forex(.*)",
+  "/crypto(.*)",
+  "/ideas(.*)",
   "/research(.*)",
-  "/opportunities(.*)",
-  "/paper(.*)",
-  "/reviews(.*)",
-  "/watchlists(.*)",
+  "/alpaca(.*)",
+  "/quant(.*)",
 ]);
 
 // TEMPORARY guest mode: bypass Clerk middleware ENTIRELY. Running

@@ -38,11 +38,10 @@ import { createAnthropicAdvisor } from "@investiq/ai";
 import { createAdvisorService } from "./services/advisor.js";
 import { advisorRoutes } from "./routes/advisor.js";
 import { quantLabRoutes } from "./routes/quant-lab.js";
-// NOTE (forex refactor): the stock/ETF feature set is DORMANT, not deleted.
-// Its routes (symbols, market, watchlists, connections, analysis, portfolio,
-// reviews, risk, chart, opportunities, paper, discovery, news, cron scan,
-// macro, filings, scorecard) are no longer registered; the files, services,
-// and DB tables remain in the tree for archive/reference.
+import { preferencesRoutes } from "./routes/preferences.js";
+// NOTE (personal-dashboard refactor 2026-07): the stock-era SaaS feature set
+// has been DELETED from the tree (git history is the archive). Its DB tables
+// remain in schema.prisma as dormant — dropping tables is risk with no reward.
 
 /**
  * InvestIQ API. Boots with FAIL-FAST env validation. Every protected route
@@ -148,6 +147,7 @@ async function main() {
   // Learning (18-lesson forex curriculum) + glossary (forex term tooltips).
   await app.register(async (instance) => learningRoutes(instance, authDeps));
   await app.register(async (instance) => glossaryRoutes(instance, authDeps));
+  await app.register(async (instance) => preferencesRoutes(instance, { auth: authDeps }));
 
   // Quant Lab bridge: ingest (secret-authed, from ~/quant-lab's own cron) +
   // read (Clerk-authed, the /quant tab). Ingest stays a no-op 404 until

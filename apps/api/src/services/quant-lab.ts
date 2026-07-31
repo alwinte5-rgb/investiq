@@ -16,3 +16,39 @@ export async function getQuantSnapshot(): Promise<{ data: unknown; updatedAt: Da
   const row = await prisma.quantLabSnapshot.findUnique({ where: { id: SNAPSHOT_ID } });
   return row ? { data: row.data, updatedAt: row.updatedAt } : null;
 }
+
+// ---- per-bot controls (pull-based: the Mac applies what the web stores) ----
+
+export interface BotControlPatch {
+  riskPct?: number | null;
+  maxExposure?: number | null;
+  paperEquity?: number | null;
+  stopPct?: number | null;
+  takeProfit?: boolean | null;
+  desiredStatus?: string | null;
+}
+
+export function listBotControls() {
+  return prisma.botControl.findMany({ orderBy: { botName: "asc" } });
+}
+
+export function upsertBotControl(botName: string, patch: BotControlPatch) {
+  // A new desired value invalidates the previous "applied" stamp — the UI
+  // reads appliedAt == null as "pending on the Mac".
+  return prisma.botControl.upsert({
+    where: { botName },
+    create: { botName, ...patch },
+    update: { ...patch, appliedAt: null },
+  });
+}
+
+/** Mark rows as applied — called by quant-lab's sync after it writes the
+ * overrides and restarts the affected loops. */
+export async function markControlsApplied(botNames: string[]): Promise<number> {
+  if (!botNames.length) return 0;
+  const { count } = await prisma.botControl.updateMany({
+    where: { botName: { in: botNames } },
+    data: { appliedAt: new Date() },
+  });
+  return count;
+}

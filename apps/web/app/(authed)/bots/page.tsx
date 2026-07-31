@@ -1,5 +1,7 @@
+import { apiFetch } from "@/lib/api";
 import { loadQuantStatus } from "@/components/trading/load-status";
 import { OpenPositionsTable, TradesFeed } from "@/components/trading/panels";
+import { BotControls, type BotControl } from "@/components/trading/bot-controls";
 import { assetClassOf, type Bot, type Incubating } from "@/components/trading/types";
 import { ClassBadge, EmptyState, Panel, Pill, Pnl, fmtTime } from "@/components/trading/ui";
 
@@ -9,7 +11,15 @@ export const dynamic = "force-dynamic";
  * positions, recent trades, retest verdict, caveats. The per-bot limit
  * controls attach here (Phase E). */
 
-function BotCard({ bot, paper }: { bot: Bot; paper?: Incubating }) {
+function BotCard({
+  bot,
+  paper,
+  control,
+}: {
+  bot: Bot;
+  paper?: Incubating;
+  control?: BotControl;
+}) {
   const symbols = bot.symbols?.length ? bot.symbols : [bot.symbol];
   return (
     <Panel>
@@ -85,14 +95,22 @@ function BotCard({ bot, paper }: { bot: Bot; paper?: Incubating }) {
           </ul>
         </details>
       ) : null}
+
+      <BotControls botName={bot.name} initial={control} benched={bot.benched} />
     </Panel>
   );
 }
 
 export default async function BotsPage() {
-  const status = await loadQuantStatus();
+  const [status, controls] = await Promise.all([
+    loadQuantStatus(),
+    apiFetch<{ data: BotControl[] }>("/api/v1/quant-lab/controls")
+      .then((r) => r.data)
+      .catch(() => [] as BotControl[]),
+  ]);
   const bots = status?.bots ?? [];
   const paperByName = new Map((status?.incubator ?? []).map((b) => [b.strategy, b]));
+  const controlByName = new Map(controls.map((c) => [c.botName, c]));
 
   const active = bots.filter((b) => !b.benched);
   const benched = bots.filter((b) => b.benched);
@@ -115,7 +133,12 @@ export default async function BotsPage() {
 
       <div className="grid gap-4 xl:grid-cols-2">
         {active.map((bot) => (
-          <BotCard key={bot.name} bot={bot} paper={paperByName.get(bot.name)} />
+          <BotCard
+            key={bot.name}
+            bot={bot}
+            paper={paperByName.get(bot.name)}
+            control={controlByName.get(bot.name)}
+          />
         ))}
       </div>
 
@@ -126,7 +149,12 @@ export default async function BotsPage() {
           </summary>
           <div className="mt-3 grid gap-4 xl:grid-cols-2">
             {benched.map((bot) => (
-              <BotCard key={bot.name} bot={bot} paper={paperByName.get(bot.name)} />
+              <BotCard
+            key={bot.name}
+            bot={bot}
+            paper={paperByName.get(bot.name)}
+            control={controlByName.get(bot.name)}
+          />
             ))}
           </div>
         </details>

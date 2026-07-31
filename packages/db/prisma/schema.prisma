@@ -896,3 +896,19 @@ model QuantLabSnapshot {
   data      Json
   updatedAt DateTime @updatedAt
 }
+
+/// Desired per-bot limits set from the dashboard. Railway can't reach the Mac,
+/// so control is PULL-based: the web writes desired values here, quant-lab's
+/// sync_controls cron pulls them, applies them to bots/<name>/overrides.json,
+/// and stamps appliedAt. The UI shows desired-vs-applied so latency is visible.
+model BotControl {
+  botName       String    @id
+  riskPct       Float? // fraction of equity risked per trade (0.0025–0.03)
+  maxExposure   Float? // max fraction of equity in one position (0.05–0.25)
+  paperEquity   Float? // per-bot paper bankroll ($100–$10,000)
+  stopPct       Float? // stop distance as a fraction (0.02–0.15)
+  takeProfit    Boolean? // managed take-profit/time-cap exits on/off
+  desiredStatus String? // "active" | "benched"
+  updatedAt     DateTime  @updatedAt
+  appliedAt     DateTime? // set when quant-lab confirms it applied this row
+}

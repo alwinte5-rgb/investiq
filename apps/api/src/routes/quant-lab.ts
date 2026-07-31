@@ -4,7 +4,13 @@ import { z } from "zod";
 import { errors } from "@investiq/shared";
 import { validate } from "../lib/validate.js";
 import { resolveAuthContext, type AuthDeps } from "../lib/guard.js";
-import { getQuantSnapshot, upsertQuantSnapshot } from "../services/quant-lab.js";
+import {
+  getQuantSnapshot,
+  listBotControls,
+  markControlsApplied,
+  upsertBotControl,
+  upsertQuantSnapshot,
+} from "../services/quant-lab.js";
 
 export interface QuantLabRouteDeps {
   auth: AuthDeps;
@@ -52,6 +58,20 @@ const snapshotSchema = z
   })
   .strict();
 
+/** Desired per-bot limits. Bounds are the real guardrail — the UI dropdown is
+ * only a convenience, so every value is range-checked here. `null` clears an
+ * override (bot falls back to the validated default). */
+const controlPatchSchema = z
+  .object({
+    riskPct: z.number().min(0.0025).max(0.03).nullable().optional(),
+    maxExposure: z.number().min(0.05).max(0.25).nullable().optional(),
+    paperEquity: z.number().min(100).max(10_000).nullable().optional(),
+    stopPct: z.number().min(0.02).max(0.15).nullable().optional(),
+    takeProfit: z.boolean().nullable().optional(),
+    desiredStatus: z.enum(["active", "benched"]).nullable().optional(),
+  })
+  .strict();
+
 export async function quantLabRoutes(app: FastifyInstance, deps: QuantLabRouteDeps) {
   // Ingest — called by ~/quant-lab's own cron, not a browser. Bearer-secret
   // auth instead of Clerk (no user session exists for a machine caller).
@@ -69,12 +89,66 @@ export async function quantLabRoutes(app: FastifyInstance, deps: QuantLabRouteDe
     return { data: { stored: true } };
   });
 
-  // Read — the /quant tab. Normal Clerk auth; any signed-in user is fine
+  // Read — the trading pages. Normal Clerk auth; any signed-in user is fine
   // (this app only has one possible user now that sign-ups are closed).
   app.get("/api/v1/quant-lab/snapshot", async (req, reply) => {
     await resolveAuthContext(req, deps.auth);
     reply.header("Cache-Control", "no-store");
     const snapshot = await getQuantSnapshot();
     return { data: snapshot };
+  });
+
+  // ---- per-bot controls -------------------------------------------------
+  // Railway can't reach the Mac, so control is PULL-based: the UI stores
+  // desired limits here; quant-lab's sync cron pulls, applies, and confirms.
+
+  // UI read (Clerk).
+  app.get("/api/v1/quant-lab/controls", async (req, reply) => {
+    await resolveAuthContext(req, deps.auth);
+    reply.header("Cache-Control", "no-store");
+    return { data: await listBotControls() };
+  });
+
+  // UI write (Clerk). Ranges are enforced server-side — a dropdown can't be
+  // trusted to bound risk on a real account.
+  app.patch("/api/v1/quant-lab/controls/:bot", async (req, reply) => {
+    await resolveAuthContext(req, deps.auth);
+    const { bot } = validate(
+      z.object({ bot: z.string().min(1).max(120) }),
+      req.params,
+    );
+    const patch = validate(controlPatchSchema, req.body);
+    reply.header("Cache-Control", "no-store");
+    return { data: await upsertBotControl(bot, patch) };
+  });
+
+  // Mac pull (bearer secret — same machine caller as the snapshot push).
+  app.get("/api/v1/quant-lab/controls/pending", async (req, reply) => {
+    if (!deps.pushSecret) {
+      reply.code(404);
+      return { error: "Not found", code: "NOT_FOUND" };
+    }
+    if (!secretMatches(req.headers.authorization, deps.pushSecret)) {
+      throw errors.unauthorized();
+    }
+    reply.header("Cache-Control", "no-store");
+    return { data: await listBotControls() };
+  });
+
+  // Mac confirms it applied a set of bots (bearer secret).
+  app.post("/api/v1/quant-lab/controls/applied", async (req, reply) => {
+    if (!deps.pushSecret) {
+      reply.code(404);
+      return { error: "Not found", code: "NOT_FOUND" };
+    }
+    if (!secretMatches(req.headers.authorization, deps.pushSecret)) {
+      throw errors.unauthorized();
+    }
+    const { bots } = validate(
+      z.object({ bots: z.array(z.string().min(1).max(120)).max(200) }),
+      req.body,
+    );
+    reply.header("Cache-Control", "no-store");
+    return { data: { applied: await markControlsApplied(bots) } };
   });
 }

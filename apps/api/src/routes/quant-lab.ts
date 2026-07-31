@@ -43,6 +43,12 @@ const snapshotSchema = z
     mining: z.record(z.unknown()).optional(),
     improvements: z.record(z.unknown()).optional(),
     data_health: z.record(z.unknown()).optional(),
+    // Trading-command additions (2026-07): upcoming signals, live prices,
+    // Alpaca paper snapshot, options program status.
+    signals: z.array(z.record(z.unknown())).optional(),
+    prices: z.array(z.record(z.unknown())).optional(),
+    alpaca: z.record(z.unknown()).optional(),
+    options: z.record(z.unknown()).optional(),
   })
   .strict();
 

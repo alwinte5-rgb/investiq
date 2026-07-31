@@ -53,8 +53,8 @@ export default async function CalculatorPage({
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Trade Calculator</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-t1">Trade Calculator</h1>
+        <p className="text-sm text-t3">
           Know exactly how much you are controlling and risking before you place the trade. Status
           checks compare each setup against your own risk settings.
         </p>

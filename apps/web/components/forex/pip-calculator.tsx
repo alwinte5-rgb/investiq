@@ -100,7 +100,7 @@ export function PipCalculator() {
           />
         </div>
 
-        <div className="space-y-2 rounded-lg border bg-slate-50 p-4 text-sm leading-relaxed text-slate-600">
+        <div className="space-y-2 rounded-lg border bg-raised p-4 text-sm leading-relaxed text-t2">
           <p>
             <strong>For most pairs, one pip is the fourth decimal place</strong> (0.0001) —
             EUR/USD moving 1.08500 → 1.08510 is one pip.

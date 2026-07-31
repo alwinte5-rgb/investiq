@@ -35,11 +35,11 @@ const STATUSES = ["DRAFT", "PLANNED", "ENTERED", "CLOSED", "CANCELLED"] as const
 const EMOTIONS = ["Calm", "Confident", "Anxious", "FOMO", "Frustrated", "Rushed", "Neutral"];
 
 const STATUS_BADGE: Record<string, string> = {
-  DRAFT: "border-slate-200 text-slate-600",
-  PLANNED: "border-blue-200 bg-blue-50 text-blue-800",
-  ENTERED: "border-amber-200 bg-amber-50 text-amber-800",
-  CLOSED: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  CANCELLED: "border-slate-200 bg-slate-50 text-slate-400",
+  DRAFT: "border-edge text-t2",
+  PLANNED: "border-accent bg-accent-soft text-accent",
+  ENTERED: "border-warn bg-warn-soft text-warn",
+  CLOSED: "border-pos bg-pos-soft text-pos",
+  CANCELLED: "border-edge bg-raised text-t3",
 };
 
 export interface PlannerPrefill {
@@ -171,14 +171,14 @@ export function PlannerUI({
   return (
     <div className="space-y-8">
       {openRisk > 0 && (
-        <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+        <p className="rounded-md border border-accent bg-accent-soft p-3 text-sm text-accent">
           Open planned risk across active plans: <strong>{money(openRisk, accountCurrency)}</strong>
         </p>
       )}
 
       {/* ── New plan form ── */}
       <section className="space-y-3 rounded-lg border p-4">
-        <h2 className="text-sm font-semibold text-slate-800">New trade plan</h2>
+        <h2 className="text-sm font-semibold text-t1">New trade plan</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Field label="Currency pair">
             <PairSelect value={pair} onChange={setPair} />
@@ -258,13 +258,13 @@ export function PlannerUI({
             className="w-full rounded-md border px-3 py-2 text-sm"
           />
         </Field>
-        <p className="text-[11px] text-slate-400">Screenshot upload is coming soon.</p>
+        <p className="text-[11px] text-t3">Screenshot upload is coming soon.</p>
 
         {error && (
-          <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>
+          <p className="rounded-md border border-neg bg-neg-soft p-3 text-sm text-neg">{error}</p>
         )}
         {saved && (
-          <p className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+          <p className="rounded-md border border-pos bg-pos-soft p-3 text-sm text-pos">
             Trade plan saved.
           </p>
         )}
@@ -275,33 +275,33 @@ export function PlannerUI({
             <WarningList warnings={check.warnings} />
             <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
               <div className="rounded-md border p-2">
-                <div className="text-[11px] text-slate-400">Risk</div>
+                <div className="text-[11px] text-t3">Risk</div>
                 <div className="tabular-nums font-medium">
                   {check.actualRiskAmount != null ? money(check.actualRiskAmount, accountCurrency) : "—"}
                   {check.actualRiskPct != null && (
-                    <span className="text-xs text-slate-400"> ({check.actualRiskPct}%)</span>
+                    <span className="text-xs text-t3"> ({check.actualRiskPct}%)</span>
                   )}
                 </div>
               </div>
               <div className="rounded-md border p-2">
-                <div className="text-[11px] text-slate-400">Size</div>
+                <div className="text-[11px] text-t3">Size</div>
                 <div className="tabular-nums font-medium">
                   {check.units != null ? `${check.units.toLocaleString()} u` : "—"}
-                  {check.lots != null && <span className="text-xs text-slate-400"> ({check.lots} lots)</span>}
+                  {check.lots != null && <span className="text-xs text-t3"> ({check.lots} lots)</span>}
                 </div>
               </div>
               <div className="rounded-md border p-2">
-                <div className="text-[11px] text-slate-400">Est. margin</div>
+                <div className="text-[11px] text-t3">Est. margin</div>
                 <div className="tabular-nums font-medium">
                   {check.requiredMargin != null ? money(check.requiredMargin, accountCurrency) : "—"}
                 </div>
               </div>
               <div className="rounded-md border p-2">
-                <div className="text-[11px] text-slate-400">Reward ratio</div>
+                <div className="text-[11px] text-t3">Reward ratio</div>
                 <div className="tabular-nums font-medium">{check.riskRewardLabel ?? "—"}</div>
               </div>
             </div>
-            {check.summary && <p className="text-xs leading-relaxed text-slate-500">{check.summary}</p>}
+            {check.summary && <p className="text-xs leading-relaxed text-t3">{check.summary}</p>}
           </div>
         )}
 
@@ -310,7 +310,7 @@ export function PlannerUI({
             type="button"
             onClick={runCheck}
             disabled={pending}
-            className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50"
+            className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-raised disabled:opacity-50"
           >
             {pending ? "Working…" : "Run trade check"}
           </button>
@@ -318,7 +318,7 @@ export function PlannerUI({
             type="button"
             onClick={save}
             disabled={pending}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
           >
             {pending ? "Working…" : "Save trade plan"}
           </button>
@@ -327,9 +327,9 @@ export function PlannerUI({
 
       {/* ── Plan list ── */}
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-slate-800">Your plans</h2>
+        <h2 className="text-sm font-semibold text-t1">Your plans</h2>
         {plans.length === 0 ? (
-          <p className="rounded-lg border border-dashed p-6 text-center text-sm text-slate-500">
+          <p className="rounded-lg border border-dashed p-6 text-center text-sm text-t3">
             No trade plans yet — plan your first trade above, or start from the Trade Calculator.
           </p>
         ) : (
@@ -338,25 +338,25 @@ export function PlannerUI({
               <div key={p.id} className="rounded-lg border p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold tabular-nums">{p.pair.symbol}</span>
-                  <span className="text-sm text-slate-500">{p.direction === "BUY" ? "Buy" : "Sell"}</span>
+                  <span className="text-sm text-t3">{p.direction === "BUY" ? "Buy" : "Sell"}</span>
                   <span className={`rounded-full border px-2 py-0.5 text-xs ${STATUS_BADGE[p.status] ?? ""}`}>
                     {p.status.charAt(0) + p.status.slice(1).toLowerCase()}
                   </span>
                   {p.riskStatus && (
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-t3">
                       Check: {p.riskStatus.replace(/_/g, " ").toLowerCase()}
                     </span>
                   )}
                   <span className="ml-auto flex items-center gap-1.5">
                     {(p.status === "CLOSED" || p.status === "ENTERED") &&
                       (journaled.has(p.id) ? (
-                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-800">
+                        <span className="rounded-full border border-pos bg-pos-soft px-2 py-0.5 text-xs text-pos">
                           Journaled ✓
                         </span>
                       ) : (
                         <Link
                           href={`/journal?fromPlan=${p.id}`}
-                          className="rounded-md bg-blue-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-700"
+                          className="rounded-md bg-accent px-2.5 py-1 text-xs font-medium text-accent-fg hover:opacity-90"
                         >
                           Journal This Trade
                         </Link>
@@ -365,7 +365,7 @@ export function PlannerUI({
                       value={p.status}
                       aria-label={`Change status of ${p.pair.symbol} plan`}
                       onChange={(e) => changeStatus(p.id, e.target.value)}
-                      className="rounded-md border bg-white px-2 py-1 text-xs"
+                      className="rounded-md border bg-surface px-2 py-1 text-xs"
                     >
                       {STATUSES.map((s) => (
                         <option key={s} value={s}>
@@ -377,13 +377,13 @@ export function PlannerUI({
                       type="button"
                       onClick={() => remove(p.id)}
                       aria-label={`Delete ${p.pair.symbol} plan`}
-                      className="rounded-md border px-2 py-1 text-xs text-slate-500 hover:bg-red-50 hover:text-red-700"
+                      className="rounded-md border px-2 py-1 text-xs text-t3 hover:bg-neg-soft hover:text-neg"
                     >
                       Delete
                     </button>
                   </span>
                 </div>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600 sm:grid-cols-5">
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-t2 sm:grid-cols-5">
                   <div>Entry: <span className="tabular-nums">{Number(p.entryPrice)}</span></div>
                   <div>Stop: <span className="tabular-nums">{p.stopLossPrice ? Number(p.stopLossPrice) : "—"}</span></div>
                   <div>Target: <span className="tabular-nums">{p.takeProfitPrice ? Number(p.takeProfitPrice) : "—"}</span></div>
@@ -400,9 +400,9 @@ export function PlannerUI({
                     </span>
                   </div>
                 </div>
-                {p.eventWarning && <p className="mt-1 text-xs text-amber-700">⚠ {p.eventWarning}</p>}
+                {p.eventWarning && <p className="mt-1 text-xs text-warn">⚠ {p.eventWarning}</p>}
                 {(exposureByPlan.get(p.id) ?? []).map((e) => (
-                  <p key={`${e.name}${e.eventTime}`} className="mt-1 text-xs text-amber-700">
+                  <p key={`${e.name}${e.eventTime}`} className="mt-1 text-xs text-warn">
                     ⚠ Upcoming: {e.currency} {e.name} —{" "}
                     {new Date(e.eventTime).toLocaleString(undefined, {
                       weekday: "short",
@@ -411,7 +411,7 @@ export function PlannerUI({
                     })}
                   </p>
                 ))}
-                {p.reasoning && <p className="mt-1 text-xs italic text-slate-500">“{p.reasoning}”</p>}
+                {p.reasoning && <p className="mt-1 text-xs italic text-t3">“{p.reasoning}”</p>}
               </div>
             ))}
           </div>

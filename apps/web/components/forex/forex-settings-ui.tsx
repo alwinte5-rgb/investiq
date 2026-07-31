@@ -52,7 +52,7 @@ export function ForexSettingsUI({ initial }: { initial: ForexSettings }) {
 
   return (
     <div className="space-y-4 rounded-lg border p-4">
-      <h2 className="text-sm font-semibold text-slate-800">Trading profile</h2>
+      <h2 className="text-sm font-semibold text-t1">Trading profile</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Field label="Account currency">
           <CurrencySelect value={currency} onChange={setCurrency} />
@@ -94,7 +94,7 @@ export function ForexSettingsUI({ initial }: { initial: ForexSettings }) {
             <button
               type="button"
               onClick={detectTz}
-              className="whitespace-nowrap rounded-md border px-2 text-xs hover:bg-neutral-50"
+              className="whitespace-nowrap rounded-md border px-2 text-xs hover:bg-raised"
             >
               Detect
             </button>
@@ -118,7 +118,7 @@ export function ForexSettingsUI({ initial }: { initial: ForexSettings }) {
         </Field>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-t2">
         <input
           type="checkbox"
           checked={beginnerMode}
@@ -126,7 +126,7 @@ export function ForexSettingsUI({ initial }: { initial: ForexSettings }) {
         />
         Beginner explanation mode — show extra plain-language explanations throughout the app
       </label>
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-t2">
         <input type="checkbox" checked={eventBlock} onChange={(e) => setEventBlock(e.target.checked)} />
         Event hard rule — mark a trade check <strong>Outside Plan</strong> (instead of Caution) when a
         high-impact event is inside your warning window
@@ -136,8 +136,8 @@ export function ForexSettingsUI({ initial }: { initial: ForexSettings }) {
         <p
           className={`rounded-md border p-3 text-sm ${
             status.kind === "ok"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-red-200 bg-red-50 text-red-700"
+              ? "border-pos bg-pos-soft text-pos"
+              : "border-neg bg-neg-soft text-neg"
           }`}
         >
           {status.msg}
@@ -148,7 +148,7 @@ export function ForexSettingsUI({ initial }: { initial: ForexSettings }) {
         type="button"
         onClick={save}
         disabled={pending}
-        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
       >
         {pending ? "Saving…" : "Save trading profile"}
       </button>

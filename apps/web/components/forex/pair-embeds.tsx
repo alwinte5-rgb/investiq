@@ -14,13 +14,13 @@ export function PairEmbeds({ symbol }: { symbol: string }) {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-semibold text-slate-800">Try it with {symbol}</h2>
+      <h2 className="text-sm font-semibold text-t1">Try it with {symbol}</h2>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setOpen(open === "pip" ? null : "pip")}
           className={`rounded-md border px-4 py-2 text-sm font-medium ${
-            open === "pip" ? "border-blue-300 bg-blue-50 text-blue-700" : "hover:bg-neutral-50"
+            open === "pip" ? "border-accent bg-accent-soft text-accent" : "hover:bg-raised"
           }`}
         >
           Pip calculator
@@ -29,7 +29,7 @@ export function PairEmbeds({ symbol }: { symbol: string }) {
           type="button"
           onClick={() => setOpen(open === "size" ? null : "size")}
           className={`rounded-md border px-4 py-2 text-sm font-medium ${
-            open === "size" ? "border-blue-300 bg-blue-50 text-blue-700" : "hover:bg-neutral-50"
+            open === "size" ? "border-accent bg-accent-soft text-accent" : "hover:bg-raised"
           }`}
         >
           Position-size example

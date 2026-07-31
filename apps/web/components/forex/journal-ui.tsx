@@ -45,9 +45,9 @@ function numOrNull(v: string): number | null {
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="rounded-lg border p-3">
-      <div className="text-[11px] text-slate-400">{label}</div>
-      <div className="text-lg font-semibold tabular-nums text-slate-900">{value}</div>
-      {sub && <div className="text-[11px] text-slate-400">{sub}</div>}
+      <div className="text-[11px] text-t3">{label}</div>
+      <div className="text-lg font-semibold tabular-nums text-t1">{value}</div>
+      {sub && <div className="text-[11px] text-t3">{sub}</div>}
     </div>
   );
 }
@@ -56,10 +56,10 @@ function SegmentTable({ title, rows }: { title: string; rows: SegmentStats[] }) 
   if (rows.length === 0) return null;
   return (
     <div className="rounded-lg border p-3">
-      <h3 className="text-xs font-semibold text-slate-700">{title}</h3>
+      <h3 className="text-xs font-semibold text-t2">{title}</h3>
       <table className="mt-1 w-full text-xs">
         <thead>
-          <tr className="text-left text-[11px] text-slate-400">
+          <tr className="text-left text-[11px] text-t3">
             <th className="py-1 font-medium">Segment</th>
             <th className="py-1 font-medium">Trades</th>
             <th className="py-1 font-medium">Win rate</th>
@@ -73,7 +73,7 @@ function SegmentTable({ title, rows }: { title: string; rows: SegmentStats[] }) 
               <td className="py-1">{r.key}</td>
               <td className="py-1 tabular-nums">{r.trades}</td>
               <td className="py-1 tabular-nums">{r.winRatePct != null ? `${r.winRatePct}%` : "n < 5"}</td>
-              <td className={`py-1 tabular-nums ${r.totalPl >= 0 ? "text-emerald-700" : "text-red-700"}`}>
+              <td className={`py-1 tabular-nums ${r.totalPl >= 0 ? "text-pos" : "text-neg"}`}>
                 {r.totalPl >= 0 ? "+" : ""}
                 {r.totalPl}
               </td>
@@ -204,9 +204,9 @@ export function JournalUI({
       {/* ── Analytics ── */}
       {analytics && (
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-slate-800">Analytics</h2>
+          <h2 className="text-sm font-semibold text-t1">Analytics</h2>
           {!analytics.meetsSample ? (
-            <p className="rounded-lg border border-dashed p-4 text-sm text-slate-500">
+            <p className="rounded-lg border border-dashed p-4 text-sm text-t3">
               {analytics.totalTrades === 0
                 ? "No closed trades recorded yet. Analytics unlock after your first entries."
                 : `Performance insights need at least ${analytics.minimumSample} closed trades to be meaningful — you have ${analytics.totalTrades}. Keep recording; small samples produce unreliable conclusions.`}
@@ -239,7 +239,7 @@ export function JournalUI({
                 />
               </div>
               {analytics.insights.length > 0 && (
-                <div className="space-y-1 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+                <div className="space-y-1 rounded-lg border border-accent bg-accent-soft p-3 text-sm text-accent">
                   {analytics.insights.map((i) => (
                     <p key={i}>💡 {i}</p>
                   ))}
@@ -252,7 +252,7 @@ export function JournalUI({
                 <SegmentTable title="By day of week" rows={analytics.byWeekday} />
                 <SegmentTable title="Around high-impact events" rows={analytics.byEvent ?? []} />
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-t3">
                 Segments with fewer than 5 trades don&apos;t show rates — small samples mislead.
               </p>
             </>
@@ -265,12 +265,12 @@ export function JournalUI({
         <button
           type="button"
           onClick={() => setShowForm((s) => !s)}
-          className="text-sm font-semibold text-slate-800"
+          className="text-sm font-semibold text-t1"
         >
           {showForm ? "▾" : "▸"} Record a trade
         </button>
         {prefill && (
-          <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
+          <p className="rounded-md border border-accent bg-accent-soft p-3 text-xs text-accent">
             Journaling your {prefill.pairSymbol} {prefill.direction === "BUY" ? "buy" : "sell"} plan — planned
             values are prefilled below. Enter what actually happened.
           </p>
@@ -351,7 +351,7 @@ export function JournalUI({
               onToggle={(e) => setShowPlanned((e.target as HTMLDetailsElement).open)}
               className="rounded-md border p-3"
             >
-              <summary className="cursor-pointer text-sm font-medium text-slate-700">Add planned values</summary>
+              <summary className="cursor-pointer text-sm font-medium text-t2">Add planned values</summary>
               <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <Field label="Planned entry">
                   <NumberInput value={f("plannedEntry")} onChange={setF("plannedEntry")} ariaLabel="Planned entry" />
@@ -379,7 +379,7 @@ export function JournalUI({
 
             {/* Context — expander. */}
             <details className="rounded-md border p-3">
-              <summary className="cursor-pointer text-sm font-medium text-slate-700">
+              <summary className="cursor-pointer text-sm font-medium text-t2">
                 Add context (session, strategy, discipline)
               </summary>
               <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -422,16 +422,16 @@ export function JournalUI({
               </div>
             </details>
 
-            <p className="text-[11px] text-slate-400">Before/after screenshots are coming soon.</p>
+            <p className="text-[11px] text-t3">Before/after screenshots are coming soon.</p>
 
             {error && (
-              <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>
+              <p className="rounded-md border border-neg bg-neg-soft p-3 text-sm text-neg">{error}</p>
             )}
             <button
               type="button"
               onClick={save}
               disabled={pending}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
             >
               {pending ? "Saving…" : "Save entry"}
             </button>
@@ -441,9 +441,9 @@ export function JournalUI({
 
       {/* ── Entries ── */}
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-slate-800">Entries</h2>
+        <h2 className="text-sm font-semibold text-t1">Entries</h2>
         {entries.length === 0 ? (
-          <p className="rounded-lg border border-dashed p-6 text-center text-sm text-slate-500">
+          <p className="rounded-lg border border-dashed p-6 text-center text-sm text-t3">
             No journal entries yet.
           </p>
         ) : (
@@ -454,13 +454,13 @@ export function JournalUI({
                 <div key={e.id} className="rounded-lg border p-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold tabular-nums">{e.pair.symbol}</span>
-                    <span className="text-sm text-slate-500">{e.direction === "BUY" ? "Buy" : "Sell"}</span>
+                    <span className="text-sm text-t3">{e.direction === "BUY" ? "Buy" : "Sell"}</span>
                     {pl != null && (
                       <span
                         className={`rounded-full border px-2 py-0.5 text-xs font-medium tabular-nums ${
                           pl >= 0
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                            : "border-red-200 bg-red-50 text-red-800"
+                            ? "border-pos bg-pos-soft text-pos"
+                            : "border-neg bg-neg-soft text-neg"
                         }`}
                       >
                         {pl >= 0 ? "Gain" : "Loss"} {money(pl, accountCurrency)}
@@ -468,27 +468,27 @@ export function JournalUI({
                       </span>
                     )}
                     {e.tradePlanId && (
-                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-800">
+                      <span className="rounded-full border border-accent bg-accent-soft px-2 py-0.5 text-xs text-accent">
                         From plan
                       </span>
                     )}
                     {e.rulesFollowed != null && (
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-t3">
                         {e.rulesFollowed ? "Followed plan" : "Broke plan"}
                       </span>
                     )}
-                    {e.session && <span className="text-xs text-slate-400">{e.session}</span>}
-                    {e.strategyTag && <span className="text-xs text-slate-400">#{e.strategyTag}</span>}
+                    {e.session && <span className="text-xs text-t3">{e.session}</span>}
+                    {e.strategyTag && <span className="text-xs text-t3">#{e.strategyTag}</span>}
                     <button
                       type="button"
                       onClick={() => remove(e.id)}
                       aria-label={`Delete ${e.pair.symbol} entry`}
-                      className="ml-auto rounded-md border px-2 py-1 text-xs text-slate-500 hover:bg-red-50 hover:text-red-700"
+                      className="ml-auto rounded-md border px-2 py-1 text-xs text-t3 hover:bg-neg-soft hover:text-neg"
                     >
                       Delete
                     </button>
                   </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600 sm:grid-cols-4">
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-t2 sm:grid-cols-4">
                     <div>
                       Entry:{" "}
                       <span className="tabular-nums">
@@ -506,7 +506,7 @@ export function JournalUI({
                       <span className="tabular-nums">{e.profitLossPips != null ? Number(e.profitLossPips) : "—"}</span>
                     </div>
                   </div>
-                  {e.lessons && <p className="mt-1 text-xs italic text-slate-500">Lesson: {e.lessons}</p>}
+                  {e.lessons && <p className="mt-1 text-xs italic text-t3">Lesson: {e.lessons}</p>}
                 </div>
               );
             })}

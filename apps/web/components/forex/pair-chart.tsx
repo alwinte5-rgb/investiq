@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { formatPairPrice } from "@investiq/shared/forex";
+import { useTvTheme } from "@/components/tv/use-tv-theme";
 
 /**
  * Pair chart: TradingView's free Advanced Chart embed for the live candles,
@@ -12,6 +13,7 @@ import { formatPairPrice } from "@investiq/shared/forex";
 
 function TradingViewChart({ pairSymbol, height = 320 }: { pairSymbol: string; height?: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const theme = useTvTheme();
 
   useEffect(() => {
     const container = containerRef.current;
@@ -26,7 +28,7 @@ function TradingViewChart({ pairSymbol, height = 320 }: { pairSymbol: string; he
       autosize: true,
       interval: "60",
       timezone: "Etc/UTC",
-      theme: "light",
+      theme,
       style: "1",
       locale: "en",
       hide_top_toolbar: false,
@@ -38,10 +40,10 @@ function TradingViewChart({ pairSymbol, height = 320 }: { pairSymbol: string; he
     return () => {
       container.innerHTML = "";
     };
-  }, [pairSymbol]);
+  }, [pairSymbol, theme]);
 
   return (
-    <div className="w-full overflow-hidden rounded-md border bg-white" style={{ height }}>
+    <div className="w-full overflow-hidden rounded-md border bg-surface" style={{ height }}>
       <div ref={containerRef} className="tradingview-widget-container h-full w-full" />
     </div>
   );
@@ -74,13 +76,13 @@ function LevelLadder({ pairSymbol, levels }: { pairSymbol: string; levels: Chart
 
   return (
     <div className="space-y-1">
-      <p className="text-[11px] text-slate-500">Your levels, placed by price — where the stop and target sit around entry.</p>
-      <div className="relative h-40 rounded-md border bg-slate-50">
+      <p className="text-[11px] text-t3">Your levels, placed by price — where the stop and target sit around entry.</p>
+      <div className="relative h-40 rounded-md border bg-raised">
         {rows.map((r) => (
           <div key={r.label} className="absolute inset-x-0" style={{ top: `${pos(r.value)}%` }}>
             <div className="border-t border-dashed" style={{ borderColor: r.color }} />
             <span
-              className="absolute right-1 -translate-y-1/2 rounded bg-white px-1.5 text-[10px] font-medium tabular-nums"
+              className="absolute right-1 -translate-y-1/2 rounded bg-surface px-1.5 text-[10px] font-medium tabular-nums"
               style={{ color: r.color }}
             >
               {r.label} {formatPairPrice(r.value, pairSymbol)}
@@ -105,7 +107,7 @@ export function PairChart({
     <div className="space-y-3">
       <TradingViewChart pairSymbol={pairSymbol} height={height} />
       {levels && <LevelLadder pairSymbol={pairSymbol} levels={levels} />}
-      <p className="text-[10px] text-slate-400">Chart by TradingView. Levels shown are your own plan inputs, not predictions.</p>
+      <p className="text-[10px] text-t3">Chart by TradingView. Levels shown are your own plan inputs, not predictions.</p>
     </div>
   );
 }

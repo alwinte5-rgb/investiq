@@ -30,7 +30,7 @@ export function SessionsUI({ compact = false }: { compact?: boolean }) {
   }, []);
 
   if (!snap) {
-    return <div className="rounded-lg border p-4 text-sm text-slate-400">Loading sessions…</div>;
+    return <div className="rounded-lg border p-4 text-sm text-t3">Loading sessions…</div>;
   }
 
   if (compact) {
@@ -40,16 +40,16 @@ export function SessionsUI({ compact = false }: { compact?: boolean }) {
           <span
             key={s.id}
             className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs ${
-              s.isOpen ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 text-slate-500"
+              s.isOpen ? "border-pos bg-pos-soft text-pos" : "border-edge text-t3"
             }`}
           >
             <span aria-hidden="true">{s.isOpen ? "●" : "○"}</span>
             {s.name} {s.isOpen ? "Open" : "Closed"}
-            <span className="text-slate-400">· {s.isOpen ? "closes" : "opens"} in {countdown(s.minutesUntilChange)}</span>
+            <span className="text-t3">· {s.isOpen ? "closes" : "opens"} in {countdown(s.minutesUntilChange)}</span>
           </span>
         ))}
         {snap.overlap.length >= 2 && (
-          <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs text-blue-800">
+          <span className="rounded-full border border-accent bg-accent-soft px-3 py-1 text-xs text-accent">
             {snap.overlap.join(" + ")} overlap — typically the most liquid hours
           </span>
         )}
@@ -60,7 +60,7 @@ export function SessionsUI({ compact = false }: { compact?: boolean }) {
   return (
     <div className="space-y-4">
       {snap.overlap.length >= 2 && (
-        <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+        <p className="rounded-md border border-accent bg-accent-soft p-3 text-sm text-accent">
           <strong>{snap.overlap.join(" + ")}</strong> are open at the same time right now — session
           overlaps are typically the most liquid hours of the day.
         </p>
@@ -69,16 +69,16 @@ export function SessionsUI({ compact = false }: { compact?: boolean }) {
         {snap.sessions.map((s) => (
           <div key={s.id} className="rounded-lg border p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-800">{s.name}</h3>
+              <h3 className="text-sm font-semibold text-t1">{s.name}</h3>
               <span
                 className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
-                  s.isOpen ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 text-slate-500"
+                  s.isOpen ? "border-pos bg-pos-soft text-pos" : "border-edge text-t3"
                 }`}
               >
                 {s.isOpen ? "Open" : "Closed"}
               </span>
             </div>
-            <dl className="mt-2 space-y-1 text-xs text-slate-600">
+            <dl className="mt-2 space-y-1 text-xs text-t2">
               <div className="flex justify-between">
                 <dt>Session hours (local)</dt>
                 <dd className="tabular-nums">{s.localWindow}</dd>
@@ -98,13 +98,13 @@ export function SessionsUI({ compact = false }: { compact?: boolean }) {
                 </dd>
               </div>
             </dl>
-            <p className="mt-2 text-[11px] text-slate-400">
+            <p className="mt-2 text-[11px] text-t3">
               Commonly active: {s.activePairs.join(", ")}
             </p>
           </div>
         ))}
       </div>
-      <p className="text-[11px] text-slate-400">
+      <p className="text-[11px] text-t3">
         Times follow each city&apos;s own clock, including daylight-saving changes. Your timezone:{" "}
         {userTz}.
       </p>

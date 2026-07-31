@@ -122,11 +122,11 @@ export function PositionSizeCalculator() {
           <ResultRow label="Effective leverage" value={result.effectiveLeverageLabel ?? "—"} />
         </div>
         {result.summary && (
-          <p aria-live="polite" className="rounded-lg border bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
+          <p aria-live="polite" className="rounded-lg border bg-raised p-4 text-sm leading-relaxed text-t2">
             {result.summary}
           </p>
         )}
-        <p className="text-[11px] text-slate-400">
+        <p className="text-[11px] text-t3">
           Estimates only. The margin requirement is not the same as the amount you could lose —
           your stop loss defines the risk.
         </p>

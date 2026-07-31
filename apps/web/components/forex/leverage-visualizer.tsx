@@ -58,18 +58,18 @@ export function LeverageVisualizer() {
         {bal != null && pos != null && (
           <div className="space-y-2 rounded-lg border p-4">
             <div className="flex items-baseline justify-between text-sm">
-              <span className="font-medium text-slate-700">Your money</span>
+              <span className="font-medium text-t2">Your money</span>
               <span className="tabular-nums font-semibold">{money(bal, "USD")}</span>
             </div>
-            <div className="h-3 w-full overflow-hidden rounded bg-slate-100" aria-hidden="true">
-              <div className="h-full rounded bg-blue-600" style={{ width: `${barRatio ?? 0}%` }} />
+            <div className="h-3 w-full overflow-hidden rounded bg-raised" aria-hidden="true">
+              <div className="h-full rounded bg-accent" style={{ width: `${barRatio ?? 0}%` }} />
             </div>
             <div className="flex items-baseline justify-between text-sm">
-              <span className="font-medium text-slate-700">Money controlled</span>
+              <span className="font-medium text-t2">Money controlled</span>
               <span className="tabular-nums font-semibold">{money(pos, "USD")}</span>
             </div>
             <div className="h-3 w-full rounded bg-slate-800" aria-hidden="true" />
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-t3">
               Your {money(bal, "USD")} controls a {money(pos, "USD")} position
               {effLev != null ? ` — effective leverage ${formatLeverage(effLev)}` : ""}. Every
               price move applies to the full position value, not just your own money.
@@ -102,13 +102,13 @@ export function LeverageVisualizer() {
         </div>
 
         {largeMoveRisk && (
-          <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <p className="rounded-md border border-warn bg-warn-soft p-3 text-sm text-warn">
             Note: at this position size, a 1% market move changes your account by a substantial
             percentage. Smaller position sizes reduce how much any single move matters.
           </p>
         )}
 
-        <p className="text-[11px] text-slate-400">
+        <p className="text-[11px] text-t3">
           Broker leverage is the maximum available to you; effective leverage is what this position
           actually takes on. Leverage magnifies gains and losses equally.
         </p>

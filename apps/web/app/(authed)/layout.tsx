@@ -1,46 +1,17 @@
-import Link from "next/link";
 import { GlossaryProvider } from "@/components/term";
+import { SidebarNav } from "@/components/sidebar-nav";
 
-// In-app sub-nav for the authed routes. The ClerkProvider + account menu live in
-// the root layout header, so this layout only renders navigation.
+/** Authed shell: sidebar rail (desktop) / nav strip (mobile) + content area.
+ * The ClerkProvider + account menu live in the root layout header. */
 export default function AuthedLayout({ children }: { children: React.ReactNode }) {
   return (
     <GlossaryProvider>
-      <div className="mb-6 flex items-center justify-between gap-3 border-b pb-3 text-sm dark:border-neutral-800">
-        <nav className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <Link href="/dashboard" className="hover:underline">
-            Dashboard
-          </Link>
-          <Link href="/calculator" className="font-semibold text-blue-700 hover:underline">
-            Trade Calculator
-          </Link>
-          <Link href="/pairs" className="hover:underline">
-            Currency Pairs
-          </Link>
-          <Link href="/sessions" className="hover:underline">
-            Market Sessions
-          </Link>
-          <Link href="/calendar" className="hover:underline">
-            Economic Calendar
-          </Link>
-          <Link href="/planner" className="hover:underline">
-            Trade Planner
-          </Link>
-          <Link href="/journal" className="hover:underline">
-            Journal
-          </Link>
-          <Link href="/learn" className="hover:underline">
-            Learn
-          </Link>
-          <Link href="/quant" className="hover:underline">
-            Quant Lab
-          </Link>
-          <Link href="/settings" className="ml-auto text-slate-500 hover:underline">
-            Settings
-          </Link>
-        </nav>
+      <div className="flex min-h-full flex-col lg:flex-row">
+        <SidebarNav />
+        <div className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl">{children}</div>
+        </div>
       </div>
-      {children}
     </GlossaryProvider>
   );
 }

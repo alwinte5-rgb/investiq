@@ -71,37 +71,37 @@ export default async function PairDetailPage({ params }: { params: { symbol: str
     <div className="space-y-6">
       <div>
         <div className="flex flex-wrap items-baseline gap-3">
-          <h1 className="text-2xl font-bold tabular-nums text-slate-900">{info.symbol}</h1>
-          <span className="rounded-full border px-2.5 py-0.5 text-xs text-slate-500">{categoryLabel}</span>
+          <h1 className="text-2xl font-bold tabular-nums text-t1">{info.symbol}</h1>
+          <span className="rounded-full border px-2.5 py-0.5 text-xs text-t3">{categoryLabel}</span>
         </div>
-        <p className="text-sm text-slate-500">{info.displayName}</p>
+        <p className="text-sm text-t3">{info.displayName}</p>
       </div>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border p-4">
-          <div className="text-xs text-slate-500">Base currency</div>
+          <div className="text-xs text-t3">Base currency</div>
           <div className="text-lg font-semibold">{info.baseCurrency}</div>
         </div>
         <div className="rounded-lg border p-4">
-          <div className="text-xs text-slate-500">Quote currency</div>
+          <div className="text-xs text-t3">Quote currency</div>
           <div className="text-lg font-semibold">{info.quoteCurrency}</div>
         </div>
         <div className="rounded-lg border p-4">
-          <div className="text-xs text-slate-500">Pip size</div>
+          <div className="text-xs text-t3">Pip size</div>
           <div className="text-lg font-semibold tabular-nums">{info.pipSize}</div>
-          <div className="text-[11px] text-slate-400">Pipette {info.pipetteSize}</div>
+          <div className="text-[11px] text-t3">Pipette {info.pipetteSize}</div>
         </div>
         <div className="rounded-lg border p-4">
-          <div className="text-xs text-slate-500">Typical format</div>
+          <div className="text-xs text-t3">Typical format</div>
           <div className="text-lg font-semibold tabular-nums">
             {info.pipSize === 0.01 ? "3 decimals" : "5 decimals"}
           </div>
         </div>
       </section>
 
-      <section className="space-y-2 rounded-lg border bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
+      <section className="space-y-2 rounded-lg border bg-raised p-4 text-sm leading-relaxed text-t2">
         <p>{info.description}</p>
-        <p className="text-slate-500">
+        <p className="text-t3">
           Example: {explainRate(info, insight?.rate ?? (info.pipSize === 0.01 ? 145.25 : 1.085))}
         </p>
       </section>
@@ -109,23 +109,23 @@ export default async function PairDetailPage({ params }: { params: { symbol: str
       {insight?.atrPips != null && (
         <section className="rounded-lg border p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-800">Typical daily range</h2>
+            <h2 className="text-sm font-semibold text-t1">Typical daily range</h2>
             {insight.rateAsOf && (
-              <span className="text-[11px] text-slate-400">
+              <span className="text-[11px] text-t3">
                 Updated {new Date(insight.rateAsOf).toLocaleTimeString()}
               </span>
             )}
           </div>
           <div className="mt-2 flex flex-wrap items-baseline gap-6">
             <div>
-              <div className="text-2xl font-bold tabular-nums text-slate-900">
+              <div className="text-2xl font-bold tabular-nums text-t1">
                 ≈ {Math.round(insight.atrPips)} pips
               </div>
-              <div className="text-[11px] text-slate-400">14-day average true range, daily candles</div>
+              <div className="text-[11px] text-t3">14-day average true range, daily candles</div>
             </div>
             {atrMoney && (
               <div>
-                <div className="text-2xl font-bold tabular-nums text-slate-900">
+                <div className="text-2xl font-bold tabular-nums text-t1">
                   ≈{" "}
                   {new Intl.NumberFormat("en-US", {
                     style: "currency",
@@ -133,13 +133,13 @@ export default async function PairDetailPage({ params }: { params: { symbol: str
                     maximumFractionDigits: 2,
                   }).format(atrMoney.amount)}
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-t3">
                   movement at 1,000 units{atrMoney.converted ? "" : ` (in ${atrMoney.currency})`}
                 </div>
               </div>
             )}
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-t3">
             This is a recent average range, not a prediction of today&apos;s movement.
           </p>
         </section>
@@ -147,58 +147,58 @@ export default async function PairDetailPage({ params }: { params: { symbol: str
 
       <section className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border p-4">
-          <h2 className="text-sm font-semibold text-slate-800">What buying means</h2>
-          <p className="mt-1 text-sm text-slate-600">{explanations.buy}</p>
+          <h2 className="text-sm font-semibold text-t1">What buying means</h2>
+          <p className="mt-1 text-sm text-t2">{explanations.buy}</p>
         </div>
         <div className="rounded-lg border p-4">
-          <h2 className="text-sm font-semibold text-slate-800">What selling means</h2>
-          <p className="mt-1 text-sm text-slate-600">{explanations.sell}</p>
+          <h2 className="text-sm font-semibold text-t1">What selling means</h2>
+          <p className="mt-1 text-sm text-t2">{explanations.sell}</p>
         </div>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border p-4">
-          <h2 className="text-sm font-semibold text-slate-800">Most active sessions</h2>
-          <ul className="mt-1 space-y-0.5 text-sm text-slate-600">
+          <h2 className="text-sm font-semibold text-t1">Most active sessions</h2>
+          <ul className="mt-1 space-y-0.5 text-sm text-t2">
             {info.sessions.map((s) => (
               <li key={s}>{s}</li>
             ))}
           </ul>
-          <Link href="/sessions" className="mt-2 inline-block text-xs text-blue-600 hover:underline">
+          <Link href="/sessions" className="mt-2 inline-block text-xs text-accent hover:underline">
             View session times →
           </Link>
         </div>
         <div className="rounded-lg border p-4">
-          <h2 className="text-sm font-semibold text-slate-800">Central banks</h2>
-          <ul className="mt-1 space-y-0.5 text-sm text-slate-600">
+          <h2 className="text-sm font-semibold text-t1">Central banks</h2>
+          <ul className="mt-1 space-y-0.5 text-sm text-t2">
             {info.centralBanks.map((b) => (
               <li key={b}>{b}</li>
             ))}
           </ul>
-          <p className="mt-1 text-[11px] text-slate-400">Economies: {info.economies.join(", ")}</p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-[11px] text-t3">Economies: {info.economies.join(", ")}</p>
+          <p className="mt-1 text-xs text-t3">
             Central-bank decisions can affect interest rates, currency demand, and volatility in
             this pair.
           </p>
         </div>
         <div className="rounded-lg border p-4">
-          <h2 className="text-sm font-semibold text-slate-800">Events traders watch</h2>
-          <ul className="mt-1 space-y-0.5 text-sm text-slate-600">
+          <h2 className="text-sm font-semibold text-t1">Events traders watch</h2>
+          <ul className="mt-1 space-y-0.5 text-sm text-t2">
             {info.commonEvents.map((e) => (
               <li key={e}>{e}</li>
             ))}
           </ul>
-          <Link href="/calendar" className="mt-2 inline-block text-xs text-blue-600 hover:underline">
+          <Link href="/calendar" className="mt-2 inline-block text-xs text-accent hover:underline">
             Economic calendar →
           </Link>
         </div>
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-slate-800">Risk considerations</h2>
+        <h2 className="text-sm font-semibold text-t1">Risk considerations</h2>
         <div className="flex flex-wrap gap-2">
           {info.educationLabels.map((l) => (
-            <span key={l} className="rounded-full border px-3 py-1 text-xs text-slate-600">
+            <span key={l} className="rounded-full border px-3 py-1 text-xs text-t2">
               {l}
             </span>
           ))}
@@ -208,8 +208,8 @@ export default async function PairDetailPage({ params }: { params: { symbol: str
       {upcoming.length > 0 && (
         <section className="space-y-2">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold text-slate-800">Upcoming events for {info.symbol}</h2>
-            <Link href="/calendar" className="text-xs text-blue-600 hover:underline">
+            <h2 className="text-sm font-semibold text-t1">Upcoming events for {info.symbol}</h2>
+            <Link href="/calendar" className="text-xs text-accent hover:underline">
               Full calendar →
             </Link>
           </div>
@@ -221,15 +221,15 @@ export default async function PairDetailPage({ params }: { params: { symbol: str
                 <span
                   className={`rounded-full border px-2 py-0.5 text-xs ${
                     e.impact === "HIGH"
-                      ? "border-red-200 bg-red-50 text-red-800"
+                      ? "border-red-200 bg-neg-soft text-red-800"
                       : e.impact === "MEDIUM"
-                        ? "border-amber-200 bg-amber-50 text-amber-800"
-                        : "border-slate-200 text-slate-500"
+                        ? "border-warn bg-warn-soft text-warn"
+                        : "border-edge text-t3"
                   }`}
                 >
                   {e.impact === "HIGH" ? "High" : e.impact === "MEDIUM" ? "Medium" : "Low"}
                 </span>
-                <span className="tabular-nums text-xs text-slate-500">
+                <span className="tabular-nums text-xs text-t3">
                   {new Date(e.eventTime).toLocaleString(undefined, {
                     weekday: "short",
                     hour: "2-digit",
@@ -243,7 +243,7 @@ export default async function PairDetailPage({ params }: { params: { symbol: str
       )}
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-slate-800">Live chart</h2>
+        <h2 className="text-sm font-semibold text-t1">Live chart</h2>
         <PairChart pairSymbol={info.symbol} height={360} />
       </section>
 

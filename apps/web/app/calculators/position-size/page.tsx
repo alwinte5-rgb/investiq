@@ -12,8 +12,8 @@ export default function PublicPositionSizePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Position-Size Calculator</h1>
-        <p className="max-w-2xl text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-t1">Position-Size Calculator</h1>
+        <p className="max-w-2xl text-sm text-t3">
           Work out the position size at which your stop loss risks exactly what you planned — in
           units and lots, with the pip value and estimated margin. Free to use, no account needed.
         </p>
@@ -21,9 +21,9 @@ export default function PublicPositionSizePage() {
 
       <PositionSizeCalculator />
 
-      <div className="rounded-lg border bg-slate-50 p-4 text-sm text-slate-600">
+      <div className="rounded-lg border bg-raised p-4 text-sm text-t2">
         Want the full trade calculator, saved plans, a journal, and session/event awareness?{" "}
-        <Link href="/sign-up" className="font-medium text-blue-600 hover:underline">
+        <Link href="/sign-up" className="font-medium text-accent hover:underline">
           Create a free account
         </Link>{" "}
         or{" "}

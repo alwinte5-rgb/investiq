@@ -71,34 +71,34 @@ export function QuickCalculator({
       </div>
 
       <div className="flex flex-col justify-between gap-3">
-        <div className="rounded-lg border bg-slate-50 p-4 text-center">
-          <div className="text-[11px] uppercase tracking-wide text-slate-400">Recommended position</div>
+        <div className="rounded-lg border bg-raised p-4 text-center">
+          <div className="text-[11px] uppercase tracking-wide text-t3">Recommended position</div>
           {units != null && units > 0 ? (
             <>
-              <div className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+              <div className="mt-1 text-2xl font-bold tabular-nums text-t1">
                 {units.toLocaleString()} units
               </div>
-              <div className="text-sm text-slate-500">
+              <div className="text-sm text-t3">
                 {unitsToLots(units).toLocaleString(undefined, { maximumFractionDigits: 3 })} standard lots
               </div>
             </>
           ) : (
-            <div className="mt-1 text-sm text-slate-500">
+            <div className="mt-1 text-sm text-t3">
               {perUnit == null
                 ? "This pair needs an exchange rate — use the full calculator."
                 : "Enter a risk % and stop distance."}
             </div>
           )}
-          <div className="mt-2 flex justify-center gap-4 text-xs text-slate-500">
+          <div className="mt-2 flex justify-center gap-4 text-xs text-t3">
             <span>
               Max loss:{" "}
-              <span className="font-medium tabular-nums text-slate-700">
+              <span className="font-medium tabular-nums text-t2">
                 {maxLoss != null ? money(maxLoss, currency) : "—"}
               </span>
             </span>
             <span>
               Pip value:{" "}
-              <span className="font-medium tabular-nums text-slate-700">
+              <span className="font-medium tabular-nums text-t2">
                 {pipValue != null ? money(pipValue, currency) : "—"}
               </span>
             </span>
@@ -106,11 +106,11 @@ export function QuickCalculator({
         </div>
         <Link
           href={fullHref}
-          className="rounded-md bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-700"
+          className="rounded-md bg-accent px-4 py-2 text-center text-sm font-medium text-accent-fg hover:opacity-90"
         >
           Open Full Calculator
         </Link>
-        <p className="text-center text-[10px] text-slate-400">
+        <p className="text-center text-[10px] text-t3">
           Uses your saved balance ({money(balance, currency)}). Estimates only.
         </p>
       </div>

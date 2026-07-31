@@ -238,7 +238,7 @@ export function TradeCalculator({
           <button
             type="button"
             onClick={useLiveRate}
-            className="whitespace-nowrap rounded-md border px-2 text-xs text-blue-700 hover:bg-blue-50"
+            className="whitespace-nowrap rounded-md border px-2 text-xs text-accent hover:bg-accent-soft"
           >
             Use live
           </button>
@@ -253,11 +253,11 @@ export function TradeCalculator({
         type="button"
         onClick={applySuggestion}
         disabled={insightPending}
-        className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+        className="rounded-md border border-accent bg-accent-soft px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent-soft disabled:opacity-50"
       >
         {insightPending ? "Working…" : "Suggest stop & target"}
       </button>
-      {suggestNote && <p className="text-[11px] leading-relaxed text-slate-500">{suggestNote}</p>}
+      {suggestNote && <p className="text-[11px] leading-relaxed text-t3">{suggestNote}</p>}
     </div>
   );
 
@@ -292,7 +292,7 @@ export function TradeCalculator({
   /** Advanced options — identical set in both modes, always behind an expander. */
   const advancedSection = (label: string) => (
     <details className="rounded-md border p-3">
-      <summary className="cursor-pointer text-sm font-medium text-slate-700">{label}</summary>
+      <summary className="cursor-pointer text-sm font-medium text-t2">{label}</summary>
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Field label="Account currency">
           <CurrencySelect value={currency} onChange={setCurrency} />
@@ -315,7 +315,7 @@ export function TradeCalculator({
             value={swap}
             aria-label="Swap or rollover cost"
             onChange={(e) => setSwap(e.target.value)}
-            className="w-full rounded-md border px-3 py-2 text-sm tabular-nums focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-md border px-3 py-2 text-sm tabular-nums focus:border-accent focus:outline-none"
           />
         </Field>
         <Field label="Position units override" hint="Recalculates your true risk">
@@ -349,7 +349,7 @@ export function TradeCalculator({
         return (
           <div className="space-y-2">
             <PairSelect value={pair} onChange={setPair} />
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-t3">
               The rate is how much of the second (quote) currency one unit of the first (base)
               currency buys.
             </p>
@@ -359,7 +359,7 @@ export function TradeCalculator({
         return (
           <div className="space-y-2">
             <DirectionToggle value={direction} onChange={setDirection} />
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-t3">
               {direction === "BUY"
                 ? `Buying ${pair} means you expect the ${parts?.base ?? "base"} to strengthen against the ${parts?.quote ?? "quote"}.`
                 : `Selling ${pair} means you expect the ${parts?.base ?? "base"} to weaken against the ${parts?.quote ?? "quote"}.`}
@@ -376,7 +376,7 @@ export function TradeCalculator({
               <NumberInput value={riskPct} onChange={setRiskPct} placeholder="1" ariaLabel="Risk percentage" />
             </Field>
             {num(balance) != null && num(riskPct) != null && (
-              <p className="col-span-2 text-xs text-slate-500">
+              <p className="col-span-2 text-xs text-t3">
                 You&apos;re choosing to risk {money((num(balance)! * num(riskPct)!) / 100, currency)} on this trade.
               </p>
             )}
@@ -389,7 +389,7 @@ export function TradeCalculator({
           <div className="space-y-3">
             {stopFields}
             {suggestButton}
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-t3">
               The stop defines your risk: for a {direction === "BUY" ? "buy" : "sell"} it normally
               sits {direction === "BUY" ? "below" : "above"} your entry.
             </p>
@@ -399,7 +399,7 @@ export function TradeCalculator({
         return (
           <div className="space-y-3">
             {tpFields}
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-t3">
               Optional — setting a target unlocks the risk-to-reward ratio and break-even win rate.
             </p>
           </div>
@@ -407,14 +407,14 @@ export function TradeCalculator({
       case "review":
         return (
           <div className="space-y-2">
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-t2">
               Your full results are on the right — check the status badge and the plain-language
               summary before deciding.
             </p>
             {saveHref && hasResult && (
               <Link
                 href={`${saveHref}?pair=${encodeURIComponent(pair)}&direction=${direction}&entry=${entry}&stop=${stopPrice}&tp=${tpPrice}&risk=${riskPct}&balance=${balance}&leverage=${leverage}`}
-                className="inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                className="inline-block rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:opacity-90"
               >
                 Save as Trade Plan
               </Link>
@@ -430,7 +430,7 @@ export function TradeCalculator({
     <div className="space-y-3">
       {/* Mode toggle + live-update hint */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-slate-500">Results update automatically as you enter your trade.</p>
+        <p className="text-xs text-t3">Results update automatically as you enter your trade.</p>
         <div role="radiogroup" aria-label="Calculator mode" className="flex rounded-md border p-0.5 text-xs">
           {(["guided", "full"] as const).map((m) => (
             <button
@@ -440,7 +440,7 @@ export function TradeCalculator({
               aria-checked={mode === m}
               onClick={() => setMode(m)}
               className={`rounded px-3 py-1 font-medium ${
-                mode === m ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
+                mode === m ? "bg-raised text-accent-fg" : "text-t2 hover:bg-raised"
               }`}
             >
               {m === "guided" ? "Guided" : "Full form"}
@@ -455,13 +455,13 @@ export function TradeCalculator({
           {mode === "guided" ? (
             <div className="space-y-3 rounded-lg border p-4">
               <div className="flex items-baseline justify-between gap-2">
-                <h3 className="text-sm font-semibold text-slate-800">
+                <h3 className="text-sm font-semibold text-t1">
                   Step {step + 1} of {GUIDED_STEPS.length}: {current.title}
                 </h3>
                 <button
                   type="button"
                   onClick={() => setMode("full")}
-                  className="text-xs text-blue-600 hover:underline"
+                  className="text-xs text-accent hover:underline"
                 >
                   Show all fields
                 </button>
@@ -471,7 +471,7 @@ export function TradeCalculator({
                 {GUIDED_STEPS.map((s, i) => (
                   <span
                     key={s.id}
-                    className={`h-1.5 flex-1 rounded ${i <= step ? "bg-blue-600" : "bg-slate-200"}`}
+                    className={`h-1.5 flex-1 rounded ${i <= step ? "bg-accent" : "bg-slate-200"}`}
                   />
                 ))}
               </div>
@@ -483,7 +483,7 @@ export function TradeCalculator({
                   type="button"
                   onClick={() => setStep((s) => Math.max(0, s - 1))}
                   disabled={step === 0}
-                  className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-neutral-50 disabled:opacity-40"
+                  className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-raised disabled:opacity-40"
                 >
                   Back
                 </button>
@@ -491,7 +491,7 @@ export function TradeCalculator({
                   <button
                     type="button"
                     onClick={() => setStep((s) => Math.min(GUIDED_STEPS.length - 1, s + 1))}
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                    className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:opacity-90"
                   >
                     Next
                   </button>
@@ -622,37 +622,37 @@ export function TradeCalculator({
           </div>
 
           {result.summary && (
-            <p aria-live="polite" className="rounded-lg border bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
+            <p aria-live="polite" className="rounded-lg border bg-raised p-4 text-sm leading-relaxed text-t2">
               {result.summary}
             </p>
           )}
 
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-t3">
             Estimates only — spreads, commissions, swap, slippage, and broker contract specifications
             can change actual results. The margin requirement is not the same as the amount you could
             lose.
           </p>
 
           {withInsight && insight != null && insight.upcomingEvents.length > 0 && (
-            <div className="rounded-lg border border-amber-100 bg-amber-50/50 p-3">
-              <h3 className="text-xs font-semibold text-slate-700">
+            <div className="rounded-lg border border-amber-100 bg-warn-soft/50 p-3">
+              <h3 className="text-xs font-semibold text-t2">
                 Scheduled events for {pair} — next 48 hours
               </h3>
               <ul className="mt-1 space-y-1">
                 {insight.upcomingEvents.map((e) => (
-                  <li key={`${e.name}${e.eventTime}`} className="flex items-center gap-2 text-xs text-slate-600">
+                  <li key={`${e.name}${e.eventTime}`} className="flex items-center gap-2 text-xs text-t2">
                     <span
                       className={`rounded-full border px-1.5 py-0.5 text-[10px] ${
                         e.impact === "HIGH"
-                          ? "border-red-200 bg-red-50 text-red-800"
-                          : "border-amber-200 bg-amber-50 text-amber-800"
+                          ? "border-neg bg-neg-soft text-neg"
+                          : "border-warn bg-warn-soft text-warn"
                       }`}
                     >
                       {e.impact === "HIGH" ? "High" : "Medium"}
                     </span>
                     <span className="font-medium">{e.currency}</span>
                     <span className="flex-1">{e.name}</span>
-                    <span className="tabular-nums text-slate-400">
+                    <span className="tabular-nums text-t3">
                       {new Date(e.eventTime).toLocaleString(undefined, {
                         weekday: "short",
                         hour: "2-digit",
@@ -662,7 +662,7 @@ export function TradeCalculator({
                   </li>
                 ))}
               </ul>
-              <p className="mt-1 text-[10px] text-slate-400">
+              <p className="mt-1 text-[10px] text-t3">
                 Volatility and spreads may increase around releases. Context only — not a directional signal.
               </p>
             </div>
@@ -681,7 +681,7 @@ export function TradeCalculator({
           {mode === "full" && saveHref && hasResult && (
             <Link
               href={`${saveHref}?pair=${encodeURIComponent(pair)}&direction=${direction}&entry=${entry}&stop=${stopPrice}&tp=${tpPrice}&risk=${riskPct}&balance=${balance}&leverage=${leverage}`}
-              className="inline-block rounded-md border px-4 py-2 text-sm font-medium hover:bg-neutral-50"
+              className="inline-block rounded-md border px-4 py-2 text-sm font-medium hover:bg-raised"
             >
               Save as Trade Plan
             </Link>

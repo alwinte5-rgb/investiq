@@ -95,11 +95,11 @@ export function Term({ k, children }: { k?: string; children: ReactNode }) {
       {open && (
         <span
           role="tooltip"
-          className="absolute bottom-full left-0 z-50 mb-1 block w-64 rounded-md border border-slate-200 bg-white p-2.5 text-left text-xs font-normal leading-snug text-slate-700 shadow-lg"
+          className="absolute bottom-full left-0 z-50 mb-1 block w-64 rounded-md border border-edge bg-surface p-2.5 text-left text-xs font-normal leading-snug text-t2 shadow-lg"
         >
-          <span className="mb-0.5 block font-semibold text-slate-900">{entry.term}</span>
+          <span className="mb-0.5 block font-semibold text-t1">{entry.term}</span>
           <span className="block">{entry.short}</span>
-          {entry.full && <span className="mt-1 block text-slate-500">{entry.full}</span>}
+          {entry.full && <span className="mt-1 block text-t3">{entry.full}</span>}
         </span>
       )}
     </span>

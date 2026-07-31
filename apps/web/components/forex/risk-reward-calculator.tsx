@@ -70,7 +70,7 @@ export function RiskRewardCalculator() {
           </Field>
         </div>
         {wrongSide && (
-          <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+          <p className="rounded-md border border-warn bg-warn-soft p-3 text-xs text-warn">
             ⚠ For a {direction === "BUY" ? "buy" : "sell"} trade the stop normally sits{" "}
             {direction === "BUY" ? "below" : "above"} entry and the target{" "}
             {direction === "BUY" ? "above" : "below"} it — double-check the prices.
@@ -98,10 +98,10 @@ export function RiskRewardCalculator() {
         </div>
 
         <div className="rounded-lg border p-4">
-          <h3 className="text-sm font-semibold text-slate-800">Break-even reference (before costs)</h3>
+          <h3 className="text-sm font-semibold text-t1">Break-even reference (before costs)</h3>
           <table className="mt-2 w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-slate-500">
+              <tr className="text-left text-xs text-t3">
                 <th className="py-1 font-medium">Risk : Reward</th>
                 <th className="py-1 font-medium">Win rate needed to break even</th>
               </tr>
@@ -115,7 +115,7 @@ export function RiskRewardCalculator() {
               ))}
             </tbody>
           </table>
-          <p className="mt-2 text-[11px] text-slate-400">
+          <p className="mt-2 text-[11px] text-t3">
             Spread, commission, swap, and slippage raise the true break-even rate. No ratio
             guarantees profitability — targets still have to be realistic for the pair.
           </p>

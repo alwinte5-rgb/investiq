@@ -2,16 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   InvestIQ design tokens — dark-first "trading terminal" theme.
+
+   Every component styles itself with the token classes Tailwind maps from
+   these vars (bg-surface, text-t1, border-edge, text-pos, …), so BOTH themes
+   work without per-component dark: variants. Dark is the designed-first
+   default; light is derived from the same roles.
+
+   Semantic color rules (dataviz skill):
+   - pos/neg/warn are STATUS colors, reserved for P&L / alerts — never used as
+     chart-series identity. P&L values always render with an explicit +/− sign
+     so color is never the only encoding. Contrast vs both surfaces validated
+     >= 3:1 (dataviz validate_palette.js).
+--------------------------------------------------------------------------- */
+
 :root {
+  --bg: #fafafa;        /* page background */
+  --surface: #ffffff;   /* cards / panels */
+  --raised: #f4f4f5;    /* nested surfaces, table header rows */
+  --edge: #e4e4e7;      /* hairline borders */
+  --edge-strong: #d4d4d8;
+  --t1: #18181b;        /* primary text */
+  --t2: #52525b;        /* secondary text */
+  --t3: #a1a1aa;        /* muted / labels */
+  --accent: #0891b2;    /* the one sharp accent (cyan) */
+  --accent-soft: #ecfeff;
+  --accent-fg: #ffffff; /* text on accent-filled buttons */
+  --pos: #059669;       /* P&L up   (always with a + sign) */
+  --neg: #dc2626;       /* P&L down (always with a − sign) */
+  --warn: #d97706;      /* alerts / stale / caution */
+  --pos-soft: #ecfdf5;
+  --neg-soft: #fef2f2;
+  --warn-soft: #fffbeb;
   color-scheme: light;
 }
+
 :root.dark {
+  --bg: #09090b;        /* near-black */
+  --surface: #101014;   /* panel */
+  --raised: #18181b;    /* nested */
+  --edge: #27272a;      /* hairline */
+  --edge-strong: #3f3f46;
+  --t1: #fafafa;
+  --t2: #a1a1aa;
+  --t3: #71717a;
+  --accent: #22d3ee;
+  --accent-soft: #0e2a30;
+  --accent-fg: #083344; /* dark ink on the light cyan accent */
+  --pos: #34d399;
+  --neg: #f87171;
+  --warn: #fbbf24;
+  --pos-soft: #0a231b;
+  --neg-soft: #2a1414;
+  --warn-soft: #2a2110;
   color-scheme: dark;
 }
 
 body {
-  @apply bg-white text-neutral-900 antialiased;
+  @apply bg-bg text-t1 antialiased;
 }
-:root.dark body {
-  @apply bg-neutral-950 text-neutral-100;
+
+/* Numbers/tables read best in the mono face; opt in with .tabular */
+.tabular {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
 }

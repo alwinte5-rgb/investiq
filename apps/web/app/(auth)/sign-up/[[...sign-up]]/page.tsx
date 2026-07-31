@@ -8,7 +8,7 @@ export default function SignUpPage() {
   return (
     <div className="mx-auto max-w-md py-16 text-center">
       <h1 className="text-xl font-semibold">Sign-ups are closed</h1>
-      <p className="mt-3 text-sm text-slate-600">
+      <p className="mt-3 text-sm text-t2">
         This is a personal tool and isn&apos;t accepting new accounts.
       </p>
     </div>

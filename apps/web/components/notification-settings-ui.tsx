@@ -103,7 +103,7 @@ export function NotificationSettingsUI({ initial }: { initial: NotificationPrefe
             </option>
           ))}
         </select>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-t3">
           Used to schedule briefings and apply quiet hours.
         </p>
       </div>
@@ -174,7 +174,7 @@ export function NotificationSettingsUI({ initial }: { initial: NotificationPrefe
             </label>
           </div>
         )}
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-t3">
           In-app notifications are always recorded; quiet hours only mute email and push.
         </p>
       </div>
@@ -183,12 +183,12 @@ export function NotificationSettingsUI({ initial }: { initial: NotificationPrefe
         <button
           onClick={save}
           disabled={pending}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
         >
           {pending ? "Saving…" : "Save preferences"}
         </button>
-        {saved && <span className="text-sm text-green-600">Saved.</span>}
-        {error && <span className="text-sm text-red-600">{error}</span>}
+        {saved && <span className="text-sm text-pos">Saved.</span>}
+        {error && <span className="text-sm text-neg">{error}</span>}
       </div>
     </div>
   );

@@ -102,7 +102,7 @@ export function MarginCalculator() {
           <ResultRow label="Effective leverage" value={effLev != null ? formatLeverage(effLev) : "—"} />
         </div>
 
-        <div className="rounded-lg border bg-slate-50 p-4 text-sm leading-relaxed text-slate-600">
+        <div className="rounded-lg border bg-raised p-4 text-sm leading-relaxed text-t2">
           <p>
             <strong>
               Margin is the amount your broker may reserve to maintain the position. It is not the

@@ -77,10 +77,10 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">
+        <h1 className="text-2xl font-bold text-t1">
           {firstName ? `Welcome back, ${firstName}` : "Your risk dashboard"}
         </h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-t3">
           Know exactly how much you&apos;re controlling and risking before you place the trade.
         </p>
       </div>
@@ -89,7 +89,7 @@ export default async function DashboardPage() {
       <section className="space-y-2">
         <div className="flex items-baseline justify-between">
           <h2 className="text-lg font-semibold">Market sessions</h2>
-          <Link href="/sessions" className="text-xs text-blue-600 hover:underline">
+          <Link href="/sessions" className="text-xs text-accent hover:underline">
             Details →
           </Link>
         </div>
@@ -100,14 +100,14 @@ export default async function DashboardPage() {
       <section className="space-y-2">
         <div className="flex items-baseline justify-between">
           <h2 className="text-lg font-semibold">Account summary</h2>
-          <Link href="/settings" className="text-xs text-blue-600 hover:underline">
+          <Link href="/settings" className="text-xs text-accent hover:underline">
             Edit settings →
           </Link>
         </div>
         {settings == null ? (
-          <p className="rounded-lg border border-dashed p-5 text-sm text-slate-500">
+          <p className="rounded-lg border border-dashed p-5 text-sm text-t3">
             Set your account balance, currency, and risk limits in{" "}
-            <Link href="/settings" className="text-blue-600 hover:underline">
+            <Link href="/settings" className="text-accent hover:underline">
               Settings
             </Link>{" "}
             to unlock personalized risk checks.
@@ -116,39 +116,39 @@ export default async function DashboardPage() {
           <>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
               <div className="rounded-lg border p-3">
-                <div className="text-[11px] text-slate-400">Account balance</div>
+                <div className="text-[11px] text-t3">Account balance</div>
                 <div className="text-lg font-semibold tabular-nums">
                   {balance != null ? fmt(balance, currency) : "—"}
                 </div>
               </div>
               <div className="rounded-lg border p-3">
-                <div className="text-[11px] text-slate-400">Default risk ({defaultRisk}%)</div>
+                <div className="text-[11px] text-t3">Default risk ({defaultRisk}%)</div>
                 <div className="text-lg font-semibold tabular-nums">
                   {defaultRiskAmount != null ? fmt(defaultRiskAmount, currency) : "—"}
                 </div>
               </div>
               <div className="rounded-lg border p-3">
-                <div className="text-[11px] text-slate-400">Maximum risk ({maxRisk}%)</div>
+                <div className="text-[11px] text-t3">Maximum risk ({maxRisk}%)</div>
                 <div className="text-lg font-semibold tabular-nums">
                   {maxRiskAmount != null ? fmt(maxRiskAmount, currency) : "—"}
                 </div>
               </div>
               <div className="rounded-lg border p-3">
-                <div className="text-[11px] text-slate-400">Broker leverage</div>
+                <div className="text-[11px] text-t3">Broker leverage</div>
                 <div className="text-lg font-semibold tabular-nums">{Number(settings.defaultLeverage)}:1</div>
               </div>
               <div className="rounded-lg border p-3">
-                <div className="text-[11px] text-slate-400">Open planned risk</div>
+                <div className="text-[11px] text-t3">Open planned risk</div>
                 <div className="text-lg font-semibold tabular-nums">{fmt(openRisk, currency)}</div>
               </div>
               <div className="rounded-lg border p-3">
-                <div className="text-[11px] text-slate-400">Remaining risk allowance</div>
+                <div className="text-[11px] text-t3">Remaining risk allowance</div>
                 <div className="text-lg font-semibold tabular-nums">
                   {remainingAllowance != null ? fmt(remainingAllowance, currency) : "—"}
                 </div>
               </div>
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-t3">
               Your margin requirement is not the same as the amount you could lose — risk is set by
               your stop loss; margin is only what your broker reserves.
             </p>
@@ -161,28 +161,28 @@ export default async function DashboardPage() {
         <section className="space-y-2">
           <div className="flex items-baseline justify-between">
             <h2 className="text-lg font-semibold">Event exposure</h2>
-            <Link href="/calendar" className="text-xs text-blue-600 hover:underline">
+            <Link href="/calendar" className="text-xs text-accent hover:underline">
               Full calendar →
             </Link>
           </div>
-          <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/60 p-4">
-            <p className="text-xs text-amber-800">
+          <div className="space-y-2 rounded-lg border border-warn bg-warn-soft/60 p-4">
+            <p className="text-xs text-warn">
               These open plans face a high-impact economic event — volatility and spreads may
               increase around each release.
             </p>
             {plans.exposure.map((x) => (
-              <div key={x.planId} className="rounded-md border border-amber-200 bg-white p-3 text-sm">
+              <div key={x.planId} className="rounded-md border border-warn bg-surface p-3 text-sm">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold tabular-nums">{x.pairSymbol}</span>
-                  <span className="text-slate-500">{x.direction === "BUY" ? "Buy" : "Sell"}</span>
-                  <span className="rounded-full border px-2 py-0.5 text-xs text-slate-500">
+                  <span className="text-t3">{x.direction === "BUY" ? "Buy" : "Sell"}</span>
+                  <span className="rounded-full border px-2 py-0.5 text-xs text-t3">
                     {x.status.charAt(0) + x.status.slice(1).toLowerCase()}
                   </span>
-                  <Link href="/planner" className="ml-auto text-xs text-blue-600 hover:underline">
+                  <Link href="/planner" className="ml-auto text-xs text-accent hover:underline">
                     Review plan →
                   </Link>
                 </div>
-                <ul className="mt-1 space-y-0.5 text-xs text-slate-600">
+                <ul className="mt-1 space-y-0.5 text-xs text-t2">
                   {x.events.map((e) => (
                     <li key={`${e.name}${e.eventTime}`}>
                       ⚠ {e.currency} {e.name} —{" "}
@@ -216,7 +216,7 @@ export default async function DashboardPage() {
       <section className="space-y-2">
         <div className="flex items-baseline justify-between">
           <h2 className="text-lg font-semibold">Currency pairs</h2>
-          <Link href="/pairs" className="text-xs text-blue-600 hover:underline">
+          <Link href="/pairs" className="text-xs text-accent hover:underline">
             All pairs →
           </Link>
         </div>
@@ -227,12 +227,12 @@ export default async function DashboardPage() {
       <section className="space-y-2">
         <div className="flex items-baseline justify-between">
           <h2 className="text-lg font-semibold">Upcoming economic events</h2>
-          <Link href="/calendar" className="text-xs text-blue-600 hover:underline">
+          <Link href="/calendar" className="text-xs text-accent hover:underline">
             Full calendar →
           </Link>
         </div>
         {upcomingEvents.length === 0 ? (
-          <p className="rounded-lg border border-dashed p-5 text-sm text-slate-500">
+          <p className="rounded-lg border border-dashed p-5 text-sm text-t3">
             {calendar.providerEnabled
               ? "No events in the next two weeks."
               : "No calendar provider connected yet — once configured, upcoming high-impact releases will appear here and inside your trade checks."}
@@ -246,15 +246,15 @@ export default async function DashboardPage() {
                 <span
                   className={`rounded-full border px-2 py-0.5 text-xs ${
                     e.impact === "HIGH"
-                      ? "border-red-200 bg-red-50 text-red-800"
+                      ? "border-neg bg-neg-soft text-neg"
                       : e.impact === "MEDIUM"
-                        ? "border-amber-200 bg-amber-50 text-amber-800"
-                        : "border-slate-200 text-slate-500"
+                        ? "border-warn bg-warn-soft text-warn"
+                        : "border-edge text-t3"
                   }`}
                 >
                   {e.impact === "HIGH" ? "High" : e.impact === "MEDIUM" ? "Medium" : "Low"}
                 </span>
-                <span className="tabular-nums text-xs text-slate-500">
+                <span className="tabular-nums text-xs text-t3">
                   {new Date(e.eventTime).toLocaleString(undefined, {
                     month: "short",
                     day: "numeric",

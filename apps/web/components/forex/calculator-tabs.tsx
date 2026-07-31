@@ -44,8 +44,8 @@ export function CalculatorTabs({
             onClick={() => setTab(t.id)}
             className={`-mb-px rounded-t-md border-b-2 px-3 py-2 text-sm font-medium ${
               tab === t.id
-                ? "border-blue-600 text-blue-700"
-                : "border-transparent text-slate-500 hover:text-slate-700"
+                ? "border-accent text-accent"
+                : "border-transparent text-t3 hover:text-t2"
             }`}
           >
             {t.label}

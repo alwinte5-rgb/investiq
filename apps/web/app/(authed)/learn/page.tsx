@@ -27,8 +27,8 @@ export default async function LearnPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Learn</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-t1">Learn</h1>
+        <p className="text-sm text-t3">
           A plain-English path through forex — pips, lots, leverage, margin, position sizing, and
           the discipline that ties them together. Educational only, never advice. Tap a topic to
           expand.
@@ -36,11 +36,11 @@ export default async function LearnPage() {
       </div>
 
       {error ? (
-        <p className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <p className="rounded-md border border-neg bg-neg-soft p-4 text-sm text-neg">
           Couldn&apos;t load lessons: {error}
         </p>
       ) : sections.length === 0 ? (
-        <p className="rounded-md border border-dashed p-6 text-center text-sm text-slate-500">
+        <p className="rounded-md border border-dashed p-6 text-center text-sm text-t3">
           No lessons available right now.
         </p>
       ) : (
@@ -48,15 +48,15 @@ export default async function LearnPage() {
           <section key={s.title} className="space-y-2">
             <div>
               <h2 className="text-lg font-semibold">{s.title}</h2>
-              <p className="text-sm text-slate-500">{s.intro}</p>
+              <p className="text-sm text-t3">{s.intro}</p>
             </div>
             <div className="divide-y rounded-lg border">
               {s.items.map((it) => (
                 <details key={it.slug} className="p-3">
-                  <summary className="cursor-pointer text-sm font-medium text-slate-800">
+                  <summary className="cursor-pointer text-sm font-medium text-t1">
                     {it.title}
                   </summary>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{it.body}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-t2">{it.body}</p>
                 </details>
               ))}
             </div>
@@ -64,11 +64,11 @@ export default async function LearnPage() {
         ))
       )}
 
-      <p className="border-t pt-3 text-xs text-slate-400">
+      <p className="border-t pt-3 text-xs text-t3">
         See a term you don&apos;t know elsewhere in the app? Any{" "}
         <span className="border-b border-dotted border-slate-400">underlined word</span> is tappable
         for a definition. Ready to apply it?{" "}
-        <Link href="/calculator" className="text-blue-600 hover:underline">
+        <Link href="/calculator" className="text-accent hover:underline">
           Open the Trade Calculator →
         </Link>
       </p>

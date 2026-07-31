@@ -60,15 +60,15 @@ export default async function JournalPage({
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Trading Journal</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-t1">Trading Journal</h1>
+        <p className="text-sm text-t3">
           Record what actually happened — planned values are optional and prefill automatically when
           you journal a trade plan. Over time, the analytics surface patterns about your process.
         </p>
       </div>
 
       {fromPlanId && !prefill && (
-        <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+        <p className="rounded-md border border-warn bg-warn-soft p-3 text-sm text-warn">
           That trade plan has already been journaled (or wasn&apos;t found) — its entry is in the
           list below.
         </p>

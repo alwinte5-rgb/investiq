@@ -28,8 +28,8 @@ export default function PairsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Currency Pairs</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-t1">Currency Pairs</h1>
+        <p className="text-sm text-t3">
           What each pair is, how it&apos;s quoted, and what to be aware of before trading it.
           Educational profiles — no pair is ever a recommendation.
         </p>
@@ -39,23 +39,23 @@ export default function PairsPage() {
         <section key={g.category} className="space-y-2">
           <div>
             <h2 className="text-lg font-semibold">{g.title}</h2>
-            <p className="text-sm text-slate-500">{g.blurb}</p>
+            <p className="text-sm text-t3">{g.blurb}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {CURRENCY_PAIRS.filter((p) => p.category === g.category).map((p) => (
               <Link
                 key={p.symbol}
                 href={`/pairs/${p.symbol.replace("/", "-")}`}
-                className="rounded-lg border p-4 hover:border-blue-300 hover:bg-blue-50/30"
+                className="rounded-lg border p-4 hover:border-accent hover:bg-accent-soft/30"
               >
                 <div className="flex items-baseline justify-between">
-                  <span className="font-semibold tabular-nums text-slate-900">{p.symbol}</span>
-                  <span className="text-[11px] text-slate-400">pip {p.pipSize}</span>
+                  <span className="font-semibold tabular-nums text-t1">{p.symbol}</span>
+                  <span className="text-[11px] text-t3">pip {p.pipSize}</span>
                 </div>
-                <div className="mt-0.5 text-xs text-slate-500">{p.displayName}</div>
+                <div className="mt-0.5 text-xs text-t3">{p.displayName}</div>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {p.educationLabels.slice(0, 2).map((l) => (
-                    <span key={l} className="rounded-full border px-2 py-0.5 text-[10px] text-slate-500">
+                    <span key={l} className="rounded-full border px-2 py-0.5 text-[10px] text-t3">
                       {l}
                     </span>
                   ))}

@@ -39,8 +39,8 @@ export default async function PlannerPage({
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Trade Planner</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-t1">Trade Planner</h1>
+        <p className="text-sm text-t3">
           Write the trade down before you take it. Every plan is checked against your own risk
           settings before it can be saved.
         </p>

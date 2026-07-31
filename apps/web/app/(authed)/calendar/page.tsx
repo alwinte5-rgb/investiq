@@ -37,15 +37,15 @@ export default async function CalendarPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Economic Calendar</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-t1">Economic Calendar</h1>
+        <p className="text-sm text-t3">
           Scheduled releases that can move currencies. Around high-impact events, volatility and
           spreads may increase. Awareness only — never a trade signal.
         </p>
       </div>
 
       {error ? (
-        <p className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <p className="rounded-md border border-neg bg-neg-soft p-4 text-sm text-neg">
           Couldn&apos;t load the calendar: {error}
         </p>
       ) : (

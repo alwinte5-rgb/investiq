@@ -19,9 +19,9 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium text-slate-600">{label}</span>
+      <span className="mb-1 block text-xs font-medium text-t2">{label}</span>
       {children}
-      {hint && <span className="mt-0.5 block text-[11px] text-slate-400">{hint}</span>}
+      {hint && <span className="mt-0.5 block text-[11px] text-t3">{hint}</span>}
     </label>
   );
 }
@@ -49,7 +49,7 @@ export function NumberInput({
       placeholder={placeholder}
       aria-label={ariaLabel}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-md border px-3 py-2 text-sm tabular-nums focus:border-blue-500 focus:outline-none"
+      className="w-full rounded-md border px-3 py-2 text-sm tabular-nums focus:border-accent focus:outline-none"
     />
   );
 }
@@ -70,7 +70,7 @@ export function Select({
       value={value}
       aria-label={ariaLabel}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-md border bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+      className="w-full rounded-md border bg-surface px-3 py-2 text-sm focus:border-accent focus:outline-none"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>
@@ -92,7 +92,7 @@ export function PairSelect({ value, onChange }: { value: string; onChange: (v: s
       value={value}
       aria-label="Currency pair"
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-md border bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+      className="w-full rounded-md border bg-surface px-3 py-2 text-sm focus:border-accent focus:outline-none"
     >
       {groups.map((g) => (
         <optgroup key={g.category} label={g.label}>
@@ -135,7 +135,7 @@ export function DirectionToggle({
           aria-checked={value === d}
           onClick={() => onChange(d)}
           className={`rounded px-3 py-1.5 text-sm font-medium ${
-            value === d ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
+            value === d ? "bg-raised text-accent-fg" : "text-t2 hover:bg-raised"
           }`}
         >
           {d === "BUY" ? "Buy (long)" : "Sell (short)"}
@@ -158,22 +158,22 @@ export function ResultRow({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-3 py-1.5">
-      <span className="text-sm text-slate-500">{label}</span>
+      <span className="text-sm text-t3">{label}</span>
       <span className="text-right">
-        <span className={`tabular-nums ${emphasize ? "text-base font-semibold text-slate-900" : "text-sm font-medium text-slate-800"}`}>
+        <span className={`tabular-nums ${emphasize ? "text-base font-semibold text-t1" : "text-sm font-medium text-t1"}`}>
           {value}
         </span>
-        {sub && <span className="block text-[11px] text-slate-400">{sub}</span>}
+        {sub && <span className="block text-[11px] text-t3">{sub}</span>}
       </span>
     </div>
   );
 }
 
 const STATUS_STYLES: Record<RiskStatus, string> = {
-  WITHIN_PLAN: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  CAUTION: "border-amber-200 bg-amber-50 text-amber-800",
-  OUTSIDE_PLAN: "border-red-200 bg-red-50 text-red-800",
-  MISSING_INFO: "border-slate-200 bg-slate-50 text-slate-600",
+  WITHIN_PLAN: "border-pos bg-pos-soft text-pos",
+  CAUTION: "border-warn bg-warn-soft text-warn",
+  OUTSIDE_PLAN: "border-neg bg-neg-soft text-neg",
+  MISSING_INFO: "border-edge bg-raised text-t2",
 };
 
 export function RiskStatusBadge({ status, reasons }: { status: RiskStatus; reasons: string[] }) {
@@ -194,7 +194,7 @@ export function RiskStatusBadge({ status, reasons }: { status: RiskStatus; reaso
 export function WarningList({ warnings }: { warnings: string[] }) {
   if (warnings.length === 0) return null;
   return (
-    <ul className="space-y-1 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+    <ul className="space-y-1 rounded-md border border-warn bg-warn-soft p-3 text-xs text-warn">
       {warnings.map((w) => (
         <li key={w}>⚠ {w}</li>
       ))}

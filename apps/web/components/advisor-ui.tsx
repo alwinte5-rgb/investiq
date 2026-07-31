@@ -44,8 +44,8 @@ export function AdvisorUI() {
   return (
     <div className="space-y-4">
       {messages.length === 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-600">
+        <div className="rounded-xl border border-edge bg-surface p-5">
+          <p className="text-sm text-t2">
             Ask about an investing concept or your own portfolio. Try one of these:
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -53,7 +53,7 @@ export function AdvisorUI() {
               <button
                 key={s}
                 onClick={() => ask(s)}
-                className="rounded-full border border-slate-300 px-3 py-1.5 text-xs text-slate-700 transition hover:border-blue-300 hover:bg-blue-50/40"
+                className="rounded-full border border-edge-strong px-3 py-1.5 text-xs text-t2 transition hover:border-accent hover:bg-accent-soft/40"
               >
                 {s}
               </button>
@@ -69,8 +69,8 @@ export function AdvisorUI() {
               <div
                 className={`max-w-[85%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm ${
                   m.role === "user"
-                    ? "bg-blue-600 text-white"
-                    : "border border-slate-200 bg-white text-slate-700"
+                    ? "bg-accent text-accent-fg"
+                    : "border border-edge bg-surface text-t2"
                 }`}
               >
                 {m.text}
@@ -79,7 +79,7 @@ export function AdvisorUI() {
           ))}
           {pending && (
             <div className="flex justify-start">
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-400">
+              <div className="rounded-2xl border border-edge bg-surface px-4 py-2.5 text-sm text-t3">
                 Thinking…
               </div>
             </div>
@@ -88,7 +88,7 @@ export function AdvisorUI() {
         </div>
       )}
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-neg">{error}</p>}
 
       <form
         onSubmit={(e) => {
@@ -101,18 +101,18 @@ export function AdvisorUI() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about investing or your portfolio…"
-          className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="flex-1 rounded-md border border-edge-strong px-3 py-2 text-sm"
         />
         <button
           type="submit"
           disabled={pending || input.trim().length < 3}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
         >
           {pending ? "…" : "Ask"}
         </button>
       </form>
 
-      <p className="text-[11px] text-slate-400">
+      <p className="text-[11px] text-t3">
         Educational only — InvestIQ is not a financial advisor and never gives buy/sell or
         personalized investment advice.
       </p>

@@ -27,7 +27,7 @@ export default async function SettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Settings</h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-t3">
           Your trading profile drives every calculator and trade check — set it once, and the app
           measures every setup against it.
         </p>
@@ -36,7 +36,7 @@ export default async function SettingsPage() {
       {forex ? (
         <ForexSettingsUI initial={forex} />
       ) : (
-        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="rounded-md border border-neg bg-neg-soft p-4 text-sm text-neg">
           Couldn&apos;t load your trading profile. Refresh to try again.
         </div>
       )}
@@ -46,7 +46,7 @@ export default async function SettingsPage() {
         {prefs ? (
           <NotificationSettingsUI initial={prefs} />
         ) : (
-          <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="rounded-md border border-neg bg-neg-soft p-4 text-sm text-neg">
             Couldn&apos;t load your notification preferences. Refresh to try again.
           </div>
         )}

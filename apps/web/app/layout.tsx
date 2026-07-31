@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { ThemeToggle } from "@/components/theme-toggle";
 import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 // Single ClerkProvider at the root so the header can reflect auth state. The
 // publishable key is supplied at build time (see apps/web/Dockerfile). This is
@@ -20,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const guestMode = process.env.GUEST_MODE === "true";
 
   const page = (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${mono.variable} font-sans`}>
         <head>
           {/* Set the theme on <html> BEFORE first paint to avoid a flash of
               the wrong theme. Defaults to dark (owner preference); honors a
@@ -33,9 +37,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           />
         </head>
         <body className="flex min-h-screen flex-col">
-          <header className="flex items-center justify-between border-b border-slate-200 px-6 py-3 dark:border-neutral-800">
+          <header className="flex items-center justify-between border-b border-edge px-6 py-3">
             <Link href="/" className="font-semibold tracking-tight">
-              Invest<span className="text-cyan-500">IQ</span>
+              Invest<span className="text-accent">IQ</span>
             </Link>
             <nav className="flex items-center gap-4 text-sm">
               <ThemeToggle />
@@ -54,7 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <SignedOut>
                     <Link
                       href="/sign-in"
-                      className="rounded-md bg-cyan-600 px-3 py-1.5 font-medium text-white hover:bg-cyan-500"
+                      className="rounded-md bg-accent px-3 py-1.5 font-medium text-surface hover:opacity-90"
                     >
                       Sign in
                     </Link>
@@ -64,7 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </nav>
           </header>
           <main className="flex-1">{children}</main>
-          <footer className="border-t border-slate-200 px-6 py-4 text-xs text-neutral-500 dark:border-neutral-800">
+          <footer className="border-t border-edge px-6 py-4 text-xs text-t3">
             <p>
               Personal research & paper-trading dashboard. Educational only — nothing here is
               financial advice.{" "}

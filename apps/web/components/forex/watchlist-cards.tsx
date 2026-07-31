@@ -28,9 +28,9 @@ export function WatchlistCards({
 }) {
   if (pairs.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed p-5 text-sm text-slate-500">
+      <p className="rounded-lg border border-dashed p-5 text-sm text-t3">
         No pairs to show yet — browse{" "}
-        <Link href="/pairs" className="text-blue-600 hover:underline">
+        <Link href="/pairs" className="text-accent hover:underline">
           Currency Pairs
         </Link>{" "}
         to explore the catalog.
@@ -48,32 +48,32 @@ export function WatchlistCards({
             <Link
               key={p.symbol}
               href={`/pairs/${p.symbol.replace("/", "-")}`}
-              className="rounded-lg border p-4 hover:border-blue-300 hover:bg-blue-50/30"
+              className="rounded-lg border p-4 hover:border-accent hover:bg-accent-soft/30"
             >
               <div className="flex items-baseline justify-between">
-                <span className="font-semibold tabular-nums text-slate-900">{p.symbol}</span>
+                <span className="font-semibold tabular-nums text-t1">{p.symbol}</span>
                 {rate != null ? (
-                  <span className="tabular-nums text-sm font-medium text-slate-800">{rate}</span>
+                  <span className="tabular-nums text-sm font-medium text-t1">{rate}</span>
                 ) : (
-                  <span className="text-[11px] text-slate-400">No live rate</span>
+                  <span className="text-[11px] text-t3">No live rate</span>
                 )}
               </div>
-              <div className="mt-0.5 text-xs text-slate-500">
+              <div className="mt-0.5 text-xs text-t3">
                 {p.baseCurrency}/{p.quoteCurrency} · pip {p.pipSize}
               </div>
-              <p className="mt-2 text-xs leading-relaxed text-slate-500">
+              <p className="mt-2 text-xs leading-relaxed text-t3">
                 {rate != null && info
                   ? explainRate(info, rate)
                   : `One ${p.baseCurrency} is quoted in ${p.quoteCurrency}. Enter the current rate manually in the calculator.`}
               </p>
               {p.sessions.length > 0 && (
-                <p className="mt-1 text-[11px] text-slate-400">Most active: {p.sessions.join(", ")}</p>
+                <p className="mt-1 text-[11px] text-t3">Most active: {p.sessions.join(", ")}</p>
               )}
             </Link>
           );
         })}
       </div>
-      <p className="text-[11px] text-slate-400">
+      <p className="text-[11px] text-t3">
         {lastUpdated
           ? `Rates last updated ${new Date(lastUpdated).toLocaleTimeString()}.`
           : "Live rates are not connected yet — calculators accept manually entered rates and always work."}

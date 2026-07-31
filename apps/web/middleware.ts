@@ -28,7 +28,6 @@ const isProtectedRoute = createRouteMatcher([
   "/ideas(.*)",
   "/research(.*)",
   "/alpaca(.*)",
-  "/quant(.*)",
 ]);
 
 // TEMPORARY guest mode: bypass Clerk middleware ENTIRELY. Running
